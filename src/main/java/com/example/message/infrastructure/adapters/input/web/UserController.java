@@ -2,6 +2,9 @@ package com.example.message.infrastructure.adapters.input.web;
 
 import com.example.message.core.domain.User;
 import com.example.message.core.ports.input.UserUseCase;
+
+import jakarta.validation.Valid;
+
 import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +18,7 @@ public class UserController {
   }
 
   @PostMapping
-  public User create(@RequestBody User user) {
+  public User create(@Valid @RequestBody User user) {
     return userUseCase.createUser(user);
   }
 
