@@ -5,5 +5,8 @@ import java.util.List;
 
 public interface UserUseCase {
   User createUser(User user);
+
   List<User> listUsers();
+
+  User findById(Long id);
 }

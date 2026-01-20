@@ -32,4 +32,12 @@ public class PostgresUserRepository implements UserRepositoryPort {
         .map(e -> new User(e.getId(), e.getName(), e.getEmail()))
         .collect(Collectors.toList());
   }
+
+  @Override
+  public User find(Long id) {
+    return repository
+        .findById(id)
+        .map(e -> new User(e.getId(), e.getName(), e.getEmail()))
+        .orElse(null);
+  }
 }
