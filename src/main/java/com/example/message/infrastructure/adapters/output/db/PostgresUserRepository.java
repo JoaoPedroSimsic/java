@@ -18,6 +18,7 @@ public class PostgresUserRepository implements UserRepositoryPort {
   public User save(User user) {
     UserEntity entity = new UserEntity();
 
+    entity.setId(user.getId());
     entity.setName(user.getName());
     entity.setEmail(user.getEmail());
 
