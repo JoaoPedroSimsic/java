@@ -46,13 +46,16 @@ public class UserController {
       @PathVariable @Min(value = 1, message = "ID must be at least 1") Long id,
       @Valid @RequestBody UserRequest request) {
     User domainUser = new User(id, request.name(), request.email());
-    return ResponseEntity.ok(userUseCase.updateUser(domainUser));
+    User updatedUser = userUseCase.updateUser(domainUser);
+
+    return ResponseEntity.ok(updatedUser);
   }
 
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(
       @PathVariable @Min(value = 1, message = "ID must be at least 1") Long id) {
     userUseCase.deleteUser(id);
+
     return ResponseEntity.noContent().build();
   }
 }
