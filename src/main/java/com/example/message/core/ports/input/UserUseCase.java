@@ -9,4 +9,8 @@ public interface UserUseCase {
   List<User> listUsers();
 
   User findById(Long id);
+
+  User updateUser(User user);
+
+  void deleteUser(Long id);
 }

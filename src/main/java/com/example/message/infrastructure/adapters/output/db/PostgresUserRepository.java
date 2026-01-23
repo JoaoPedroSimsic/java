@@ -40,4 +40,17 @@ public class PostgresUserRepository implements UserRepositoryPort {
         .map(e -> new User(e.getId(), e.getName(), e.getEmail()))
         .orElse(null);
   }
+
+  @Override
+  public User findByEmail(String email) {
+    return repository
+        .findByEmail(email)
+        .map(e -> new User(e.getId(), e.getName(), e.getEmail()))
+        .orElse(null);
+  }
+
+  @Override
+  public void delete(Long id) {
+    repository.deleteById(id);
+  }
 }

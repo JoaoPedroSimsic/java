@@ -31,4 +31,30 @@ public class UserService implements UserUseCase {
     }
     return user;
   }
+
+  @Override
+  public User updateUser(User user) {
+    User existing = userRepositoryPort.find(user.getId());
+
+    if (existing == null) {
+      throw new UserNotFoundException("User not found with id: " + user.getId());
+    }
+
+    String updatedName = user.getName() != null ? user.getName() : existing.getName();
+    String updatedEmail = user.getEmail() != null ? user.getEmail() : existing.getEmail();
+
+    User updatedUser = new User(existing.getId(), updatedName, updatedEmail);
+    return userRepositoryPort.save(updatedUser);
+  }
+
+  @Override
+  public void deleteUser(Long id) {
+    User existing = userRepositoryPort.find(id);
+
+    if (existing == null) {
+      throw new UserNotFoundException("User not found with id: " + id);
+    }
+
+    userRepositoryPort.delete(id);
+  }
 }
