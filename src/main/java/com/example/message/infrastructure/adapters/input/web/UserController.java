@@ -5,7 +5,6 @@ import com.example.message.core.ports.input.UserUseCase;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -30,8 +29,10 @@ public class UserController {
   }
 
   @GetMapping
-  public List<User> getAll() {
-    return userUseCase.listUsers();
+  public ResponseEntity<List<User>> getAll() {
+    List<User> users = userUseCase.listUsers();
+
+    return ResponseEntity.ok(users);
   }
 
   @GetMapping("/{id}")
