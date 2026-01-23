@@ -40,11 +40,9 @@ public class UserService implements UserUseCase {
       throw new UserNotFoundException("User not found with id: " + user.getId());
     }
 
-    String updatedName = user.getName() != null ? user.getName() : existing.getName();
-    String updatedEmail = user.getEmail() != null ? user.getEmail() : existing.getEmail();
+    existing.updateFields(user.getName(), user.getEmail());
 
-    User updatedUser = new User(existing.getId(), updatedName, updatedEmail);
-    return userRepositoryPort.save(updatedUser);
+    return userRepositoryPort.save(existing);
   }
 
   @Override
