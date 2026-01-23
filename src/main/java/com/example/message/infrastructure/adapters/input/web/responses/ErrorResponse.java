@@ -1,4 +1,4 @@
-package com.example.message.core.exceptions.responses;
+package com.example.message.infrastructure.adapters.input.web.responses;
 
 import java.time.LocalDateTime;
 import java.util.Map;
