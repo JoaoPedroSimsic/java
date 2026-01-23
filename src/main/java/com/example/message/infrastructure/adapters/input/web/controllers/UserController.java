@@ -3,13 +3,15 @@ package com.example.message.infrastructure.adapters.input.web.controllers;
 import com.example.message.core.domain.User;
 import com.example.message.core.ports.input.UserUseCase;
 import com.example.message.infrastructure.adapters.input.web.requests.UserRequest;
+import com.example.message.infrastructure.adapters.input.web.responses.UserResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import java.net.URI;
 import java.util.List;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/users")
@@ -22,34 +24,44 @@ public class UserController {
   }
 
   @PostMapping
-  public ResponseEntity<User> create(@Valid @RequestBody UserRequest request) {
+  public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest request) {
     User domainUser = new User(null, request.name(), request.email());
     User savedUser = userUseCase.createUser(domainUser);
 
-    return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
+    UserResponse response = UserResponse.fromDomain(savedUser);
+
+    URI location =
+        ServletUriComponentsBuilder.fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(response.id())
+            .toUri();
+
+    return ResponseEntity.created(location).body(response);
   }
 
   @GetMapping
-  public ResponseEntity<List<User>> getAll() {
-    List<User> users = userUseCase.listUsers();
+  public ResponseEntity<List<UserResponse>> getAll() {
+    List<UserResponse> responses =
+        userUseCase.listUsers().stream().map(UserResponse::fromDomain).toList();
 
-    return ResponseEntity.ok(users);
+    return ResponseEntity.ok(responses);
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<User> find(
+  public ResponseEntity<UserResponse> find(
       @PathVariable @Min(value = 1, message = "ID must be at least 1") Long id) {
-    return ResponseEntity.ok(userUseCase.findById(id));
+    User user = userUseCase.findById(id);
+    return ResponseEntity.ok(UserResponse.fromDomain(user));
   }
 
   @PatchMapping("/{id}")
-  public ResponseEntity<User> update(
+  public ResponseEntity<UserResponse> update(
       @PathVariable @Min(value = 1, message = "ID must be at least 1") Long id,
       @Valid @RequestBody UserRequest request) {
     User domainUser = new User(id, request.name(), request.email());
     User updatedUser = userUseCase.updateUser(domainUser);
 
-    return ResponseEntity.ok(updatedUser);
+    return ResponseEntity.ok(UserResponse.fromDomain(updatedUser));
   }
 
   @DeleteMapping("/{id}")
