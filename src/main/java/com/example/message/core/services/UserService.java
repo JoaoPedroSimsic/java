@@ -1,6 +1,7 @@
 package com.example.message.core.services;
 
 import com.example.message.core.domain.User;
+import com.example.message.core.exceptions.ConflictException;
 import com.example.message.core.exceptions.UserNotFoundException;
 import com.example.message.core.ports.input.UserUseCase;
 import com.example.message.core.ports.output.UserRepositoryPort;
@@ -15,6 +16,12 @@ public class UserService implements UserUseCase {
 
   @Override
   public User createUser(User user) {
+    User existingEmail = userRepositoryPort.findByEmail(user.getEmail());
+
+    if (existingEmail != null) {
+      throw new ConflictException("User with email " + user.getEmail() + " already exists");
+    }
+
     return userRepositoryPort.save(user);
   }
 
@@ -38,6 +45,12 @@ public class UserService implements UserUseCase {
 
     if (existing == null) {
       throw new UserNotFoundException("User not found with id: " + user.getId());
+    }
+
+    User existingEmail = userRepositoryPort.findByEmail(user.getEmail());
+
+    if (existingEmail != null && !existingEmail.getId().equals(user.getId())) {
+      throw new ConflictException("User with email " + user.getEmail() + " already exists");
     }
 
     existing.updateFields(user.getName(), user.getEmail());
