@@ -18,6 +18,7 @@ public class PostgresUserRepository implements UserRepositoryPort {
   public User save(User user) {
     UserEntity entity = new UserEntity();
 
+    entity.setId(user.getId());
     entity.setName(user.getName());
     entity.setEmail(user.getEmail());
 
@@ -39,5 +40,18 @@ public class PostgresUserRepository implements UserRepositoryPort {
         .findById(id)
         .map(e -> new User(e.getId(), e.getName(), e.getEmail()))
         .orElse(null);
+  }
+
+  @Override
+  public User findByEmail(String email) {
+    return repository
+        .findByEmail(email)
+        .map(e -> new User(e.getId(), e.getName(), e.getEmail()))
+        .orElse(null);
+  }
+
+  @Override
+  public void delete(Long id) {
+    repository.deleteById(id);
   }
 }
