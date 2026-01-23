@@ -1,16 +1,18 @@
-package com.example.message.infrastructure.adapters.output.db;
+package com.example.message.infrastructure.adapters.output.db.repositories;
 
 import com.example.message.core.domain.User;
 import com.example.message.core.ports.output.UserRepositoryPort;
+import com.example.message.infrastructure.adapters.output.db.entities.UserEntity;
+import com.example.message.infrastructure.adapters.output.db.jpa.JpaUserRepo;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PostgresUserRepository implements UserRepositoryPort {
+public class JpaUserRepository implements UserRepositoryPort {
   private final JpaUserRepo repository;
 
-  public PostgresUserRepository(JpaUserRepo repository) {
+  public JpaUserRepository(JpaUserRepo repository) {
     this.repository = repository;
   }
 
