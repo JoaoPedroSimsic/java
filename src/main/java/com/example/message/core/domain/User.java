@@ -11,6 +11,7 @@ public class User {
   private Long id;
   private String name;
   private String email;
+  private String password;
 
   public void updateFields(String newName, String newEmail) {
     if (newName != null && !newName.isBlank()) {
