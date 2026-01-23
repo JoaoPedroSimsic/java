@@ -33,7 +33,7 @@ public class JpaUserRepository implements UserRepositoryPort {
   @Override
   public List<User> findAll() {
     return repository.findAll().stream()
-        .map(e -> new User(e.getId(), e.getName(), e.getEmail()))
+        .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
         .collect(Collectors.toList());
   }
 
@@ -41,7 +41,7 @@ public class JpaUserRepository implements UserRepositoryPort {
   public User find(Long id) {
     return repository
         .findById(id)
-        .map(e -> new User(e.getId(), e.getName(), e.getEmail()))
+        .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
         .orElse(null);
   }
 
@@ -49,7 +49,7 @@ public class JpaUserRepository implements UserRepositoryPort {
   public User findByEmail(String email) {
     return repository
         .findByEmail(email)
-        .map(e -> new User(e.getId(), e.getName(), e.getEmail()))
+        .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
         .orElse(null);
   }
 
