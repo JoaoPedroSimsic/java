@@ -40,9 +40,22 @@ public class UserService implements UserUseCase {
   @Override
   public User findById(Long id) {
     User user = userRepositoryPort.find(id);
+
     if (user == null) {
       throw new UserNotFoundException("User not found with id: " + id);
     }
+
+    return user;
+  }
+
+  @Override
+  public User findByEmail(String email) {
+    User user = userRepositoryPort.findByEmail(email);
+
+    if (user == null) {
+      throw new UserNotFoundException("User not found with email: " + email);
+    }
+
     return user;
   }
 
