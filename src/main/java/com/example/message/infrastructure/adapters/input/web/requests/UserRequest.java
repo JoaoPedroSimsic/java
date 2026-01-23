@@ -9,4 +9,7 @@ public record UserRequest(
         @Size(min = 4, max = 50, message = "Name must be between 4 and 50 characters")
         String name,
     @NotBlank(message = "Email cannot be empty") @Email(message = "Invalid email format")
-        String email) {}
+        String email,
+    @NotBlank(message = "Password cannot be empty")
+        @Size(min = 8, max = 50, message = "Password must be between 8 and 50 characters")
+        String password) {}

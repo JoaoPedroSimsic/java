@@ -23,10 +23,11 @@ public class JpaUserRepository implements UserRepositoryPort {
     entity.setId(user.getId());
     entity.setName(user.getName());
     entity.setEmail(user.getEmail());
+    entity.setPassword(user.getPassword());
 
     UserEntity saved = repository.save(entity);
 
-    return new User(saved.getId(), saved.getName(), saved.getEmail());
+    return User.builder().id(saved.getId()).name(saved.getName()).email(saved.getEmail()).build();
   }
 
   @Override
