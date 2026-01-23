@@ -1,7 +1,8 @@
-package com.example.message.infrastructure.adapters.input.web;
+package com.example.message.infrastructure.adapters.input.web.controllers;
 
 import com.example.message.core.domain.User;
 import com.example.message.core.ports.input.UserUseCase;
+import com.example.message.infrastructure.adapters.input.web.requests.UserRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import java.util.List;

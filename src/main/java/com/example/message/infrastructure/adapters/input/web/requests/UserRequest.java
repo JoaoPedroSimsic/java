@@ -1,4 +1,4 @@
-package com.example.message.infrastructure.adapters.input.web;
+package com.example.message.infrastructure.adapters.input.web.requests;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
