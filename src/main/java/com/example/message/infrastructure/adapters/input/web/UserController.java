@@ -5,6 +5,8 @@ import com.example.message.core.ports.input.UserUseCase;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import java.util.List;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,9 +22,11 @@ public class UserController {
   }
 
   @PostMapping
-  public User create(@Valid @RequestBody UserRequest request) {
+  public ResponseEntity<User> create(@Valid @RequestBody UserRequest request) {
     User domainUser = new User(null, request.name(), request.email());
-    return userUseCase.createUser(domainUser);
+    User savedUser = userUseCase.createUser(domainUser);
+
+    return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
   }
 
   @GetMapping
