@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
@@ -18,32 +17,6 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(UserNotFoundException.class)
   public ResponseEntity<Map<String, Object>> handleNotFound(UserNotFoundException ex) {
     return buildJsonResponse(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
-  }
-
-  @ExceptionHandler(InvalidCredentialsException.class)
-  public ResponseEntity<Map<String, Object>> handleInvalidCredentials(
-      InvalidCredentialsException ex) {
-    return buildJsonResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage());
-  }
-
-  @ExceptionHandler(SessionExpiredException.class)
-  public ResponseEntity<Map<String, Object>> handleSessionExpired(SessionExpiredException ex) {
-    return buildJsonResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage());
-  }
-
-  @ExceptionHandler(InvalidSessionException.class)
-  public ResponseEntity<Map<String, Object>> handleInvalidSession(InvalidSessionException ex) {
-    return buildJsonResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage());
-  }
-
-  @ExceptionHandler(UnauthorizedException.class)
-  public ResponseEntity<Map<String, Object>> handleUnauthorized(UnauthorizedException ex) {
-    return buildJsonResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage());
-  }
-
-  @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
-    return buildJsonResponse(HttpStatus.FORBIDDEN, "Forbidden", "Access denied");
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

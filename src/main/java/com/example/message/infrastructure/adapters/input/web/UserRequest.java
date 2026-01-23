@@ -1,4 +1,4 @@
-package com.example.message.infrastructure.adapters.input.web.requests;
+package com.example.message.infrastructure.adapters.input.web;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -9,5 +9,4 @@ public record UserRequest(
         @Size(min = 4, max = 50, message = "Name must be between 4 and 50 characters")
         String name,
     @NotBlank(message = "Email cannot be empty") @Email(message = "Invalid email format")
-        String email,
-    String password) {}
+        String email) {}

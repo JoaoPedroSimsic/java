@@ -1,11 +1,11 @@
 services:
   db:
     image: postgres:15
-    container_name: postgres-db
+    container_name: user-db
     environment:
-      POSTGRES_USER: joao
-      POSTGRES_PASSWORD: qualasenha
-      POSTGRES_DB: postgres
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: user_management
     ports:
       - "5432:5432"
     volumes:
