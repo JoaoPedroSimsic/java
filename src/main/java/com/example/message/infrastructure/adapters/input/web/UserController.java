@@ -5,6 +5,7 @@ import com.example.message.core.ports.input.UserUseCase;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,14 +21,18 @@ public class UserController {
   }
 
   @PostMapping
-  public User create(@Valid @RequestBody UserRequest request) {
+  public ResponseEntity<User> create(@Valid @RequestBody UserRequest request) {
     User domainUser = new User(null, request.name(), request.email());
-    return userUseCase.createUser(domainUser);
+    User savedUser = userUseCase.createUser(domainUser);
+
+    return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
   }
 
   @GetMapping
-  public List<User> getAll() {
-    return userUseCase.listUsers();
+  public ResponseEntity<List<User>> getAll() {
+    List<User> users = userUseCase.listUsers();
+
+    return ResponseEntity.ok(users);
   }
 
   @GetMapping("/{id}")
@@ -41,13 +46,16 @@ public class UserController {
       @PathVariable @Min(value = 1, message = "ID must be at least 1") Long id,
       @Valid @RequestBody UserRequest request) {
     User domainUser = new User(id, request.name(), request.email());
-    return ResponseEntity.ok(userUseCase.updateUser(domainUser));
+    User updatedUser = userUseCase.updateUser(domainUser);
+
+    return ResponseEntity.ok(updatedUser);
   }
 
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(
       @PathVariable @Min(value = 1, message = "ID must be at least 1") Long id) {
     userUseCase.deleteUser(id);
+
     return ResponseEntity.noContent().build();
   }
 }
