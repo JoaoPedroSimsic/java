@@ -60,7 +60,7 @@ public class UserService implements UserUseCase {
       throw new ConflictException("User with email " + user.getEmail() + " already exists");
     }
 
-    existing.updateFields(user.getName(), user.getEmail());
+    existing.updateFields(user.getName(), user.getEmail(), user.getPassword());
 
     return userRepositoryPort.save(existing);
   }
