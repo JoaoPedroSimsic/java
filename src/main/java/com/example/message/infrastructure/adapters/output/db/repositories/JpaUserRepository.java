@@ -49,7 +49,14 @@ public class JpaUserRepository implements UserRepositoryPort {
   public User findByEmail(String email) {
     return repository
         .findByEmail(email)
-        .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
+        .map(
+            e ->
+                User.builder()
+                    .id(e.getId())
+                    .name(e.getName())
+                    .email(e.getEmail())
+                    .password(e.getPassword())
+                    .build())
         .orElse(null);
   }
 
