@@ -10,6 +10,8 @@ public interface UserUseCase {
 
   User findById(Long id);
 
+  User findByEmail(String email);
+
   User updateUser(User user);
 
   void deleteUser(Long id);

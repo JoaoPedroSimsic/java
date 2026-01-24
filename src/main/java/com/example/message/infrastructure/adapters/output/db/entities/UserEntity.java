@@ -1,4 +1,4 @@
-package com.example.message.infrastructure.adapters.output.db;
+package com.example.message.infrastructure.adapters.output.db.entities;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -15,4 +15,5 @@ public class UserEntity {
 
   private String name;
   private String email;
+  private String password;
 }

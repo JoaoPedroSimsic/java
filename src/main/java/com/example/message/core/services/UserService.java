@@ -6,12 +6,15 @@ import com.example.message.core.exceptions.UserNotFoundException;
 import com.example.message.core.ports.input.UserUseCase;
 import com.example.message.core.ports.output.UserRepositoryPort;
 import java.util.List;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class UserService implements UserUseCase {
   private final UserRepositoryPort userRepositoryPort;
+  private final PasswordEncoder passwordEncoder;
 
-  public UserService(UserRepositoryPort userRepositoryPort) {
+  public UserService(UserRepositoryPort userRepositoryPort, PasswordEncoder passwordEncoder) {
     this.userRepositoryPort = userRepositoryPort;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @Override
@@ -21,6 +24,10 @@ public class UserService implements UserUseCase {
     if (existingEmail != null) {
       throw new ConflictException("User with email " + user.getEmail() + " already exists");
     }
+
+    String hashedPassword = passwordEncoder.encode(user.getPassword());
+
+    user.setPassword(hashedPassword);
 
     return userRepositoryPort.save(user);
   }
@@ -33,9 +40,22 @@ public class UserService implements UserUseCase {
   @Override
   public User findById(Long id) {
     User user = userRepositoryPort.find(id);
+
     if (user == null) {
       throw new UserNotFoundException("User not found with id: " + id);
     }
+
+    return user;
+  }
+
+  @Override
+  public User findByEmail(String email) {
+    User user = userRepositoryPort.findByEmail(email);
+
+    if (user == null) {
+      throw new UserNotFoundException("User not found with email: " + email);
+    }
+
     return user;
   }
 
@@ -53,7 +73,7 @@ public class UserService implements UserUseCase {
       throw new ConflictException("User with email " + user.getEmail() + " already exists");
     }
 
-    existing.updateFields(user.getName(), user.getEmail());
+    existing.updateFields(user.getName(), user.getEmail(), user.getPassword());
 
     return userRepositoryPort.save(existing);
   }

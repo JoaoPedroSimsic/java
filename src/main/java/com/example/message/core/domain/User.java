@@ -1,24 +1,31 @@
 package com.example.message.core.domain;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class User {
   private Long id;
   private String name;
   private String email;
+  private String password;
 
-  public void updateFields(String newName, String newEmail) {
+  public void updateFields(String newName, String newEmail, String newPassword) {
     if (newName != null && !newName.isBlank()) {
       this.name = newName;
     }
 
     if (newEmail != null && !newEmail.isBlank()) {
       this.email = newEmail;
+    }
+
+    if (newPassword != null && !newPassword.isBlank()) {
+      this.password = newPassword;
     }
   }
 }

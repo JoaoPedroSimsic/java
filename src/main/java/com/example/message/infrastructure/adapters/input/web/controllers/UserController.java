@@ -25,7 +25,13 @@ public class UserController {
 
   @PostMapping
   public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest request) {
-    User domainUser = new User(null, request.name(), request.email());
+    User domainUser =
+        User.builder()
+            .name(request.name())
+            .email(request.email())
+            .password(request.password())
+            .build();
+
     User savedUser = userUseCase.createUser(domainUser);
 
     UserResponse response = UserResponse.fromDomain(savedUser);
@@ -58,7 +64,12 @@ public class UserController {
   public ResponseEntity<UserResponse> update(
       @PathVariable @Min(value = 1, message = "ID must be at least 1") Long id,
       @Valid @RequestBody UserRequest request) {
-    User domainUser = new User(id, request.name(), request.email());
+    User domainUser =
+        User.builder()
+            .name(request.name())
+            .email(request.email())
+            .password(request.password())
+            .build();
     User updatedUser = userUseCase.updateUser(domainUser);
 
     return ResponseEntity.ok(UserResponse.fromDomain(updatedUser));
