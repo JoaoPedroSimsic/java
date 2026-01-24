@@ -36,7 +36,9 @@ public class AuthController {
     User user = userUseCase.findByEmail(request.email());
 
     if (passwordEncoder.matches(request.password(), user.getPassword())) {
-      Cookie cookie = new Cookie(request.password(), user.getPassword());
+      String token = tokenRepositoryPort.generateToken(user);
+
+      Cookie cookie = new Cookie("jwt", token);
 
       cookie.setHttpOnly(true);
       cookie.setSecure(true);
