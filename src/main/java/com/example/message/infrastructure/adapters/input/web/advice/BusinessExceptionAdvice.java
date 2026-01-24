@@ -1,8 +1,9 @@
 package com.example.message.infrastructure.adapters.input.web.advice;
 
-import com.example.message.core.exceptions.abstracts.BusinessException;
 import com.example.message.core.exceptions.ConflictException;
+import com.example.message.core.exceptions.InvalidCredentialsException;
 import com.example.message.core.exceptions.UserNotFoundException;
+import com.example.message.core.exceptions.abstracts.BusinessException;
 import com.example.message.infrastructure.adapters.input.web.responses.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,13 @@ public class BusinessExceptionAdvice {
       BusinessException ex, HttpServletRequest request) {
     return buildResponse(
         HttpStatus.UNPROCESSABLE_CONTENT, "Business Rule Violation", ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(InvalidCredentialsException.class)
+  public ResponseEntity<ErrorResponse> handleInvalidCredentials(
+      InvalidCredentialsException ex, HttpServletRequest request) {
+    return buildResponse(
+        HttpStatus.UNAUTHORIZED, "Invalid Credentials", ex.getMessage(), request);
   }
 
   private ResponseEntity<ErrorResponse> buildResponse(

@@ -1,6 +1,7 @@
 package com.example.message.infrastructure.adapters.input.web.controllers;
 
 import com.example.message.core.domain.User;
+import com.example.message.core.exceptions.InvalidCredentialsException;
 import com.example.message.core.ports.input.UserUseCase;
 import com.example.message.core.ports.output.TokenRepositoryPort;
 import com.example.message.infrastructure.adapters.input.web.requests.LoginRequest;
@@ -31,25 +32,25 @@ public class AuthController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<Void> login(
+  public ResponseEntity<String> login(
       @RequestBody LoginRequest request, HttpServletResponse response) {
     User user = userUseCase.findByEmail(request.email());
 
-    if (passwordEncoder.matches(request.password(), user.getPassword())) {
-      String token = tokenRepositoryPort.generateToken(user);
-
-      Cookie cookie = new Cookie("jwt", token);
-
-      cookie.setHttpOnly(true);
-      cookie.setSecure(true);
-      cookie.setPath("/");
-      cookie.setMaxAge(86400);
-
-      response.addCookie(cookie);
-
-      return ResponseEntity.ok().build();
+    if (user == null || !passwordEncoder.matches(request.password(), user.getPassword())) {
+      throw new InvalidCredentialsException("Email or Password Incorrect");
     }
 
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    String token = tokenRepositoryPort.generateToken(user);
+
+    Cookie cookie = new Cookie("jwt", token);
+
+    cookie.setHttpOnly(true);
+    cookie.setSecure(true);
+    cookie.setPath("/");
+    cookie.setMaxAge(86400);
+
+    response.addCookie(cookie);
+
+    return ResponseEntity.ok().build();
   }
 }
