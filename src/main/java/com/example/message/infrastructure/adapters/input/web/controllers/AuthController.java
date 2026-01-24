@@ -4,6 +4,8 @@ import com.example.message.core.domain.User;
 import com.example.message.core.ports.input.UserUseCase;
 import com.example.message.core.ports.output.TokenRepositoryPort;
 import com.example.message.infrastructure.adapters.input.web.requests.LoginRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,11 +31,21 @@ public class AuthController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<String> login(@RequestBody LoginRequest request) {
+  public ResponseEntity<Void> login(
+      @RequestBody LoginRequest request, HttpServletResponse response) {
     User user = userUseCase.findByEmail(request.email());
 
     if (passwordEncoder.matches(request.password(), user.getPassword())) {
-      return ResponseEntity.ok(tokenRepositoryPort.generateToken(user));
+      Cookie cookie = new Cookie(request.password(), user.getPassword());
+
+      cookie.setHttpOnly(true);
+      cookie.setSecure(true);
+      cookie.setPath("/");
+      cookie.setMaxAge(86400);
+
+      response.addCookie(cookie);
+
+      return ResponseEntity.ok().build();
     }
 
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
