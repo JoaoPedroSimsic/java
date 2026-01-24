@@ -66,6 +66,7 @@ public class UserController {
       @Valid @RequestBody UserRequest request) {
     User domainUser =
         User.builder()
+            .id(id)
             .name(request.name())
             .email(request.email())
             .password(request.password())

@@ -5,6 +5,7 @@ import com.example.message.core.ports.output.TokenRepositoryPort;
 import com.example.message.core.ports.output.UserRepositoryPort;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -28,10 +29,18 @@ public class JwtFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
-    String authHeader = request.getHeader("Authorization");
+    String token = null;
 
-    if (authHeader != null && authHeader.startsWith("Bearer ")) {
-      String token = authHeader.substring(7);
+    if (request.getCookies() != null) {
+      for (Cookie cookie : request.getCookies()) {
+        if ("jwt".equals(cookie.getName())) {
+          token = cookie.getValue();
+          break;
+        }
+      }
+    }
+
+    if (token != null) {
       String email = tokenRepositoryPort.validateToken(token);
 
       if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
