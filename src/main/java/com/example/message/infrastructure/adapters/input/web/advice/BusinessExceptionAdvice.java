@@ -36,8 +36,7 @@ public class BusinessExceptionAdvice {
   @ExceptionHandler(InvalidCredentialsException.class)
   public ResponseEntity<ErrorResponse> handleInvalidCredentials(
       InvalidCredentialsException ex, HttpServletRequest request) {
-    return buildResponse(
-        HttpStatus.UNAUTHORIZED, "Invalid Credentials", ex.getMessage(), request);
+    return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid Credentials", ex.getMessage(), request);
   }
 
   private ResponseEntity<ErrorResponse> buildResponse(
