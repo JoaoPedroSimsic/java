@@ -7,6 +7,8 @@ import com.example.message.core.ports.output.TokenRepositoryPort;
 import com.example.message.infrastructure.adapters.input.web.requests.LoginRequest;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@Slf4j
 public class AuthController {
   private final UserUseCase userUseCase;
   private final TokenRepositoryPort tokenRepositoryPort;
@@ -33,9 +36,12 @@ public class AuthController {
   @PostMapping("/login")
   public ResponseEntity<String> login(
       @RequestBody LoginRequest request, HttpServletResponse response) {
+    log.debug("Login attempt for email: {}", request.email());
+
     User user = userUseCase.findByEmail(request.email());
 
     if (user == null || !passwordEncoder.matches(request.password(), user.getPassword())) {
+      log.warn("Failed login attempt for email: {}", request.email());
       throw new InvalidCredentialsException("Email or Password Incorrect");
     }
 
@@ -50,11 +56,14 @@ public class AuthController {
 
     response.addCookie(cookie);
 
+    log.info("Successful login for user: {}", user.getId());
     return ResponseEntity.ok().build();
   }
 
   @PostMapping("/logout")
   public ResponseEntity<Void> logout(HttpServletResponse response) {
+    log.debug("Logout request received");
+
     Cookie cookie = new Cookie("jwt", null);
 
     cookie.setHttpOnly(true);
