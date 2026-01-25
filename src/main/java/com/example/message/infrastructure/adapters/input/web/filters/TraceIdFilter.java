@@ -15,12 +15,11 @@ public class TraceIdFilter implements Filter {
   private static final String TRACE_ID = "traceId";
 
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response,
-                       FilterChain filterChain)
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
       throws IOException, ServletException {
     try {
       MDC.put(TRACE_ID, UUID.randomUUID().toString().substring(0, 8));
-      
+
       filterChain.doFilter(request, response);
     } finally {
       MDC.remove(TRACE_ID);
