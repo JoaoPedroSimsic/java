@@ -5,6 +5,8 @@ target/
 !**/src/test/**/target/
 .metadata
 jdt.ls-java-project
+.env
+*.log
 
 ### STS ###
 .apt_generated

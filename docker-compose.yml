@@ -3,11 +3,11 @@ services:
     image: postgres:15
     container_name: user-db
     environment:
-      POSTGRES_USER: joao
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
