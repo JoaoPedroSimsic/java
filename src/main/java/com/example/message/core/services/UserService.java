@@ -6,8 +6,10 @@ import com.example.message.core.exceptions.UserNotFoundException;
 import com.example.message.core.ports.input.UserUseCase;
 import com.example.message.core.ports.output.UserRepositoryPort;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+@Slf4j
 public class UserService implements UserUseCase {
   private final UserRepositoryPort userRepositoryPort;
   private final PasswordEncoder passwordEncoder;
@@ -19,9 +21,12 @@ public class UserService implements UserUseCase {
 
   @Override
   public User createUser(User user) {
+    log.debug("Creating user with email: {}", user.getEmail());
+
     User existingEmail = userRepositoryPort.findByEmail(user.getEmail());
 
     if (existingEmail != null) {
+      log.warn("Attempted to create user with existing email: {}", user.getEmail());
       throw new ConflictException("User with email " + user.getEmail() + " already exists");
     }
 
@@ -29,7 +34,11 @@ public class UserService implements UserUseCase {
 
     user.setPassword(hashedPassword);
 
-    return userRepositoryPort.save(user);
+    User savedUser = userRepositoryPort.save(user);
+
+    log.info("Created user with id: {}", savedUser.getId());
+
+    return savedUser;
   }
 
   @Override
@@ -61,15 +70,19 @@ public class UserService implements UserUseCase {
 
   @Override
   public User updateUser(User user) {
+    log.debug("Updating user with id: {}", user.getId());
+
     User existing = userRepositoryPort.find(user.getId());
 
     if (existing == null) {
+      log.warn("Update failed - user not found with id: {}", user.getId());
       throw new UserNotFoundException("User not found with id: " + user.getId());
     }
 
     User existingEmail = userRepositoryPort.findByEmail(user.getEmail());
 
     if (existingEmail != null && !existingEmail.getId().equals(user.getId())) {
+      log.warn("Update failed - email already in use: {}", user.getEmail());
       throw new ConflictException("User with email " + user.getEmail() + " already exists");
     }
 
@@ -81,17 +94,24 @@ public class UserService implements UserUseCase {
 
     existing.updateFields(user.getName(), user.getEmail(), password);
 
-    return userRepositoryPort.save(existing);
+    User updatedUser = userRepositoryPort.save(user);
+
+    log.info("Updated user with id: {}", updatedUser.getId());
+
+    return updatedUser;
   }
 
   @Override
   public void deleteUser(Long id) {
+    log.debug("Deleting user with id: {}", id);
     User existing = userRepositoryPort.find(id);
 
     if (existing == null) {
+      log.warn("Delete failed - user not found with id: {}", id);
       throw new UserNotFoundException("User not found with id: " + id);
     }
 
     userRepositoryPort.delete(id);
+    log.info("Deleted user with id: {}", id);
   }
 }
