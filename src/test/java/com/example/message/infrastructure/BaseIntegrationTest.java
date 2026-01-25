@@ -1,5 +1,6 @@
 package com.example.message.infrastructure;
 
+import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -9,8 +10,6 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import io.restassured.RestAssured;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -23,7 +22,7 @@ public abstract class BaseIntegrationTest {
   @SuppressWarnings("resource")
   static final PostgreSQLContainer<?> postgres =
       new PostgreSQLContainer<>("postgres:15-alpine")
-          .withDatabaseName("db")
+          .withDatabaseName("db-test")
           .withUsername("test")
           .withPassword("test");
 
