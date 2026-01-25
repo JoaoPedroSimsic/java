@@ -1,30 +1,35 @@
 package com.example.message.infrastructure;
 
+import com.example.message.infrastructure.adapters.output.db.jpa.JpaUserRepo;
 import io.restassured.RestAssured;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Testcontainers
 public abstract class BaseIntegrationTest {
 
   @LocalServerPort protected Integer port;
 
-  @Container
+  @Autowired private JpaUserRepo jpaUserRepo;
+
   @SuppressWarnings("resource")
   static final PostgreSQLContainer<?> postgres =
       new PostgreSQLContainer<>("postgres:15-alpine")
           .withDatabaseName("db-test")
           .withUsername("test")
           .withPassword("test");
+
+  static {
+    postgres.start();
+  }
 
   @DynamicPropertySource
   static void configureProperties(DynamicPropertyRegistry registry) {
@@ -38,8 +43,13 @@ public abstract class BaseIntegrationTest {
   }
 
   @BeforeEach
-  void setupBase() {
+  protected void setupBase() {
     RestAssured.baseURI = "http://localhost";
     RestAssured.port = port;
+  }
+
+  @AfterEach
+  void cleanUp() {
+    jpaUserRepo.deleteAll();
   }
 }

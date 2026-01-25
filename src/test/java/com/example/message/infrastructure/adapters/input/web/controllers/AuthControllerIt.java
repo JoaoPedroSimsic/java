@@ -22,7 +22,7 @@ class AuthControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Should login and set HttpOnly JWT cookie")
   void shouldLoginSuccessfully() {
-    LoginRequest loginRequest = new LoginRequest("auth@example.com", "securePassword");
+    LoginRequest loginRequest = new LoginRequest("auth@example.com", "password");
 
     given()
         .contentType(ContentType.JSON)
@@ -37,9 +37,17 @@ class AuthControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Should access protected resource with JWT cookie")
   void shouldAccessProtectedResourceWithToken() {
-    LoginRequest loginRequest = new LoginRequest("auth@example.com", "securePassword");
+    LoginRequest loginRequest = new LoginRequest("auth@example.com", "password");
 
-    var response = given().contentType(ContentType.JSON).body(loginRequest).post("/api/auth/login");
+    var response =
+        given()
+            .contentType(ContentType.JSON)
+            .body(loginRequest)
+            .post("/api/auth/login")
+            .then()
+            .statusCode(HttpStatus.OK.value())
+            .extract()
+            .response();
 
     String jwtCookie = response.getCookie("jwt");
 
