@@ -8,7 +8,9 @@ services:
       - ~/.m2:/root/.m2
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      POSTGRES_HOST: db
+      POSTGRES_URL: ${POSTGRES_URL}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       - db
 
@@ -16,7 +18,7 @@ services:
     image: postgres:15-alpine
     container_name: db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_URL: ${POSTGRES_URL}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       FLYWAY_USER: ${FLYWAY_USER}
