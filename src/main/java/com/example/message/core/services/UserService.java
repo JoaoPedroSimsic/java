@@ -5,11 +5,15 @@ import com.example.message.core.exceptions.ConflictException;
 import com.example.message.core.exceptions.UserNotFoundException;
 import com.example.message.core.ports.input.UserUseCase;
 import com.example.message.core.ports.output.UserRepositoryPort;
+
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Slf4j
+@Transactional(readOnly = true)
 public class UserService implements UserUseCase {
   private final UserRepositoryPort userRepositoryPort;
   private final PasswordEncoder passwordEncoder;
@@ -20,6 +24,7 @@ public class UserService implements UserUseCase {
   }
 
   @Override
+  @Transactional
   public User createUser(User user) {
     log.debug("Creating user with email: {}", user.getEmail());
 
@@ -42,6 +47,7 @@ public class UserService implements UserUseCase {
   }
 
   @Override
+  @Transactional
   public List<User> listUsers() {
     return userRepositoryPort.findAll();
   }
@@ -69,6 +75,7 @@ public class UserService implements UserUseCase {
   }
 
   @Override
+  @Transactional
   public User updateUser(User user) {
     log.debug("Updating user with id: {}", user.getId());
 
@@ -102,6 +109,7 @@ public class UserService implements UserUseCase {
   }
 
   @Override
+  @Transactional
   public void deleteUser(Long id) {
     log.debug("Deleting user with id: {}", id);
     User existing = userRepositoryPort.find(id);
