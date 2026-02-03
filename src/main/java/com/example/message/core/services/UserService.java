@@ -1,8 +1,7 @@
 package com.example.message.core.services;
 
 import com.example.message.core.domain.User;
-import com.example.message.core.exceptions.ConflictException;
-import com.example.message.core.exceptions.UserNotFoundException;
+import com.example.message.core.exceptions.business.*;
 import com.example.message.core.ports.input.UserUseCase;
 import com.example.message.core.ports.output.UserRepositoryPort;
 
