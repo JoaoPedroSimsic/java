@@ -51,6 +51,7 @@
     <logger name="com.zaxxer.hikari" level="DEBUG"/>
     <logger name="org.springframework.jdbc.core" level="DEBUG"/>"
     <logger name="org.springframework.transaction" level="DEBUG"/>"
+    <logger name="org.springframework.retry" level="DEBUG"/>"
   </springProfile>
 
   <springProfile name="prod">
