@@ -23,6 +23,21 @@
     <queueSize>512</queueSize>
   </appender>
 
+  <appender name="SLOW_QUERY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/slow-queries.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_PATH}/archived/slow-queries.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+      <maxHistory>7</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [%X{traceId}] - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+    <appender-ref ref="SLOW_QUERY_FILE" />
+  </logger>
+
   <root level="INFO">
     <appender-ref ref="CONSOLE" />
     <appender-ref ref="ASYNC" />
