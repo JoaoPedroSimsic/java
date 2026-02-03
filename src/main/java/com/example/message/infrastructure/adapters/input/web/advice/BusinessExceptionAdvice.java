@@ -1,8 +1,6 @@
 package com.example.message.infrastructure.adapters.input.web.advice;
 
-import com.example.message.core.exceptions.ConflictException;
-import com.example.message.core.exceptions.InvalidCredentialsException;
-import com.example.message.core.exceptions.UserNotFoundException;
+import com.example.message.core.exceptions.business.*;
 import com.example.message.core.exceptions.abstracts.BusinessException;
 import com.example.message.infrastructure.adapters.input.web.responses.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
