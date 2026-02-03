@@ -1,29 +1,47 @@
 package com.example.message.infrastructure.adapters.output.db.repositories;
 
 import com.example.message.core.domain.User;
+import com.example.message.core.exceptions.infrastructure.DatabaseUnavailableException;
 import com.example.message.core.ports.output.UserRepositoryPort;
 import com.example.message.infrastructure.adapters.output.db.entities.UserEntity;
 import com.example.message.infrastructure.adapters.output.db.jpa.JpaUserRepo;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.sql.SQLException;
-
-import org.springframework.dao.TransientDataAccessException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataAccessException;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class JpaUserRepository implements UserRepositoryPort {
   private final JpaUserRepo repository;
+  private final CacheManager cacheManager;
 
-  public JpaUserRepository(JpaUserRepo repository) {
+  public JpaUserRepository(JpaUserRepo repository, CacheManager cacheManager) {
     this.repository = repository;
+    this.cacheManager = cacheManager;
   }
 
   @Override
-  @Retryable(retryFor = { TransientDataAccessException.class,
-      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @CircuitBreaker(name = "userRepository")
+  @Retryable(
+      retryFor = {DataAccessException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @CachePut(value = "userById", key = "#result.id", condition = "#result != null")
+  @CacheEvict(
+      value = {"users", "userByEmail"},
+      allEntries = true)
   public User save(User user) {
     UserEntity entity = new UserEntity();
 
@@ -37,18 +55,54 @@ public class JpaUserRepository implements UserRepositoryPort {
     return User.builder().id(saved.getId()).name(saved.getName()).email(saved.getEmail()).build();
   }
 
+  @Recover
+  public User recoverSave(DataAccessException e, User user) {
+    log.error(
+        "Failed to save user after retries due to database unavailability: {}", e.getMessage());
+    throw new DatabaseUnavailableException(
+        "Unable to save user. Database is temporarily unavailable.");
+  }
+
   @Override
-  @Retryable(retryFor = { TransientDataAccessException.class,
-      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @CircuitBreaker(name = "userRepository")
+  @Retryable(
+      retryFor = {DataAccessException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @Cacheable(value = "users")
   public List<User> findAll() {
     return repository.findAll().stream()
         .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
         .collect(Collectors.toList());
   }
 
+  @Recover
+  public List<User> recoverFindAll(DataAccessException e) {
+    log.error("Database failed, checking cache. Error: {}", e.getMessage());
+
+    Cache cache = cacheManager.getCache("users");
+
+    if (cache == null) {
+      log.warn("No cache found for users, returning empty list");
+      return Collections.emptyList();
+    }
+
+    Object cachedValue = cache.get("users", Object.class);
+
+    if (cachedValue instanceof List<?> rawList) {
+      return rawList.stream().filter(User.class::isInstance).map(User.class::cast).toList();
+    }
+
+    return Collections.emptyList();
+  }
+
   @Override
-  @Retryable(retryFor = { TransientDataAccessException.class,
-      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @CircuitBreaker(name = "userRepository")
+  @Retryable(
+      retryFor = {DataAccessException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @Cacheable(value = "userById", key = "#id")
   public User find(Long id) {
     return repository
         .findById(id)
@@ -56,26 +110,67 @@ public class JpaUserRepository implements UserRepositoryPort {
         .orElse(null);
   }
 
+  @Recover
+  public User recoverFind(DataAccessException e, Long id) {
+    log.warn("DB Failure. Falling back to cache for ID: {}", id);
+    return getFromCache("userById", id, User.class);
+  }
+
   @Override
-  @Retryable(retryFor = { TransientDataAccessException.class,
-      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @CircuitBreaker(name = "userRepository")
+  @Retryable(
+      retryFor = {DataAccessException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @Cacheable(value = "userByEmail", key = "#email")
   public User findByEmail(String email) {
     return repository
         .findByEmail(email)
         .map(
-            e -> User.builder()
-                .id(e.getId())
-                .name(e.getName())
-                .email(e.getEmail())
-                .password(e.getPassword())
-                .build())
+            e ->
+                User.builder()
+                    .id(e.getId())
+                    .name(e.getName())
+                    .email(e.getEmail())
+                    .password(e.getPassword())
+                    .build())
         .orElse(null);
   }
 
+  @Recover
+  public User recoverFindByEmail(DataAccessException e, String email) {
+    log.warn("DB Failure. Falling back to cache for Email: {}", email);
+    return getFromCache("userByEmail", email, User.class);
+  }
+
   @Override
-  @Retryable(retryFor = { TransientDataAccessException.class,
-      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @CircuitBreaker(name = "userRepository")
+  @Retryable(
+      retryFor = {DataAccessException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @CacheEvict(
+      value = {"users", "userById", "userByEmail"},
+      allEntries = true)
   public void delete(Long id) {
     repository.deleteById(id);
+  }
+
+  @Recover
+  public void recoverDelete(DataAccessException e, Long id) {
+    log.error("Failed to delete user {} after retries: {}", id, e.getMessage());
+    throw new DatabaseUnavailableException(
+        "Unable to delete user. Database is temporarily unavailable.");
+  }
+
+  private <T> T getFromCache(String cacheName, Object key, Class<T> type) {
+    Cache cache = cacheManager.getCache(cacheName);
+
+    if (cache == null) {
+      log.warn("No cache found for {}, returning null", cacheName);
+      return null;
+    }
+
+    return cache.get(key, type);
   }
 }
