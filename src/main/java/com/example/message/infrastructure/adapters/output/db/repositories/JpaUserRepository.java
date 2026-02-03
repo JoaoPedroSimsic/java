@@ -6,6 +6,11 @@ import com.example.message.infrastructure.adapters.output.db.entities.UserEntity
 import com.example.message.infrastructure.adapters.output.db.jpa.JpaUserRepo;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.sql.SQLException;
+
+import org.springframework.dao.TransientDataAccessException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -17,6 +22,8 @@ public class JpaUserRepository implements UserRepositoryPort {
   }
 
   @Override
+  @Retryable(retryFor = { TransientDataAccessException.class,
+      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
   public User save(User user) {
     UserEntity entity = new UserEntity();
 
@@ -31,6 +38,8 @@ public class JpaUserRepository implements UserRepositoryPort {
   }
 
   @Override
+  @Retryable(retryFor = { TransientDataAccessException.class,
+      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
   public List<User> findAll() {
     return repository.findAll().stream()
         .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
@@ -38,6 +47,8 @@ public class JpaUserRepository implements UserRepositoryPort {
   }
 
   @Override
+  @Retryable(retryFor = { TransientDataAccessException.class,
+      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
   public User find(Long id) {
     return repository
         .findById(id)
@@ -46,21 +57,24 @@ public class JpaUserRepository implements UserRepositoryPort {
   }
 
   @Override
+  @Retryable(retryFor = { TransientDataAccessException.class,
+      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
   public User findByEmail(String email) {
     return repository
         .findByEmail(email)
         .map(
-            e ->
-                User.builder()
-                    .id(e.getId())
-                    .name(e.getName())
-                    .email(e.getEmail())
-                    .password(e.getPassword())
-                    .build())
+            e -> User.builder()
+                .id(e.getId())
+                .name(e.getName())
+                .email(e.getEmail())
+                .password(e.getPassword())
+                .build())
         .orElse(null);
   }
 
   @Override
+  @Retryable(retryFor = { TransientDataAccessException.class,
+      SQLException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
   public void delete(Long id) {
     repository.deleteById(id);
   }

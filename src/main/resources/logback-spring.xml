@@ -23,6 +23,21 @@
     <queueSize>512</queueSize>
   </appender>
 
+  <appender name="SLOW_QUERY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/slow-queries.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_PATH}/archived/slow-queries.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+      <maxHistory>7</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [%X{traceId}] - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+    <appender-ref ref="SLOW_QUERY_FILE" />
+  </logger>
+
   <root level="INFO">
     <appender-ref ref="CONSOLE" />
     <appender-ref ref="ASYNC" />
@@ -30,9 +45,19 @@
 
   <springProfile name="dev">
     <logger name="com.example.message" level="DEBUG" />
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+    <logger name="org.hibernate.stat" level="DEBUG"/>
+    <logger name="com.zaxxer.hikari" level="DEBUG"/>
+    <logger name="org.springframework.jdbc.core" level="DEBUG"/>"
+    <logger name="org.springframework.transaction" level="DEBUG"/>"
+    <logger name="org.springframework.retry" level="DEBUG"/>"
   </springProfile>
 
   <springProfile name="prod">
     <logger name="com.example.message" level="INFO" />
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="org.springframework.jdbc.core" level="WARN"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
   </springProfile>
 </configuration>

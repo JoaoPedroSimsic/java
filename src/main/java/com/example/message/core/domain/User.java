@@ -1,5 +1,6 @@
 package com.example.message.core.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,8 @@ public class User {
   private Long id;
   private String name;
   private String email;
+
+  @JsonIgnore
   private String password;
 
   public void updateFields(String newName, String newEmail, String newPassword) {

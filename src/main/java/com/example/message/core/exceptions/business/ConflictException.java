@@ -1,4 +1,4 @@
-package com.example.message.core.exceptions;
+package com.example.message.core.exceptions.business;
 
 import com.example.message.core.exceptions.abstracts.BusinessException;
 
