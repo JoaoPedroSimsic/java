@@ -30,9 +30,18 @@
 
   <springProfile name="dev">
     <logger name="com.example.message" level="DEBUG" />
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+    <logger name="org.hibernate.stat" level="DEBUG"/>
+    <logger name="com.zaxxer.hikari" level="DEBUG"/>
+    <logger name="org.springframework.jdbc.core" level="DEBUG"/>"
+    <logger name="org.springframework.transaction" level="DEBUG"/>"
   </springProfile>
 
   <springProfile name="prod">
     <logger name="com.example.message" level="INFO" />
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="org.springframework.jdbc.core" level="WARN"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
   </springProfile>
 </configuration>
