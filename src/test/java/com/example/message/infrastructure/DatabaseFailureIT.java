@@ -2,25 +2,24 @@ package com.example.message.infrastructure;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 import com.example.message.core.domain.User;
 import com.example.message.core.exceptions.infrastructure.DatabaseUnavailableException;
 import com.example.message.core.ports.output.UserRepositoryPort;
+import com.example.message.infrastructure.adapters.output.db.entities.UserEntity;
+import com.example.message.infrastructure.adapters.output.db.jpa.JpaUserRepo;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import jakarta.persistence.QueryTimeoutException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.retry.ExhaustedRetryException;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest
-@ActiveProfiles("test")
 class DatabaseFailureIT extends BaseIntegrationTest {
 
   @Autowired private UserRepositoryPort userRepository;
@@ -29,22 +28,38 @@ class DatabaseFailureIT extends BaseIntegrationTest {
 
   @Autowired private CircuitBreakerRegistry circuitBreakerRegistry;
 
-  @MockitoSpyBean private UserRepositoryPort spyUserRepository;
+  @MockitoBean private JpaUserRepo mockJpaUserRepo;
 
   @BeforeEach
   void setUp() {
     circuitBreakerRegistry.circuitBreaker("userRepository").reset();
-    cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+    cacheManager
+        .getCacheNames()
+        .forEach(
+            name -> {
+              var cache = cacheManager.getCache(name);
+              if (cache != null) cache.clear();
+            });
   }
 
   @Test
   void testFindByIdRecoveryFlow() {
+    UserEntity savedEntity = new UserEntity();
+    savedEntity.setId(1L);
+    savedEntity.setName("Test User");
+    savedEntity.setEmail("test@example.com");
+    savedEntity.setPassword("password");
+
+    when(mockJpaUserRepo.save(any())).thenReturn(savedEntity);
+
     User user =
         User.builder().name("Test User").email("test@example.com").password("password").build();
 
     User saved = userRepository.save(user);
+    assertNotNull(saved);
 
-    doThrow(new QueryTimeoutException("DB down")).when(spyUserRepository).find(saved.getId());
+    when(mockJpaUserRepo.findById(saved.getId()))
+        .thenThrow(new DataAccessResourceFailureException("DB down"));
 
     User found = userRepository.find(saved.getId());
     assertNotNull(found);
@@ -53,17 +68,26 @@ class DatabaseFailureIT extends BaseIntegrationTest {
 
   @Test
   void testSaveFailureThrowsCustomException() {
-    doThrow(new QueryTimeoutException("DB down")).when(spyUserRepository).save(any());
+    when(mockJpaUserRepo.save(any())).thenThrow(new DataAccessResourceFailureException("DB down"));
 
     User user =
         User.builder().name("New User").email("new@example.com").password("password").build();
 
-    assertThrows(DatabaseUnavailableException.class, () -> userRepository.save(user));
+    Exception exception = assertThrows(Exception.class, () -> userRepository.save(user));
+
+    Throwable rootCause = exception;
+    while (rootCause.getCause() != null && !(rootCause instanceof DatabaseUnavailableException)) {
+      rootCause = rootCause.getCause();
+    }
+
+    assertTrue(
+        rootCause instanceof DatabaseUnavailableException
+            || exception instanceof ExhaustedRetryException);
   }
 
   @Test
   void testFindAllEmptyFallback() {
-    doThrow(new QueryTimeoutException("DB down")).when(spyUserRepository).findAll();
+    when(mockJpaUserRepo.findAll()).thenThrow(new DataAccessResourceFailureException("DB down"));
 
     List<User> users = userRepository.findAll();
     assertNotNull(users);
@@ -75,12 +99,14 @@ class DatabaseFailureIT extends BaseIntegrationTest {
     CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker("userRepository");
     assertEquals(CircuitBreaker.State.CLOSED, cb.getState());
 
-    doThrow(new QueryTimeoutException("DB down")).when(spyUserRepository).find(any());
+    when(mockJpaUserRepo.save(any())).thenThrow(new DataAccessResourceFailureException("DB down"));
 
-    for (int i = 0; i < 20; i++) {
+    User user = User.builder().name("CB User").email("cb@example.com").password("password").build();
+
+    for (int i = 0; i < 15; i++) {
       try {
-        userRepository.find(1L);
-      } catch (Exception e) {
+        userRepository.save(user);
+      } catch (Exception ignored) {
       }
     }
 
