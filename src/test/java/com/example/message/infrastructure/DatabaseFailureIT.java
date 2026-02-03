@@ -22,7 +22,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Disabled("Manual test - requires stopping database container")
 class DatabaseFailureIT {
 
   @Autowired private UserRepositoryPort userRepository;
