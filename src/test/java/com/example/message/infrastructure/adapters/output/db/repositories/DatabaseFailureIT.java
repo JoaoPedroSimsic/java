@@ -1,4 +1,4 @@
-package com.example.message.infrastructure;
+package com.example.message.infrastructure.adapters.output.db.repositories;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -9,6 +9,7 @@ import static org.mockito.Mockito.*;
 import com.example.message.core.domain.User;
 import com.example.message.core.exceptions.infrastructure.DatabaseUnavailableException;
 import com.example.message.core.ports.output.UserRepositoryPort;
+import com.example.message.infrastructure.BaseIntegrationTest;
 import com.example.message.infrastructure.adapters.output.db.entities.UserEntity;
 import com.example.message.infrastructure.adapters.output.db.jpa.JpaUserRepo;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
