@@ -122,7 +122,7 @@ public class JpaUserRepository implements UserRepositoryPort {
       retryFor = {DataAccessException.class},
       maxAttempts = 3,
       backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
-  @Cacheable(value = "userByEmail", key = "#email")
+  @Cacheable(value = "userByEmail", key = "#email", unless = "#result == null")
   public User findByEmail(String email) {
     return repository
         .findByEmail(email)
