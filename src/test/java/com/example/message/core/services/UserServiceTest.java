@@ -11,8 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.message.core.domain.User;
-import com.example.message.core.exceptions.ConflictException;
-import com.example.message.core.exceptions.UserNotFoundException;
+import com.example.message.core.exceptions.business.*;
 import com.example.message.core.ports.output.UserRepositoryPort;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
