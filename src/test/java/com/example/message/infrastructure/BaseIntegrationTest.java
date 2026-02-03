@@ -1,16 +1,18 @@
 package com.example.message.infrastructure;
 
-import com.example.message.infrastructure.adapters.output.db.jpa.JpaUserRepo;
+import com.redis.testcontainers.RedisContainer;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -18,17 +20,13 @@ public abstract class BaseIntegrationTest {
 
   @LocalServerPort protected Integer port;
 
-  @Autowired private JpaUserRepo jpaUserRepo;
+  static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
 
-  @SuppressWarnings("resource")
-  static final PostgreSQLContainer<?> postgres =
-      new PostgreSQLContainer<>("postgres:15-alpine")
-          .withDatabaseName("db-test")
-          .withUsername("test")
-          .withPassword("test");
+  static final RedisContainer redis = new RedisContainer(DockerImageName.parse("redis:7-alpine"));
 
   static {
     postgres.start();
+    redis.start();
   }
 
   @DynamicPropertySource
@@ -40,6 +38,9 @@ public abstract class BaseIntegrationTest {
     registry.add("spring.flyway.url", postgres::getJdbcUrl);
     registry.add("spring.flyway.user", postgres::getUsername);
     registry.add("spring.flyway.password", postgres::getPassword);
+
+    registry.add("spring.data.redis.host", redis::getHost);
+    registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379).toString());
   }
 
   @BeforeEach
@@ -49,7 +50,7 @@ public abstract class BaseIntegrationTest {
   }
 
   @AfterEach
-  void cleanUp() {
-    jpaUserRepo.deleteAll();
+  void cleanUp(@Autowired JdbcTemplate jdbcTemplate) {
+    jdbcTemplate.execute("TRUNCATE TABLE users CASCADE");
   }
 }
