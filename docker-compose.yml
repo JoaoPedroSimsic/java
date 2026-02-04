@@ -15,13 +15,26 @@ services:
       APP_PASSWORD: ${APP_PASSWORD}
       FLYWAY_USER: ${FLYWAY_USER}
       FLYWAY_PASSWORD: ${FLYWAY_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
     depends_on:
       - db
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
 
   db:
     image: postgres:15-alpine
     container_name: db
     environment:
+      POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_URL: ${POSTGRES_URL}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -37,3 +50,4 @@ services:
 
 volumes:
   pgdata:
+  redis_data:

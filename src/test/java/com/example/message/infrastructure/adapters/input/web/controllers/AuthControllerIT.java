@@ -13,16 +13,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
 class AuthControllerIT extends BaseIntegrationTest {
+  private String testEmail;
+
   @BeforeEach
   void setupUser() {
-    UserRequest signup = new UserRequest("Auth User", "auth@example.com", "password");
+    testEmail = "auth" + System.nanoTime() + "@example.com";
+    UserRequest signup = new UserRequest("Auth User", testEmail, "password");
     given().contentType(ContentType.JSON).body(signup).post("/api/users");
   }
 
   @Test
   @DisplayName("Should login and set HttpOnly JWT cookie")
   void shouldLoginSuccessfully() {
-    LoginRequest loginRequest = new LoginRequest("auth@example.com", "password");
+    LoginRequest loginRequest = new LoginRequest(testEmail, "password");
 
     given()
         .contentType(ContentType.JSON)
@@ -37,7 +40,7 @@ class AuthControllerIT extends BaseIntegrationTest {
   @Test
   @DisplayName("Should access protected resource with JWT cookie")
   void shouldAccessProtectedResourceWithToken() {
-    LoginRequest loginRequest = new LoginRequest("auth@example.com", "password");
+    LoginRequest loginRequest = new LoginRequest(testEmail, "password");
 
     var response =
         given()

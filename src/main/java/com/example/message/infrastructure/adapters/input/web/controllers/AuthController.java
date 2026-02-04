@@ -1,7 +1,7 @@
 package com.example.message.infrastructure.adapters.input.web.controllers;
 
 import com.example.message.core.domain.User;
-import com.example.message.core.exceptions.InvalidCredentialsException;
+import com.example.message.core.exceptions.business.InvalidCredentialsException;
 import com.example.message.core.ports.input.UserUseCase;
 import com.example.message.core.ports.output.TokenRepositoryPort;
 import com.example.message.infrastructure.adapters.input.web.requests.LoginRequest;
