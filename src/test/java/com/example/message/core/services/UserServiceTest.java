@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.example.message.core.domain.User;
 import com.example.message.core.exceptions.business.*;
-import com.example.message.core.ports.output.UserRepositoryPort;
+import com.example.message.core.ports.output.UserPort;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class UserServiceTest {
 
   @Mock
-  private UserRepositoryPort userRepositoryPort;
+  private UserPort userRepositoryPort;
 
   @Mock
   private PasswordEncoder passwordEncoder;

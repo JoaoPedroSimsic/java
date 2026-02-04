@@ -8,7 +8,7 @@ import static org.mockito.Mockito.*;
 
 import com.example.message.core.domain.User;
 import com.example.message.core.exceptions.infrastructure.DatabaseUnavailableException;
-import com.example.message.core.ports.output.UserRepositoryPort;
+import com.example.message.core.ports.output.UserPort;
 import com.example.message.infrastructure.BaseIntegrationTest;
 import com.example.message.infrastructure.adapters.output.db.entities.UserEntity;
 import com.example.message.infrastructure.adapters.output.db.jpa.JpaUserRepo;
@@ -25,7 +25,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class DatabaseFailureIT extends BaseIntegrationTest {
 
-  @Autowired private UserRepositoryPort userRepository;
+  @Autowired private UserPort userRepository;
   @Autowired private CacheManager cacheManager;
   @Autowired private CircuitBreakerRegistry circuitBreakerRegistry;
   @MockitoBean private JpaUserRepo mockJpaUserRepo;

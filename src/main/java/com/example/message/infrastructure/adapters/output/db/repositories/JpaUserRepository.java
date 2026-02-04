@@ -2,7 +2,7 @@ package com.example.message.infrastructure.adapters.output.db.repositories;
 
 import com.example.message.core.domain.User;
 import com.example.message.core.exceptions.infrastructure.DatabaseUnavailableException;
-import com.example.message.core.ports.output.UserRepositoryPort;
+import com.example.message.core.ports.output.UserPort;
 import com.example.message.infrastructure.adapters.output.db.entities.UserEntity;
 import com.example.message.infrastructure.adapters.output.db.jpa.JpaUserRepo;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class JpaUserRepository implements UserRepositoryPort {
+public class JpaUserRepository implements UserPort {
   private final JpaUserRepo repository;
   private final CacheManager cacheManager;
 

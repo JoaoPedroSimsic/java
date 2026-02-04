@@ -3,7 +3,7 @@ package com.example.message.core.services;
 import com.example.message.core.domain.User;
 import com.example.message.core.exceptions.business.*;
 import com.example.message.core.ports.input.UserUseCase;
-import com.example.message.core.ports.output.UserRepositoryPort;
+import com.example.message.core.ports.output.UserPort;
 
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,10 +14,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Slf4j
 @Transactional(readOnly = true)
 public class UserService implements UserUseCase {
-  private final UserRepositoryPort userRepositoryPort;
+  private final UserPort userRepositoryPort;
   private final PasswordEncoder passwordEncoder;
 
-  public UserService(UserRepositoryPort userRepositoryPort, PasswordEncoder passwordEncoder) {
+  public UserService(UserPort userRepositoryPort, PasswordEncoder passwordEncoder) {
     this.userRepositoryPort = userRepositoryPort;
     this.passwordEncoder = passwordEncoder;
   }

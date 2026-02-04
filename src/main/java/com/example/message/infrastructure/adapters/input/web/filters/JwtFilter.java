@@ -1,8 +1,8 @@
 package com.example.message.infrastructure.adapters.input.web.filters;
 
 import com.example.message.core.domain.User;
-import com.example.message.core.ports.output.TokenRepositoryPort;
-import com.example.message.core.ports.output.UserRepositoryPort;
+import com.example.message.core.ports.output.TokenPort;
+import com.example.message.core.ports.output.UserPort;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -17,10 +17,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
-  private final TokenRepositoryPort tokenRepositoryPort;
-  private final UserRepositoryPort userRepositoryPort;
+  private final TokenPort tokenRepositoryPort;
+  private final UserPort userRepositoryPort;
 
-  public JwtFilter(TokenRepositoryPort tokenRepositoryPort, UserRepositoryPort userRepositoryPort) {
+  public JwtFilter(TokenPort tokenRepositoryPort, UserPort userRepositoryPort) {
     this.tokenRepositoryPort = tokenRepositoryPort;
     this.userRepositoryPort = userRepositoryPort;
   }
