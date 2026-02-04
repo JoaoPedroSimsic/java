@@ -63,4 +63,4 @@ services:
 volumes:
   pgdata:
   redis_data:
-  rabbitmq:
+  rabbitmq_data:
