@@ -2,6 +2,7 @@ package com.example.message.infrastructure.adapters.input.web.advice;
 
 import com.example.message.core.exceptions.abstracts.InfrastructureException;
 import com.example.message.core.exceptions.infrastructure.DatabaseUnavailableException;
+import com.example.message.core.exceptions.infrastructure.MessagingException;
 import com.example.message.infrastructure.adapters.input.web.responses.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
@@ -33,9 +34,16 @@ public class InfrastructureExceptionAdvice {
   public ResponseEntity<ErrorResponse> handleInfrastructureException(
       InfrastructureException ex, HttpServletRequest request) {
     return buildResponse(
+        HttpStatus.INTERNAL_SERVER_ERROR, "Infrastructure Error", ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(MessagingException.class)
+  public ResponseEntity<ErrorResponse> handleMessagingException(
+      MessagingException ex, HttpServletRequest request) {
+    return buildResponse(
         HttpStatus.INTERNAL_SERVER_ERROR,
-        "Infrastructure Error",
-        ex.getMessage(),
+        "Messaging Failure",
+        "The message could not be sent to the broker. The operation was aborted.",
         request);
   }
 
