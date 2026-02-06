@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.example.message.core.domain.User;
 import com.example.message.core.exceptions.business.*;
 import com.example.message.core.ports.output.UserPort;
+import com.example.message.core.ports.output.OutboxPort;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,11 +34,14 @@ class UserServiceTest {
   @Mock
   private PasswordEncoder passwordEncoder;
 
+  @Mock 
+  private OutboxPort outboxPort;
+
   private UserService userService;
 
   @BeforeEach
   void setUp() {
-    userService = new UserService(userRepositoryPort, passwordEncoder);
+    userService = new UserService(userRepositoryPort, passwordEncoder, outboxPort);
   }
 
   @Nested
