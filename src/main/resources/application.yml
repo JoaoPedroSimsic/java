@@ -6,9 +6,6 @@ app:
     secret: ${JWT_SECRET}
 
 spring:
-  profiles:
-    active: ${PROFILE:dev}
-  
   datasource:
     url: ${POSTGRES_URL}
     username: ${APP_USER}
@@ -66,7 +63,6 @@ spring:
       time-to-live: 1800000
       cache-null-values: false
 
-# Fixed a typo here from 'hiraki' to 'hikari'
 hikari:
   metrics:
     enabled: true
