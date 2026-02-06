@@ -8,6 +8,7 @@ services:
       - .:/app
       - ~/.m2:/root/.m2
     environment:
+      SPRING_PROFILES_ACTIVE: ${PROFILE}
       APP_PORT: ${APP_PORT}
       JWT_SECRET: ${JWT_SECRET}
       PROFILE: ${PROFILE}
