@@ -1,5 +1,6 @@
 package com.example.message.infrastructure;
 
+import com.example.message.core.ports.output.MessagePublisherPort;
 import com.redis.testcontainers.RedisContainer;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.AfterEach;
@@ -11,6 +12,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -19,6 +21,8 @@ import org.testcontainers.utility.DockerImageName;
 public abstract class BaseIntegrationTest {
 
   @LocalServerPort protected Integer port;
+
+  @MockitoBean protected MessagePublisherPort messagePublisherPort;
 
   static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
 
