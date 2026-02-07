@@ -23,7 +23,7 @@
       "format": "date-time",
       "description": "The timestamp when the user was created."
     }
-  }
+  },
   "required": ["userId", "email", "name", "occurredAt"],
   "additionalProperties": false
 }

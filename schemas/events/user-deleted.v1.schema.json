@@ -14,7 +14,7 @@
       "format": "date-time",
       "description": "The timestamp when the user was deleted."
     }
-  }
+  },
   "required": ["userId", "occurredAt"],
   "additionalProperties": false
 }
