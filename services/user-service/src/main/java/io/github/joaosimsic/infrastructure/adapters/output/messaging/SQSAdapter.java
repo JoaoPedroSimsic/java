@@ -20,12 +20,12 @@ public class SQSAdapter implements MessagePublisherPort {
 
   @Override
   public void publish(DomainEvent event) {
-    String queueName = getQeueName(event);
+    String queueName = getQueueName(event);
 
     sqsTemplate.send(queueName, event);
   }
 
-  private String getQeueName(DomainEvent event) {
+  private String getQueueName(DomainEvent event) {
     return switch (event) {
       case UserCreatedEvent e -> "user-created-queue";
       case UserUpdatedEvent e -> "user-updated-queue";
