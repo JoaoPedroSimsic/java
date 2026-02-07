@@ -1,23 +1,33 @@
-type: [short description] 
+# Pull Request Template
 
-[Briefly describe the purpose of this pull request and the problem it solves. What is the main goal?]
+## Title Format
+> Format: type(scope): description
+> Example: feat(auth): add google oauth2 support
+> 
+> Type of Change:
+> - feat: A new feature
+> - fix: A bug fix
+> - refactor: Code change that neither fixes a bug nor adds a feature
+> - perf: Code change that improves performance
+> - docs: Documentation updates
+> - release: New version/Production deployment (Target: main)
+> - chore: Build process or auxiliary tool changes
+>
+> If merging to MAIN: Use the release type and the version as scope.
+> Example: release(v1.0.0): prepare production deployment
 
-[Provide more context here. Mention specific files changed, architectural decisions made, or dependencies added/removed.]
+## Description
+- Summary: 
 
-Key Additions
+#### Key Files
+- `File Name`: Description of changes
 
-    [Component/Feature Name]: [Describe the change, e.g., "Added a new service to handle X."]
+#### Test Suggestion
+To verify these changes, please follow these steps:
+1. Environment: [e.g., Local, Staging]
+2. Setup: [e.g., Run migrations, install dependencies]
+3. Action: [e.g., Send a 'POST' request]
+4. Expected Result: [e.g., Return 201 Created response]
 
-    [Configuration/Refactor]: [Describe secondary changes, e.g., "Updated environment variables to include Y."]
 
-[Functional Area Name] (e.g., Documented Endpoints or Component Logic)
 
-[Sub-section Name] (path/to/module)
-
-    [Action/Method] [Path]: [Description of what this specific part does.]
-
-    [Action/Method] [Path]: [Description of what this specific part does.]
-
-[Sub-section Name] (path/to/module)
-
-    [Action/Method] [Path]: [Description of what this specific part does.]
