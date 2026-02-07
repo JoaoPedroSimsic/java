@@ -3,7 +3,7 @@ package com.example.message.infrastructure.adapters.input.web.controllers;
 import com.example.message.core.domain.User;
 import com.example.message.core.exceptions.business.InvalidCredentialsException;
 import com.example.message.core.ports.input.UserUseCase;
-import com.example.message.core.ports.output.TokenRepositoryPort;
+import com.example.message.core.ports.output.TokenPort;
 import com.example.message.infrastructure.adapters.input.web.requests.LoginRequest;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,12 +21,12 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class AuthController {
   private final UserUseCase userUseCase;
-  private final TokenRepositoryPort tokenRepositoryPort;
+  private final TokenPort tokenRepositoryPort;
   private final PasswordEncoder passwordEncoder;
 
   public AuthController(
       UserUseCase userUseCase,
-      TokenRepositoryPort tokenRepositoryPort,
+      TokenPort tokenRepositoryPort,
       PasswordEncoder passwordEncoder) {
     this.userUseCase = userUseCase;
     this.tokenRepositoryPort = tokenRepositoryPort;

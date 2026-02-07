@@ -3,6 +3,9 @@ app:
     secret: test-secret-key-for-testing-purposes-only-min-256-bits
 
 spring:
+  autoconfigure:
+    exclude:
+      - io.awspring.cloud.autoconfigure.sqs.SqsAutoConfiguration
   data:
     redis:
       host: localhost

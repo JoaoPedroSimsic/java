@@ -1,7 +1,7 @@
 package com.example.message.infrastructure.adapters.output.db.repositories;
 
 import com.example.message.core.domain.User;
-import com.example.message.core.ports.output.TokenRepositoryPort;
+import com.example.message.core.ports.output.TokenPort;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TokenRepository implements TokenRepositoryPort {
+public class TokenRepository implements TokenPort {
   private final Key key;
 
   public TokenRepository(@Value("${app.jwt.secret}") String secret) {
