@@ -1,12 +1,12 @@
 package io.github.joaosimsic.core.ports.output;
 
 import io.github.joaosimsic.core.domain.OutboxEntry;
-import io.github.joaosimsic.core.events.UserCreatedEvent;
+import io.github.joaosimsic.core.events.DomainEvent;
 import java.util.List;
 import java.util.UUID;
 
 public interface OutboxPort {
-  void save(UserCreatedEvent event);
+  void save(DomainEvent event);
 
   List<OutboxEntry> findUnprocessed(int batchSize);
 
