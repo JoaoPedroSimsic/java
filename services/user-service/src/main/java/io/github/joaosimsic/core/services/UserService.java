@@ -2,6 +2,8 @@ package io.github.joaosimsic.core.services;
 
 import io.github.joaosimsic.core.domain.User;
 import io.github.joaosimsic.core.events.UserCreatedEvent;
+import io.github.joaosimsic.core.events.UserDeletedEvent;
+import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.exceptions.business.*;
 import io.github.joaosimsic.core.ports.input.UserUseCase;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
@@ -107,6 +109,11 @@ public class UserService implements UserUseCase {
 
     User updatedUser = userPort.save(user);
 
+    UserUpdatedEvent event =
+        new UserUpdatedEvent(updatedUser.getId(), updatedUser.getEmail(), updatedUser.getName());
+
+    outboxPort.save(event);
+
     log.info("Updated user with id: {}", updatedUser.getId());
 
     return updatedUser;
@@ -124,6 +131,11 @@ public class UserService implements UserUseCase {
     }
 
     userPort.delete(id);
+
+    UserDeletedEvent event = new UserDeletedEvent(id);
+
+    outboxPort.save(event);
+
     log.info("Deleted user with id: {}", id);
   }
 }
