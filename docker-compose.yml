@@ -1,6 +1,6 @@
 services:
-  app:
-    container_name: app
+  user-service:
+    container_name: user-service
     build: .
     ports:
       - "8080:8080"
