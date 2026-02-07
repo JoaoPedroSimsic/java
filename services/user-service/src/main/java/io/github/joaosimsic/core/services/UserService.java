@@ -107,7 +107,7 @@ public class UserService implements UserUseCase {
 
     existing.updateFields(user.getName(), user.getEmail(), password);
 
-    User updatedUser = userPort.save(user);
+    User updatedUser = userPort.save(existing);
 
     UserUpdatedEvent event =
         new UserUpdatedEvent(updatedUser.getId(), updatedUser.getEmail(), updatedUser.getName());
