@@ -1,6 +1,7 @@
 package io.github.joaosimsic.infrastructure.adapters.output.db.repositories;
 
 import io.github.joaosimsic.core.domain.OutboxEntry;
+import io.github.joaosimsic.core.events.DomainEvent;
 import io.github.joaosimsic.core.events.UserCreatedEvent;
 import io.github.joaosimsic.core.exceptions.infrastructure.MessagingException;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
@@ -25,15 +26,15 @@ public class JpaOutboxAdapter implements OutboxPort {
 
     @Override
     @Transactional
-    public void save(UserCreatedEvent event) {
+    public void save(DomainEvent event) {
         try {
             String payload = objectMapper.writeValueAsString(event);
             
             OutboxEntity entity = OutboxEntity.builder()
                     .id(UUID.randomUUID())
                     .aggregateType("USER")
-                    .aggregateId(event.userId().toString())
-                    .eventType("USER_CREATED")
+                    .aggregateId(event.aggregateId().toString())
+                    .eventType(event.eventType())
                     .payload(payload)
                     .build();
 
