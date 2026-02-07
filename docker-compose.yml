@@ -1,7 +1,7 @@
 services:
   user-service:
     container_name: user-service
-    build: .
+    build: services/user-service
     ports:
       - "8080:8080"
     volumes:
