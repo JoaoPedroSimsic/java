@@ -1,11 +1,14 @@
 services:
   user-service:
     container_name: user-service
-    build: services/user-service
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
     ports:
       - "8080:8080"
     volumes:
-      - .:/app
+      - ./services/user-service:/app
+      - ./bom:/bom
       - ~/.m2:/root/.m2
       - /app/target
     environment:

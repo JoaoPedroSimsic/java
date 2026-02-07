@@ -23,7 +23,6 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Import BOM for shared versions -->
       <dependency>
         <groupId>io.github.joaosimsic</groupId>
         <artifactId>message-bom</artifactId>
@@ -35,7 +34,6 @@
   </dependencyManagement>
 
   <dependencies>
-    <!-- Spring Boot Starters -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -88,7 +86,6 @@
       <optional>true</optional>
     </dependency>
 
-    <!-- Database -->
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
@@ -103,7 +100,6 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- JWT (versions from BOM) -->
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-api</artifactId>
@@ -119,7 +115,6 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- Resilience (versions from BOM) -->
     <dependency>
       <groupId>org.springframework.retry</groupId>
       <artifactId>spring-retry</artifactId>
@@ -133,26 +128,22 @@
       <artifactId>resilience4j-spring-boot3</artifactId>
     </dependency>
 
-    <!-- API Docs (version from BOM) -->
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
     </dependency>
 
-    <!-- AWS (version from BOM) -->
     <dependency>
       <groupId>io.awspring.cloud</groupId>
       <artifactId>spring-cloud-aws-starter-sqs</artifactId>
     </dependency>
 
-    <!-- Lombok -->
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <optional>true</optional>
     </dependency>
 
-    <!-- Testing -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
