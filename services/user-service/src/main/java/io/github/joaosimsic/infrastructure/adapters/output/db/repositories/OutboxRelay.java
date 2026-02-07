@@ -1,10 +1,13 @@
 package io.github.joaosimsic.infrastructure.adapters.output.db.repositories;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.joaosimsic.core.domain.OutboxEntry;
+import io.github.joaosimsic.core.events.DomainEvent;
 import io.github.joaosimsic.core.events.UserCreatedEvent;
+import io.github.joaosimsic.core.events.UserDeletedEvent;
+import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +36,7 @@ public class OutboxRelay {
 
     for (OutboxEntry entry : entries) {
       try {
-        UserCreatedEvent event = objectMapper.readValue(entry.payload(), UserCreatedEvent.class);
+        DomainEvent event = deserializeEvent(entry);
 
         messagePublisher.publish(event);
 
@@ -48,5 +51,14 @@ public class OutboxRelay {
       outboxPort.markAsProcessed(processedIds);
       log.info("Successfully relayed {} events", processedIds.size());
     }
+  }
+
+  private DomainEvent deserializeEvent(OutboxEntry entry) throws Exception {
+    return switch (entry.eventType()) {
+      case "USER_CREATED" -> objectMapper.readValue(entry.payload(), UserCreatedEvent.class);
+      case "USER_UPDATED" -> objectMapper.readValue(entry.payload(), UserUpdatedEvent.class);
+      case "USER_DELETED" -> objectMapper.readValue(entry.payload(), UserDeletedEvent.class);
+      default -> throw new IllegalArgumentException("Unknown event type: " + entry.eventType());
+    };
   }
 }
