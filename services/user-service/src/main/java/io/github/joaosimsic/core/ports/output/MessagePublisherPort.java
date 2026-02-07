@@ -1,7 +1,7 @@
 package io.github.joaosimsic.core.ports.output;
 
-import io.github.joaosimsic.core.events.UserCreatedEvent;
+import io.github.joaosimsic.core.events.DomainEvent;
 
 public interface MessagePublisherPort {
-  void publish(UserCreatedEvent message);
+  void publish(DomainEvent event);
 }
