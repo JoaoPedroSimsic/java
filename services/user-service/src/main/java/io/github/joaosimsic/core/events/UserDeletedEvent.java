@@ -14,7 +14,7 @@ public record UserDeletedEvent(Long userId, Instant occurredAt) implements Domai
   }
 
   @Override
-  public Long aggragateId() {
+  public Long aggregateId() {
     return userId;
   }
 }

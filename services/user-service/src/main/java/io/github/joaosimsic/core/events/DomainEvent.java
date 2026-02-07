@@ -7,5 +7,5 @@ public interface DomainEvent {
 
   Instant occurredAt();
 
-  Long aggragateId();
+  Long aggregateId();
 }

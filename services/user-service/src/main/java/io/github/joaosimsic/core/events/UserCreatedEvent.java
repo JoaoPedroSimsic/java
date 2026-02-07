@@ -15,7 +15,7 @@ public record UserCreatedEvent(Long userId, String email, String name, Instant o
   }
 
   @Override
-  public Long aggragateId() {
+  public Long aggregateId() {
     return userId;
   }
 }
