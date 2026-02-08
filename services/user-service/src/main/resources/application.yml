@@ -21,6 +21,11 @@ spring:
       leak-detection-threshold: 60000
       keepalive-time: 30000
 
+  outbox:
+    poll-interval: 5000
+    batch-size: 20
+    max-attempts: 5
+
   jpa:
     hibernate:
       ddl-auto: none

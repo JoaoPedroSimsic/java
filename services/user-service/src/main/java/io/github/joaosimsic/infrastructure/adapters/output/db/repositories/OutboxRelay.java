@@ -8,6 +8,7 @@ import io.github.joaosimsic.core.events.UserDeletedEvent;
 import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
+import io.github.joaosimsic.infrastructure.config.OutboxProperties;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,17 +25,24 @@ public class OutboxRelay {
   private final OutboxPort outboxPort;
   private final MessagePublisherPort messagePublisher;
   private final ObjectMapper objectMapper;
+  private final OutboxProperties outboxProperties;
 
-  @Scheduled(fixedDelay = 5000)
+  @Scheduled(fixedDelayString = "${app.outbox.pool-interval:5000}")
   @Transactional
   public void processOutbox() {
-    var entries = outboxPort.findUnprocessed(20);
+    var entries = outboxPort.findUnprocessed(outboxProperties.getBatchSize());
 
     if (entries.isEmpty()) return;
 
     List<UUID> processedIds = new ArrayList<>();
 
     for (OutboxEntry entry : entries) {
+
+      if (entry.attempts() >= outboxProperties.getMaxAttempts()) {
+        outboxPort.markAsFailed(entry.id(), "Max attempts reached");
+        continue;
+      }
+
       try {
         DomainEvent event = deserializeEvent(entry);
 
@@ -43,6 +51,7 @@ public class OutboxRelay {
         processedIds.add(entry.id());
       } catch (Exception e) {
         log.error("Failed to relay event {}: {}", entry.id(), e.getMessage());
+
         outboxPort.incrementAttempt(entry.id(), e.getMessage());
       }
     }

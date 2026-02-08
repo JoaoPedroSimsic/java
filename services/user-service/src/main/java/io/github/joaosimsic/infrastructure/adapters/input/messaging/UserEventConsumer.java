@@ -1,7 +1,7 @@
 package io.github.joaosimsic.infrastructure.adapters.input.messaging;
 
 import io.github.joaosimsic.core.events.UserCreatedEvent;
-import io.github.joaosimsic.core.ports.input.UserUseCase;
+// import io.github.joaosimsic.core.ports.input.UserUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class UserEventConsumer {
 
-  private final UserUseCase userUseCase;
+  // private final UserUseCase userUseCase;
 
   @RabbitListener(queues = "user.created.queue")
   public void handleUserCreated(UserCreatedEvent event) {
