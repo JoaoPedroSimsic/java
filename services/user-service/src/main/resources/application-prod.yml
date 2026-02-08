@@ -7,7 +7,8 @@ spring:
         access-key: ${AWS_ACCESS_KEY_ID}
         secret-key: ${AWS_SECRET_ACCESS_KEY}
 
-    rabbitmq:
-      listener:
-        type: simple
-        enabled: false
+  rabbitmq:
+    listener:
+      type: simple
+      simple:
+        auto-startup: false

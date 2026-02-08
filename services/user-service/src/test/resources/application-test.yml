@@ -1,6 +1,9 @@
 app:
   jwt:
-    secret: test-secret-key-for-testing-purposes-only-min-256-bits
+    private-key: "test-private-key"
+    public-key: "test-public-key"
+    key-id: test-key
+    expiration-ms: 3600000
 
 spring:
   autoconfigure:

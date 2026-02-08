@@ -1,0 +1,44 @@
+{
+  "properties": [
+    {
+      "name": "app.jwt.private-key",
+      "type": "java.lang.String",
+      "description": "JWT private key for signing tokens"
+    },
+    {
+      "name": "app.jwt.public-key",
+      "type": "java.lang.String",
+      "description": "JWT public key for verifying tokens"
+    },
+    {
+      "name": "app.jwt.key-id",
+      "type": "java.lang.String",
+      "description": "JWT key identifier",
+      "defaultValue": "hermes-key-1"
+    },
+    {
+      "name": "app.jwt.expiration-ms",
+      "type": "java.lang.Long",
+      "description": "JWT token expiration time in milliseconds",
+      "defaultValue": 86400000
+    },
+    {
+      "name": "app.outbox.poll-interval",
+      "type": "java.lang.Long",
+      "description": "Interval in milliseconds between outbox polling attempts",
+      "defaultValue": 5000
+    },
+    {
+      "name": "app.outbox.batch-size",
+      "type": "java.lang.Integer",
+      "description": "Number of outbox entries to process per batch",
+      "defaultValue": 20
+    },
+    {
+      "name": "app.outbox.max-attempts",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of attempts before marking an entry as failed",
+      "defaultValue": 5
+    }
+  ]
+}
