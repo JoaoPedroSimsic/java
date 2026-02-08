@@ -7,6 +7,7 @@ import io.github.joaosimsic.core.events.DomainEvent;
 import io.github.joaosimsic.core.exceptions.infrastructure.MessagingException;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.infrastructure.adapters.output.db.entities.OutboxEntity;
+import io.github.joaosimsic.infrastructure.adapters.output.db.entities.OutboxStatus;
 import io.github.joaosimsic.infrastructure.adapters.output.db.jpa.JpaOutboxRepo;
 import java.util.List;
 import java.util.UUID;
@@ -53,7 +54,8 @@ public class JpaOutboxAdapter implements OutboxPort {
                     entity.getAggregateId(),
                     entity.getAggregateType(),
                     entity.getEventType(),
-                    entity.getPayload()))
+                    entity.getPayload(),
+                    entity.getAttempts()))
         .toList();
   }
 
@@ -72,6 +74,20 @@ public class JpaOutboxAdapter implements OutboxPort {
             entity -> {
               entity.setAttempts(entity.getAttempts() + 1);
               entity.setLastError(lastError);
+              repository.save(entity);
+            });
+  }
+
+  @Override
+  @Transactional
+  public void markAsFailed(UUID id, String reason) {
+    repository
+        .findById(id)
+        .ifPresent(
+            entity -> {
+              entity.setProcessed(true);
+              entity.setLastError("FAILED: " + reason);
+              entity.setStatus(OutboxStatus.FAILED);
               repository.save(entity);
             });
   }

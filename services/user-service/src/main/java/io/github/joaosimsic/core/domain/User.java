@@ -15,8 +15,7 @@ public class User {
   private String name;
   private String email;
 
-  @JsonIgnore
-  private String password;
+  @JsonIgnore private String password;
 
   public void updateFields(String newName, String newEmail, String newPassword) {
     if (newName != null && !newName.isBlank()) {

@@ -18,7 +18,8 @@ public interface JpaOutboxRepo extends JpaRepository<OutboxEntity, UUID> {
 
   @Modifying
   @Query(
-      "UPDATE OutboxEntity o SET o.processed = true, o.processedAt = CURRENT_TIMESTAMP WHERE o.id"
-          + " IN :ids")
+      "UPDATE OutboxEntity o SET o.processed = true, o.status = 'PROCESSED', o.processedAt ="
+          + " CURRENT_TIMESTAMP WHERE o.id IN :ids")
   void markAsProcessed(@Param("ids") List<UUID> ids);
 }
+
