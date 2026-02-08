@@ -12,5 +12,7 @@ public interface OutboxPort {
 
   void markAsProcessed(List<UUID> ids);
 
+  void markAsFailed(UUID id, String reason);
+
   void incrementAttempt(UUID id, String lastError);
 }
