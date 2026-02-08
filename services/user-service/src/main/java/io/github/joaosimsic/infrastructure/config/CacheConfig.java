@@ -18,7 +18,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class CacheConfig {
 
   @Bean
-  public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+  CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
     RedisSerializer<Object> jsonSerializer = RedisSerializer.json();
 
     RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()

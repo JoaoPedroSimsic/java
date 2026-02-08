@@ -17,7 +17,7 @@ import org.springframework.retry.support.RetryTemplate;
 public class RetryConfig {
 
   @Bean
-  public RetryTemplate retryTemplate() {
+  RetryTemplate retryTemplate() {
     RetryTemplate retryTemplate = new RetryTemplate();
 
     ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();

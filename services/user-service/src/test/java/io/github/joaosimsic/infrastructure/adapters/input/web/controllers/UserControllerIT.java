@@ -8,6 +8,8 @@ import io.github.joaosimsic.infrastructure.adapters.input.web.requests.UserReque
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 
 class UserControllerIT extends BaseIntegrationTest {
@@ -47,5 +49,19 @@ class UserControllerIT extends BaseIntegrationTest {
         .statusCode(HttpStatus.CONFLICT.value())
         .body("error", equalTo("Data Conflict"))
         .body("message", containsString("already exists"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"short", "no-at-sign", "too-long-email-address@domain.com..."})
+  void shouldReturn400WhenEmailIsInvalid(String invalidEmail) {
+    UserRequest request = new UserRequest("Valid Name", invalidEmail, "password123");
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(request)
+        .when()
+        .post("/api/users")
+        .then()
+        .statusCode(HttpStatus.BAD_REQUEST.value());
   }
 }

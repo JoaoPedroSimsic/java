@@ -24,37 +24,37 @@ public class RabbitConfig {
   public static final String USER_DELETED_ROUTING_KEY = "user.deleted";
 
   @Bean
-  public TopicExchange userExchange() {
+  TopicExchange userExchange() {
     return new TopicExchange(USER_EXCHANGE);
   }
 
   @Bean
-  public Queue userCreatedQueue() {
+  Queue userCreatedQueue() {
     return new Queue(USER_CREATED_QUEUE);
   }
 
   @Bean
-  public Binding userCreatedBinding(TopicExchange userExchange, Queue userCreatedQueue) {
+  Binding userCreatedBinding(TopicExchange userExchange, Queue userCreatedQueue) {
     return BindingBuilder.bind(userCreatedQueue).to(userExchange).with(USER_CREATED_ROUTING_KEY);
   }
 
   @Bean
-  public Queue userUpdatedQueue() {
+  Queue userUpdatedQueue() {
     return new Queue(USER_UPDATED_QUEUE);
   }
 
   @Bean
-  public Binding userUpdatedBinding(TopicExchange userExchange, Queue userUpdatedQueue) {
+  Binding userUpdatedBinding(TopicExchange userExchange, Queue userUpdatedQueue) {
     return BindingBuilder.bind(userUpdatedQueue).to(userExchange).with(USER_UPDATED_ROUTING_KEY);
   }
 
   @Bean
-  public Queue userDeletedQueue() {
+  Queue userDeletedQueue() {
     return new Queue(USER_DELETED_QUEUE);
   }
 
   @Bean
-  public Binding userDeletedBinding(TopicExchange userExchange, Queue userDeletedQueue) {
+  Binding userDeletedBinding(TopicExchange userExchange, Queue userDeletedQueue) {
     return BindingBuilder.bind(userDeletedQueue).to(userExchange).with(USER_DELETED_ROUTING_KEY);
   }
 }
