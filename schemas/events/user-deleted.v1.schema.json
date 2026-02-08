@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.io/joaosimsic/schemas/events/user-deleted.v1.schema.json",
+  "title": "User Deleted Event",
+  "description": "Event published when a user is deleted.",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "integer",
+      "description": "The unique identifier of the deleted user."
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The timestamp when the user was deleted."
+    }
+  },
+  "required": ["userId", "occurredAt"],
+  "additionalProperties": false
+}

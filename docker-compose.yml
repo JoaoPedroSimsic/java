@@ -1,11 +1,14 @@
 services:
-  app:
-    container_name: app
-    build: .
+  user-service:
+    container_name: user-service
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
     ports:
       - "8080:8080"
     volumes:
-      - .:/app
+      - ./services/user-service:/app
+      - ./bom:/bom
       - ~/.m2:/root/.m2
       - /app/target
     environment:
@@ -53,7 +56,7 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ./infrastructure/scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
