@@ -1,6 +1,8 @@
 package io.github.joaosimsic.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
@@ -18,7 +20,15 @@ public class GatewayProperties {
 
   @Data
   public static class RateLimitConfig {
-    private int replenishRate = 10;
-    private int burstCapacity = 20;
+    private RateDetails authenticated = new RateDetails(100, 150);
+    private RateDetails unauthenticated = new RateDetails(5, 10);
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class RateDetails {
+    private int replenishRate;
+    private int burstCapacity;
   }
 }
