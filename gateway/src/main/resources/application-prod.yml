@@ -1,0 +1,4 @@
+gateway:
+  jwt:
+    jwks-url: ${AUTH0_JWKS_URL}
+    expected-issuer: ${AUTH0_ISSUER}
