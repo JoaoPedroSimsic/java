@@ -2,8 +2,12 @@ server:
   port: ${APP_PORT:8080}
 
 app:
-  jwt:
-    secret: ${JWT_SECRET}
+  gateway:
+    secret: ${GATEWAY_SECRET:change-me-in-production}
+  outbox:
+    poll-interval: 5000
+    batch-size: 20
+    max-attempts: 5
 
 spring:
   datasource:
@@ -63,7 +67,7 @@ spring:
 
   cache:
     type: redis
-    cache-names: users,userByEmail,userById
+    cache-names: users,userByEmail,userById,userByExternalId
     redis:
       time-to-live: 1800000
       cache-null-values: false

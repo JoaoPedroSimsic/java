@@ -27,7 +27,7 @@ public class OutboxRelay {
   private final ObjectMapper objectMapper;
   private final OutboxProperties outboxProperties;
 
-  @Scheduled(fixedDelayString = "${app.outbox.pool-interval:5000}")
+  @Scheduled(fixedDelayString = "${app.outbox.poll-interval:5000}")
   @Transactional
   public void processOutbox() {
     var entries = outboxPort.findUnprocessed(outboxProperties.getBatchSize());

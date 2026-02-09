@@ -3,6 +3,7 @@ package io.github.joaosimsic.infrastructure.adapters.input.web.controllers;
 import io.github.joaosimsic.core.domain.User;
 import io.github.joaosimsic.core.ports.input.UserUseCase;
 import io.github.joaosimsic.infrastructure.adapters.input.web.requests.UserRequest;
+import io.github.joaosimsic.infrastructure.adapters.input.web.requests.UserSyncRequest;
 import io.github.joaosimsic.infrastructure.adapters.input.web.responses.UserResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -82,5 +83,12 @@ public class UserController {
     userUseCase.deleteUser(id);
 
     return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/sync")
+  public ResponseEntity<UserResponse> sync(@Valid @RequestBody UserSyncRequest request) {
+    User user = userUseCase.syncUser(request.externalId(), request.email(), request.name());
+
+    return ResponseEntity.ok(UserResponse.fromDomain(user));
   }
 }

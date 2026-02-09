@@ -58,26 +58,16 @@
         }
       }
     },
-    "/api/auth/logout": {
+    "/api/users/sync": {
       "post": {
-        "tags": ["auth-controller"],
-        "operationId": "logout",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/auth/login": {
-      "post": {
-        "tags": ["auth-controller"],
-        "operationId": "login",
+        "tags": ["user-controller"],
+        "operationId": "sync",
+        "description": "Sync user from external identity provider (Auth0/Keycloak). Creates user if not exists.",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
+                "$ref": "#/components/schemas/UserSyncRequest"
               }
             }
           },
@@ -89,7 +79,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/UserResponse"
                 }
               }
             }
@@ -208,6 +198,23 @@
         },
         "required": ["email", "name", "password"]
       },
+      "UserSyncRequest": {
+        "type": "object",
+        "description": "Request to sync user from external identity provider",
+        "properties": {
+          "externalId": {
+            "type": "string",
+            "description": "User ID from external provider (sub claim)"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["externalId", "email"]
+      },
       "UserResponse": {
         "type": "object",
         "properties": {
@@ -222,20 +229,6 @@
             "type": "string"
           }
         }
-      },
-      "LoginRequest": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string",
-            "maxLength": 50,
-            "minLength": 8
-          }
-        },
-        "required": ["email", "password"]
       }
     }
   }

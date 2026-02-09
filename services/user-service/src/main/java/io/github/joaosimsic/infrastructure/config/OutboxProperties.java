@@ -9,7 +9,7 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @Configuration
 @Validated
-@ConfigurationProperties(prefix = "spring.outbox")
+@ConfigurationProperties(prefix = "app.outbox")
 public class OutboxProperties {
   @Min(1)
   private int batchSize = 20;
@@ -18,5 +18,5 @@ public class OutboxProperties {
   private int maxAttempts = 5;
 
   @Min(100)
-  private long poolInterval = 5000;
+  private long pollInterval = 5000;
 }

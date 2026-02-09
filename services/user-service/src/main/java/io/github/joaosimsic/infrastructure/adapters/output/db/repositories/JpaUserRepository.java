@@ -40,19 +40,25 @@ public class JpaUserRepository implements UserPort {
       backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
   @CachePut(value = "userById", key = "#result.id", condition = "#result != null")
   @CacheEvict(
-      value = {"users", "userByEmail"},
+      value = {"users", "userByEmail", "userByExternalId"},
       allEntries = true)
   public User save(User user) {
     UserEntity entity = new UserEntity();
 
     entity.setId(user.getId());
+    entity.setExternalId(user.getExternalId());
     entity.setName(user.getName());
     entity.setEmail(user.getEmail());
     entity.setPassword(user.getPassword());
 
     UserEntity saved = repository.save(entity);
 
-    return User.builder().id(saved.getId()).name(saved.getName()).email(saved.getEmail()).build();
+    return User.builder()
+        .id(saved.getId())
+        .externalId(saved.getExternalId())
+        .name(saved.getName())
+        .email(saved.getEmail())
+        .build();
   }
 
   @Recover
@@ -72,7 +78,14 @@ public class JpaUserRepository implements UserPort {
   @Cacheable(value = "users")
   public List<User> findAll() {
     return repository.findAll().stream()
-        .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
+        .map(
+            e ->
+                User.builder()
+                    .id(e.getId())
+                    .externalId(e.getExternalId())
+                    .name(e.getName())
+                    .email(e.getEmail())
+                    .build())
         .collect(Collectors.toList());
   }
 
@@ -106,7 +119,14 @@ public class JpaUserRepository implements UserPort {
   public User find(Long id) {
     return repository
         .findById(id)
-        .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
+        .map(
+            e ->
+                User.builder()
+                    .id(e.getId())
+                    .externalId(e.getExternalId())
+                    .name(e.getName())
+                    .email(e.getEmail())
+                    .build())
         .orElse(null);
   }
 
@@ -130,9 +150,9 @@ public class JpaUserRepository implements UserPort {
             e ->
                 User.builder()
                     .id(e.getId())
+                    .externalId(e.getExternalId())
                     .name(e.getName())
                     .email(e.getEmail())
-                    .password(e.getPassword())
                     .build())
         .orElse(null);
   }
@@ -149,8 +169,35 @@ public class JpaUserRepository implements UserPort {
       retryFor = {DataAccessException.class},
       maxAttempts = 3,
       backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+  @Cacheable(value = "userByExternalId", key = "#externalId", unless = "#result == null")
+  public User findByExternalId(String externalId) {
+    return repository
+        .findByExternalId(externalId)
+        .map(
+            e ->
+                User.builder()
+                    .id(e.getId())
+                    .externalId(e.getExternalId())
+                    .name(e.getName())
+                    .email(e.getEmail())
+                    .build())
+        .orElse(null);
+  }
+
+  @Recover
+  public User recoverFindByExternalId(DataAccessException e, String externalId) {
+    log.warn("DB Failure. Falling back to cache for ExternalId: {}", externalId);
+    return getFromCache("userByExternalId", externalId, User.class);
+  }
+
+  @Override
+  @CircuitBreaker(name = "userRepository")
+  @Retryable(
+      retryFor = {DataAccessException.class},
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
   @CacheEvict(
-      value = {"users", "userById", "userByEmail"},
+      value = {"users", "userById", "userByEmail", "userByExternalId"},
       allEntries = true)
   public void delete(Long id) {
     repository.deleteById(id);

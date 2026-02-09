@@ -1,0 +1,4 @@
+gateway:
+  jwt:
+    jwks-url: http://keycloak:8080/realms/hermes/protocol/openid-connect/certs
+    expected-issuer: http://localhost:8180/realms/hermes

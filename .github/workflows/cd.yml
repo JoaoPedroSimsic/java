@@ -4,19 +4,28 @@ on:
   push:
     branches: [ main ]
 
+env:
+  AWS_REGION: us-east-1
+
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
+    name: Build and Push Docker Images
     environment: production
+    outputs:
+      user-service-image: ${{ steps.build-user-service.outputs.image }}
+      gateway-image: ${{ steps.build-gateway.outputs.image }}
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK 17
+
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-      - name: Package Application
+
+      - name: Package Applications
         run: mvn package -DskipTests
 
       - name: Login to Docker Hub
@@ -25,9 +34,100 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push Docker Image
+      - name: Build and Push User Service
+        id: build-user-service
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: services/user-service/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/message-app:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/hermes-user-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/hermes-user-service:${{ github.sha }}
+
+      - name: Build and Push API Gateway
+        id: build-gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: gateway/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/hermes-api-gateway:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/hermes-api-gateway:${{ github.sha }}
+
+  build-lambda:
+    runs-on: ubuntu-latest
+    name: Build Lambda Authorizer
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/lambda/jwt-authorizer/package-lock.json
+
+      - name: Install dependencies
+        working-directory: infrastructure/lambda/jwt-authorizer
+        run: npm ci
+
+      - name: Build and package
+        working-directory: infrastructure/lambda/jwt-authorizer
+        run: npm run package
+
+      - name: Upload Lambda package
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-authorizer-package
+          path: infrastructure/lambda/jwt-authorizer/function.zip
+
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    name: Deploy Infrastructure
+    needs: [build-and-push, build-lambda]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Lambda package
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-authorizer-package
+          path: infrastructure/lambda/jwt-authorizer
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+
+      - name: Terraform Init
+        working-directory: infrastructure/terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: infrastructure/terraform
+        run: terraform plan -var-file=environments/prod/terraform.tfvars -out=tfplan
+        env:
+          TF_VAR_user_service_url: ${{ secrets.USER_SERVICE_URL }}
+          TF_VAR_jwks_url: ${{ secrets.JWKS_URL }}
+          TF_VAR_vpc_id: ${{ secrets.VPC_ID }}
+          TF_VAR_private_subnet_ids: ${{ secrets.PRIVATE_SUBNET_IDS }}
+          TF_VAR_ecs_security_group_id: ${{ secrets.ECS_SECURITY_GROUP_ID }}
+
+      - name: Terraform Apply
+        working-directory: infrastructure/terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Output API Gateway URL
+        working-directory: infrastructure/terraform
+        run: terraform output api_gateway_url

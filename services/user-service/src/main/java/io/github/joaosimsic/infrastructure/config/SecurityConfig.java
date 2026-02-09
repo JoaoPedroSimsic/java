@@ -1,14 +1,12 @@
 package io.github.joaosimsic.infrastructure.config;
 
-import io.github.joaosimsic.infrastructure.adapters.input.web.filters.JwtFilter;
+import io.github.joaosimsic.infrastructure.adapters.input.web.filters.GatewayAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -17,25 +15,20 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
   @Bean
-  PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
-
-  @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtFilter)
+  SecurityFilterChain securityFilterChain(HttpSecurity http, GatewayAuthFilter gatewayAuthFilter)
       throws Exception {
     return http.csrf(csrf -> csrf.disable())
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
-                        "/api/auth/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
+                        "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/actuator/health")
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/users")
+                    .requestMatchers(HttpMethod.POST, "/api/users/sync")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
-        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterBefore(gatewayAuthFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
 }
