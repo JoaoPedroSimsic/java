@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class GatewayProperties {
   private JwtConfig jwt = new JwtConfig();
   private RateLimitConfig rateLimit = new RateLimitConfig();
+  private String secret = "some-randon-secret"
 
   @Data
   public static class JwtConfig {
