@@ -1,35 +1,29 @@
 package io.github.joaosimsic.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-@Data
+@Validated
 @ConfigurationProperties(prefix = "gateway")
-public class GatewayProperties {
-  private JwtConfig jwt = new JwtConfig();
-  private RateLimitConfig rateLimit = new RateLimitConfig();
-  private String secret = "some-randon-secret"
+public record GatewayProperties(
+    @Valid @NotNull JwtConfig jwt,
+    @Valid @NotNull RateLimitConfig rateLimit,
+    @NotBlank String secret) {
+  public record JwtConfig(
+      @NotBlank String jwksUrl, @Min(1) long cacheTtlSeconds, @NotBlank String expectedIssuer) {}
 
-  @Data
-  public static class JwtConfig {
-    private String jwksUrl = "http://user-service:8081/.well-known/jwks.json";
-    private long cacheTtlSeconds = 900;
-    private String expectedIssuer = "hermes-user-service";
+  public record RateLimitConfig(
+      @Valid @NotBlank RateDetails authenticated, @Valid @NotNull RateDetails unauthenticated) {
+
+    public RateLimitConfig {
+      if (authenticated == null) authenticated = new RateDetails(100, 150);
+      if (unauthenticated == null) unauthenticated = new RateDetails(5, 10);
+    }
   }
 
-  @Data
-  public static class RateLimitConfig {
-    private RateDetails authenticated = new RateDetails(100, 150);
-    private RateDetails unauthenticated = new RateDetails(5, 10);
-  }
-
-  @Data
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class RateDetails {
-    private int replenishRate;
-    private int burstCapacity;
-  }
+  public record RateDetails(@Min(1) int replenishRate, @Min(1) int burstCapacity) {}
 }
