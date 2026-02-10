@@ -1,0 +1,104 @@
+server:
+  port: ${GATEWAY_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: ${USER_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/users/**,/api/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                '[redis-rate-limiter.replenishRate]': ${RATE_LIMIT_AUTHENTICATED:100}
+                '[redis-rate-limiter.burstCapacity]': ${RATE_LIMIT_AUTHENTICATED_BURST:150}
+                '[redis-rate-limiter.requestedTokens]': 1
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: userServiceCircuitBreaker
+                fallbackUri: forward:/fallback/user-service
+
+        - id: jwks
+          uri: ${USER_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/.well-known/jwks.json
+
+        - id: user-service-docs
+          uri: ${USER_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/swagger-ui/**,/v3/api-docs/**
+
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - AddResponseHeader=X-Gateway-Version, 1.0.0
+
+gateway:
+  jwt:
+    jwks-url: ${JWKS_URL:http://user-service:8081/.well-known/jwks.json}
+    cache-ttl-seconds: ${JWKS_CACHE_TTL:900}
+    expected-issuer: ${JWT_ISSUER:hermes-user-service}
+
+  rate-limit:
+    authenticated:
+      replenish-rate: ${RATE_LIMIT_AUTHENTICATED:100}
+      burst-capacity: ${RATE_LIMIT_AUTHENTICATED_BURST:150}
+    unauthenticated:
+      replenish-rate: ${RATE_LIMIT_UNAUTHENTICATED:5}
+      burst-capacity: ${RATE_LIMIT_UNAUTHENTICATED_BURST:10}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userServiceCircuitBreaker:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30000
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+  timelimiter:
+    instances:
+      userServiceCircuitBreaker:
+        timeoutDuration: 10s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      access: unrestricted
+
+logging:
+  level:
+    '[io.github.joaosimsic.gateway]': DEBUG
+    '[org.springframework.cloud.gateway]': DEBUG
