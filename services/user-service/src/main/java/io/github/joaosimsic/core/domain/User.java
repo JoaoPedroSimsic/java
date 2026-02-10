@@ -1,6 +1,5 @@
 package io.github.joaosimsic.core.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,9 +15,7 @@ public class User {
   private String name;
   private String email;
 
-  @JsonIgnore private String password;
-
-  public void updateFields(String newName, String newEmail, String newPassword) {
+  public void updateFields(String newName, String newEmail) {
     if (newName != null && !newName.isBlank()) {
       this.name = newName;
     }
@@ -26,9 +23,9 @@ public class User {
     if (newEmail != null && !newEmail.isBlank()) {
       this.email = newEmail;
     }
+  }
 
-    if (newPassword != null && !newPassword.isBlank()) {
-      this.password = newPassword;
-    }
+  public boolean isRegistrationIncomplete() {
+    return this.name == null || this.name.trim().length() < 3;
   }
 }
