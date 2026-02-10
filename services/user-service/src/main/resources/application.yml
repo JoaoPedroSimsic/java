@@ -6,7 +6,7 @@ app:
     private-key: ${JWT_PRIVATE_KEY}
     public-key: ${JWT_PUBLIC_KEY}
     key-id: ${JWT_KEY_ID:hermes-key-1}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    expiration-ms: ${JWT_EXPIRATION_MS}
   outbox:
     poll-interval: 5000
     batch-size: 20
@@ -64,7 +64,7 @@ spring:
 
   cache:
     type: redis
-    cache-names: users,userByEmail,userById
+    cache-names: users,userByEmail,userById,userByExternalId
     redis:
       time-to-live: 1800000
       cache-null-values: false
