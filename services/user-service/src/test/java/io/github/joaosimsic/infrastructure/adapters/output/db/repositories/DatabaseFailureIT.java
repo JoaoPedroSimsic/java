@@ -44,8 +44,7 @@ class DatabaseFailureIT extends BaseIntegrationTest {
               if (cache != null) cache.clear();
             });
 
-    testUser =
-        User.builder().name("Test User").email("test@example.com").password("password").build();
+    testUser = User.builder().name("Test User").email("test@example.com").build();
 
     testEntity = new UserEntity();
     testEntity.setId(1L);
