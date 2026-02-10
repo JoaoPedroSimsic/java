@@ -4,6 +4,7 @@ app:
     public-key: "test-public-key"
     key-id: test-key
     expiration-ms: 3600000
+    secret: "assssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
 
 spring:
   autoconfigure:
