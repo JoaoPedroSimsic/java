@@ -1,26 +1,20 @@
 {
+  "groups": [
+    {
+      "name": "app",
+      "description": "Application-specific configuration properties"
+    },
+    {
+      "name": "app.jwt",
+      "description": "JWT configuration properties"
+    }
+  ],
   "properties": [
     {
-      "name": "app.jwt.private-key",
+      "name": "app.jwt.secret",
       "type": "java.lang.String",
-      "description": "JWT private key for signing tokens"
-    },
-    {
-      "name": "app.jwt.public-key",
-      "type": "java.lang.String",
-      "description": "JWT public key for verifying tokens"
-    },
-    {
-      "name": "app.jwt.key-id",
-      "type": "java.lang.String",
-      "description": "JWT key identifier",
-      "defaultValue": "hermes-key-1"
-    },
-    {
-      "name": "app.jwt.expiration-ms",
-      "type": "java.lang.Long",
-      "description": "JWT token expiration time in milliseconds",
-      "defaultValue": 86400000
+      "description": "JWT secret",
+      "defaultValue": "asdasdsadddggggggggggasfasfsfasafasfafasffafsafsff"
     },
     {
       "name": "app.outbox.poll-interval",
@@ -39,6 +33,30 @@
       "type": "java.lang.Integer",
       "description": "Maximum number of attempts before marking an entry as failed",
       "defaultValue": 5
+    },
+    {
+      "name": "app.database.retry.max-attempts",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of attempts before backoff",
+      "defaultValue": 5
+    },
+    {
+      "name": "app.database.retry.initial-backoff-ms",
+      "type": "java.lang.Long",
+      "description": "Initial backoff time",
+      "defaultValue": 2000
+    },
+    {
+      "name": "app.database.retry.multiplier",
+      "type": "java.lang.Integer",
+      "description": "multiplier of each failed retry",
+      "defaultValue": 2
+    },
+    {
+      "name": "app.database.retry.max-backoff-ms",
+      "type": "java.lang.Long",
+      "description": "Maximum backoff time",
+      "defaultValue": 10000
     }
   ]
 }

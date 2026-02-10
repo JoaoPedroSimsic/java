@@ -8,12 +8,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.cache.CacheManager;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -24,13 +26,19 @@ public abstract class BaseIntegrationTest {
 
   @MockitoBean protected MessagePublisherPort messagePublisherPort;
 
-  static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
+  static final PostgreSQLContainer<?> postgres =
+      new PostgreSQLContainer<>("postgres:15-alpine").withReuse(true);
 
-  static final RedisContainer redis = new RedisContainer(DockerImageName.parse("redis:7-alpine"));
+  static final RedisContainer redis =
+      new RedisContainer(DockerImageName.parse("redis:7-alpine")).withReuse(true);
+
+  static final RabbitMQContainer rabbitmq =
+      new RabbitMQContainer(DockerImageName.parse("rabbitmq:3-management-alpine")).withReuse(true);
 
   static {
     postgres.start();
     redis.start();
+    rabbitmq.start();
   }
 
   @DynamicPropertySource
@@ -45,16 +53,38 @@ public abstract class BaseIntegrationTest {
 
     registry.add("spring.data.redis.host", redis::getHost);
     registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379).toString());
+
+    registry.add("spring.rabbitmq.host", rabbitmq::getHost);
+    registry.add("spring.rabbitmq.port", rabbitmq::getAmqpPort);
   }
+
+  @Autowired
+  private JdbcTemplate jdbcTemplate;
+
+  @Autowired
+  private CacheManager cacheManager;
 
   @BeforeEach
   protected void setupBase() {
     RestAssured.baseURI = "http://localhost";
     RestAssured.port = port;
+    // Clean up before each test to ensure a fresh state (important for reused containers)
+    clearAllCaches();
+    jdbcTemplate.execute("TRUNCATE TABLE users CASCADE");
   }
 
   @AfterEach
-  void cleanUp(@Autowired JdbcTemplate jdbcTemplate) {
+  void cleanUp() {
     jdbcTemplate.execute("TRUNCATE TABLE users CASCADE");
+    clearAllCaches();
+  }
+
+  private void clearAllCaches() {
+    cacheManager.getCacheNames().forEach(name -> {
+      var cache = cacheManager.getCache(name);
+      if (cache != null) {
+        cache.clear();
+      }
+    });
   }
 }

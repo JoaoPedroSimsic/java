@@ -1,4 +1,4 @@
-package io.github.joaosimsic.infrastructure.config;
+package io.github.joaosimsic.infrastructure.config.properties;
 
 import jakarta.validation.constraints.Min;
 import lombok.Data;
@@ -9,14 +9,14 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @Configuration
 @Validated
-@ConfigurationProperties(prefix = "spring.outbox")
+@ConfigurationProperties(prefix = "app.outbox")
 public class OutboxProperties {
   @Min(1)
-  private int batchSize = 20;
+  private int batchSize;
 
   @Min(1)
-  private int maxAttempts = 5;
+  private int maxAttempts;
 
   @Min(100)
-  private long poolInterval = 5000;
+  private long pollInterval;
 }

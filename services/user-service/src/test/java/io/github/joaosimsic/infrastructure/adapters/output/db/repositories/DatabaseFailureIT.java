@@ -21,8 +21,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DatabaseFailureIT extends BaseIntegrationTest {
 
   @Autowired private UserPort userRepository;
@@ -44,8 +46,7 @@ class DatabaseFailureIT extends BaseIntegrationTest {
               if (cache != null) cache.clear();
             });
 
-    testUser =
-        User.builder().name("Test User").email("test@example.com").password("password").build();
+    testUser = User.builder().name("Test User").email("test@example.com").build();
 
     testEntity = new UserEntity();
     testEntity.setId(1L);

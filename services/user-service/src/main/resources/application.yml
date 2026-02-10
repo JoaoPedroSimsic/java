@@ -3,14 +3,17 @@ server:
 
 app:
   jwt:
-    private-key: ${JWT_PRIVATE_KEY}
-    public-key: ${JWT_PUBLIC_KEY}
-    key-id: ${JWT_KEY_ID:hermes-key-1}
-    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    secret: ${JWT_SECRET}
   outbox:
     poll-interval: 5000
     batch-size: 20
     max-attempts: 5
+  database:
+    retry:
+      max-attempts: 5
+      initial-backoff-ms: 2000
+      multiplier: 2
+      max-delay-ms: 10000
 
 spring:
   datasource:
@@ -58,7 +61,7 @@ spring:
 
   cache:
     type: redis
-    cache-names: users,userByEmail,userById
+    cache-names: users,userByEmail,userById,userByExternalId
     redis:
       time-to-live: 1800000
       cache-null-values: false

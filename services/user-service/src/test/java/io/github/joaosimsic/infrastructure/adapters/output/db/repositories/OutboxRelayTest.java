@@ -19,7 +19,7 @@ import io.github.joaosimsic.core.events.UserDeletedEvent;
 import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
-import io.github.joaosimsic.infrastructure.config.OutboxProperties;
+import io.github.joaosimsic.infrastructure.config.properties.OutboxProperties;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

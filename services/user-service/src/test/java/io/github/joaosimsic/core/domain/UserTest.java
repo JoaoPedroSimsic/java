@@ -18,7 +18,6 @@ class UserTest {
         .id(1L)
         .name("John Doe")
         .email("john@example.com")
-        .password("password123")
         .build();
   }
 
@@ -29,91 +28,64 @@ class UserTest {
     @Test
     @DisplayName("should update all fields when all parameters are valid")
     void shouldUpdateAllFields() {
-      user.updateFields("Jane Doe", "jane@example.com", "newpassword");
+      user.updateFields("Jane Doe", "jane@example.com");
 
       assertEquals("Jane Doe", user.getName());
       assertEquals("jane@example.com", user.getEmail());
-      assertEquals("newpassword", user.getPassword());
     }
 
     @Test
     @DisplayName("should update only name when other parameters are null")
     void shouldUpdateOnlyName() {
-      user.updateFields("Jane Doe", null, null);
+      user.updateFields("Jane Doe", null);
 
       assertEquals("Jane Doe", user.getName());
       assertEquals("john@example.com", user.getEmail());
-      assertEquals("password123", user.getPassword());
     }
 
     @Test
     @DisplayName("should update only email when other parameters are null")
     void shouldUpdateOnlyEmail() {
-      user.updateFields(null, "jane@example.com", null);
+      user.updateFields(null, "jane@example.com");
 
       assertEquals("John Doe", user.getName());
       assertEquals("jane@example.com", user.getEmail());
-      assertEquals("password123", user.getPassword());
-    }
-
-    @Test
-    @DisplayName("should update only password when other parameters are null")
-    void shouldUpdateOnlyPassword() {
-      user.updateFields(null, null, "newpassword");
-
-      assertEquals("John Doe", user.getName());
-      assertEquals("john@example.com", user.getEmail());
-      assertEquals("newpassword", user.getPassword());
     }
 
     @Test
     @DisplayName("should not update fields when all parameters are null")
     void shouldNotUpdateWhenAllNull() {
-      user.updateFields(null, null, null);
+      user.updateFields(null, null);
 
       assertEquals("John Doe", user.getName());
       assertEquals("john@example.com", user.getEmail());
-      assertEquals("password123", user.getPassword());
     }
 
     @Test
     @DisplayName("should not update name when value is blank")
     void shouldNotUpdateNameWhenBlank() {
-      user.updateFields("   ", "jane@example.com", "newpassword");
+      user.updateFields("   ", "jane@example.com");
 
       assertEquals("John Doe", user.getName());
       assertEquals("jane@example.com", user.getEmail());
-      assertEquals("newpassword", user.getPassword());
     }
 
     @Test
     @DisplayName("should not update email when value is blank")
     void shouldNotUpdateEmailWhenBlank() {
-      user.updateFields("Jane Doe", "", "newpassword");
+      user.updateFields("Jane Doe", "");
 
       assertEquals("Jane Doe", user.getName());
       assertEquals("john@example.com", user.getEmail());
-      assertEquals("newpassword", user.getPassword());
-    }
-
-    @Test
-    @DisplayName("should not update password when value is blank")
-    void shouldNotUpdatePasswordWhenBlank() {
-      user.updateFields("Jane Doe", "jane@example.com", "  ");
-
-      assertEquals("Jane Doe", user.getName());
-      assertEquals("jane@example.com", user.getEmail());
-      assertEquals("password123", user.getPassword());
     }
 
     @Test
     @DisplayName("should not update any field when all values are blank")
     void shouldNotUpdateWhenAllBlank() {
-      user.updateFields("", "   ", "");
+      user.updateFields("", "   ");
 
       assertEquals("John Doe", user.getName());
       assertEquals("john@example.com", user.getEmail());
-      assertEquals("password123", user.getPassword());
     }
   }
 
@@ -128,13 +100,11 @@ class UserTest {
           .id(1L)
           .name("John Doe")
           .email("john@example.com")
-          .password("password123")
           .build();
 
       assertEquals(1L, builtUser.getId());
       assertEquals("John Doe", builtUser.getName());
       assertEquals("john@example.com", builtUser.getEmail());
-      assertEquals("password123", builtUser.getPassword());
     }
 
     @Test
@@ -143,13 +113,11 @@ class UserTest {
       User builtUser = User.builder()
           .name("John Doe")
           .email("john@example.com")
-          .password("password123")
           .build();
 
       assertNull(builtUser.getId());
       assertEquals("John Doe", builtUser.getName());
       assertEquals("john@example.com", builtUser.getEmail());
-      assertEquals("password123", builtUser.getPassword());
     }
   }
 }

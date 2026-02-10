@@ -3,6 +3,7 @@ package io.github.joaosimsic.infrastructure.adapters.input.web.controllers;
 import io.github.joaosimsic.core.domain.User;
 import io.github.joaosimsic.core.ports.input.UserUseCase;
 import io.github.joaosimsic.infrastructure.adapters.input.web.requests.UserRequest;
+import io.github.joaosimsic.infrastructure.adapters.input.web.requests.UserSyncRequest;
 import io.github.joaosimsic.infrastructure.adapters.input.web.responses.UserResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -25,12 +26,7 @@ public class UserController {
 
   @PostMapping
   public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRequest request) {
-    User domainUser =
-        User.builder()
-            .name(request.name())
-            .email(request.email())
-            .password(request.password())
-            .build();
+    User domainUser = User.builder().name(request.name()).email(request.email()).build();
 
     User savedUser = userUseCase.createUser(domainUser);
 
@@ -64,13 +60,7 @@ public class UserController {
   public ResponseEntity<UserResponse> update(
       @PathVariable @Min(value = 1, message = "ID must be at least 1") Long id,
       @Valid @RequestBody UserRequest request) {
-    User domainUser =
-        User.builder()
-            .id(id)
-            .name(request.name())
-            .email(request.email())
-            .password(request.password())
-            .build();
+    User domainUser = User.builder().id(id).name(request.name()).email(request.email()).build();
     User updatedUser = userUseCase.updateUser(domainUser);
 
     return ResponseEntity.ok(UserResponse.fromDomain(updatedUser));
@@ -82,5 +72,12 @@ public class UserController {
     userUseCase.deleteUser(id);
 
     return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/sync")
+  public ResponseEntity<UserResponse> sync(@Valid @RequestBody UserSyncRequest request) {
+    User user = userUseCase.syncUser(request.externalId(), request.email(), request.name());
+
+    return ResponseEntity.ok(UserResponse.fromDomain(user));
   }
 }

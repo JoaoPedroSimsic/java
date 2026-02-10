@@ -12,6 +12,10 @@ public interface UserUseCase {
 
   User findByEmail(String email);
 
+  User findByExternalId(String externalId);
+
+  User syncUser(String externalId, String email, String name);
+
   User updateUser(User user);
 
   void deleteUser(Long id);

@@ -1,10 +1,12 @@
 app:
   jwt:
-    private-key: "test-private-key"
-    public-key: "test-public-key"
-    key-id: test-key
-    expiration-ms: 3600000
-    secret: "assssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+    secret: "some-test-secret"
+  database:
+    retry:
+      max-attempts: 3
+      initial-backoff-ms: 100
+      multiplier: 2
+      max-delay-ms: 1000
 
 spring:
   autoconfigure:

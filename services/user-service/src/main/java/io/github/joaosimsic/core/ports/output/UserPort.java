@@ -12,5 +12,7 @@ public interface UserPort {
 
   User findByEmail(String email);
 
+  User findByExternalId(String externalId);
+
   void delete(Long id);
 }

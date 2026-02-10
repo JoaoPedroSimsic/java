@@ -9,6 +9,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -22,22 +23,22 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class JpaUserRepository implements UserPort {
   private final JpaUserRepo repository;
   private final CacheManager cacheManager;
 
-  public JpaUserRepository(JpaUserRepo repository, CacheManager cacheManager) {
-    this.repository = repository;
-    this.cacheManager = cacheManager;
-  }
-
   @Override
   @CircuitBreaker(name = "userRepository")
   @Retryable(
       retryFor = {DataAccessException.class},
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+      maxAttemptsExpression = "${app.database.retry.max-attempts}",
+      backoff =
+          @Backoff(
+              delayExpression = "${app.database.retry.initial-backoff-ms}",
+              multiplierExpression = "${app.database.retry.multiplier}",
+              maxDelayExpression = "${app.database.retry.max-delay-ms}"))
   @CachePut(value = "userById", key = "#result.id", condition = "#result != null")
   @CacheEvict(
       value = {"users", "userByEmail"},
@@ -46,13 +47,18 @@ public class JpaUserRepository implements UserPort {
     UserEntity entity = new UserEntity();
 
     entity.setId(user.getId());
+    entity.setExternalId(user.getExternalId());
     entity.setName(user.getName());
     entity.setEmail(user.getEmail());
-    entity.setPassword(user.getPassword());
 
     UserEntity saved = repository.save(entity);
 
-    return User.builder().id(saved.getId()).name(saved.getName()).email(saved.getEmail()).build();
+    return User.builder()
+        .id(saved.getId())
+        .externalId(saved.getExternalId())
+        .name(saved.getName())
+        .email(saved.getEmail())
+        .build();
   }
 
   @Recover
@@ -67,12 +73,23 @@ public class JpaUserRepository implements UserPort {
   @CircuitBreaker(name = "userRepository")
   @Retryable(
       retryFor = {DataAccessException.class},
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+      maxAttemptsExpression = "${app.database.retry.max-attempts}",
+      backoff =
+          @Backoff(
+              delayExpression = "${app.database.retry.initial-backoff-ms}",
+              multiplierExpression = "${app.database.retry.multiplier}",
+              maxDelayExpression = "${app.database.retry.max-delay-ms}"))
   @Cacheable(value = "users")
   public List<User> findAll() {
     return repository.findAll().stream()
-        .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
+        .map(
+            e ->
+                User.builder()
+                    .id(e.getId())
+                    .externalId(e.getExternalId())
+                    .name(e.getName())
+                    .email(e.getEmail())
+                    .build())
         .collect(Collectors.toList());
   }
 
@@ -100,13 +117,24 @@ public class JpaUserRepository implements UserPort {
   @CircuitBreaker(name = "userRepository")
   @Retryable(
       retryFor = {DataAccessException.class},
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+      maxAttemptsExpression = "${app.database.retry.max-attempts}",
+      backoff =
+          @Backoff(
+              delayExpression = "${app.database.retry.initial-backoff-ms}",
+              multiplierExpression = "${app.database.retry.multiplier}",
+              maxDelayExpression = "${app.database.retry.max-delay-ms}"))
   @Cacheable(value = "userById", key = "#id")
   public User find(Long id) {
     return repository
         .findById(id)
-        .map(e -> User.builder().id(e.getId()).name(e.getName()).email(e.getEmail()).build())
+        .map(
+            e ->
+                User.builder()
+                    .id(e.getId())
+                    .externalId(e.getExternalId())
+                    .name(e.getName())
+                    .email(e.getEmail())
+                    .build())
         .orElse(null);
   }
 
@@ -120,8 +148,12 @@ public class JpaUserRepository implements UserPort {
   @CircuitBreaker(name = "userRepository")
   @Retryable(
       retryFor = {DataAccessException.class},
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+      maxAttemptsExpression = "${app.database.retry.max-attempts}",
+      backoff =
+          @Backoff(
+              delayExpression = "${app.database.retry.initial-backoff-ms}",
+              multiplierExpression = "${app.database.retry.multiplier}",
+              maxDelayExpression = "${app.database.retry.max-delay-ms}"))
   @Cacheable(value = "userByEmail", key = "#email", unless = "#result == null")
   public User findByEmail(String email) {
     return repository
@@ -130,9 +162,9 @@ public class JpaUserRepository implements UserPort {
             e ->
                 User.builder()
                     .id(e.getId())
+                    .externalId(e.getExternalId())
                     .name(e.getName())
                     .email(e.getEmail())
-                    .password(e.getPassword())
                     .build())
         .orElse(null);
   }
@@ -147,10 +179,48 @@ public class JpaUserRepository implements UserPort {
   @CircuitBreaker(name = "userRepository")
   @Retryable(
       retryFor = {DataAccessException.class},
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000))
+      maxAttemptsExpression = "${app.database.retry.max-attempts}",
+      backoff =
+          @Backoff(
+              delayExpression = "${app.database.retry.initial-backoff-ms}",
+              multiplierExpression = "${app.database.retry.multiplier}",
+              maxDelayExpression = "${app.database.retry.max-delay-ms}"))
   @CacheEvict(
       value = {"users", "userById", "userByEmail"},
+      allEntries = true)
+  public User findByExternalId(String externalId) {
+    return repository
+        .findByExternalId(externalId)
+        .map(
+            e ->
+                User.builder()
+                    .id(e.getId())
+                    .externalId(e.getExternalId())
+                    .name(e.getName())
+                    .email(e.getEmail())
+                    .build())
+        .orElse(null);
+  }
+
+  @Recover
+  public User recoverFindByExternalId(DataAccessException e, String externalId) {
+    log.warn("DB failure. Falling back to cache for externalId: {}", externalId);
+
+    return getFromCache("userByExternalId", externalId, User.class);
+  }
+
+  @Override
+  @CircuitBreaker(name = "userRepository")
+  @Retryable(
+      retryFor = {DataAccessException.class},
+      maxAttemptsExpression = "${app.database.retry.max-attempts}",
+      backoff =
+          @Backoff(
+              delayExpression = "${app.database.retry.initial-backoff-ms}",
+              multiplierExpression = "${app.database.retry.multiplier}",
+              maxDelayExpression = "${app.database.retry.max-delay-ms}"))
+  @CacheEvict(
+      value = {"users", "userById", "userByEmail", "userByExternalId"},
       allEntries = true)
   public void delete(Long id) {
     repository.deleteById(id);

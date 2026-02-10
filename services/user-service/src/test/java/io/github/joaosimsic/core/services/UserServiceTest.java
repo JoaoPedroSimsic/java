@@ -35,15 +35,13 @@ class UserServiceTest {
 
   @Mock private UserPort userRepositoryPort;
 
-  @Mock private PasswordEncoder passwordEncoder;
-
   @Mock private OutboxPort outboxPort;
 
   private UserService userService;
 
   @BeforeEach
   void setUp() {
-    userService = new UserService(userRepositoryPort, passwordEncoder, outboxPort);
+    userService = new UserService(userRepositoryPort, outboxPort);
   }
 
   @Nested
@@ -54,18 +52,16 @@ class UserServiceTest {
     @DisplayName("should create user when email does not exist")
     void shouldCreateUser() {
       User user =
-          User.builder().name("John Doe").email("john@example.com").password("password123").build();
+          User.builder().name("John Doe").email("john@example.com").build();
 
       User savedUser =
           User.builder()
               .id(1L)
               .name("John Doe")
               .email("john@example.com")
-              .password("hashedPassword")
               .build();
 
       when(userRepositoryPort.findByEmail("john@example.com")).thenReturn(null);
-      when(passwordEncoder.encode("password123")).thenReturn("hashedPassword");
       when(userRepositoryPort.save(any(User.class))).thenReturn(savedUser);
 
       User result = userService.createUser(user);
@@ -76,25 +72,22 @@ class UserServiceTest {
 
       ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
       verify(userRepositoryPort).save(userCaptor.capture());
-      assertEquals("hashedPassword", userCaptor.getValue().getPassword());
     }
 
     @Test
     @DisplayName("should save UserCreatedEvent to outbox when user is created")
     void shouldSaveUserCreatedEventToOutbox() {
       User user =
-          User.builder().name("John Doe").email("john@example.com").password("password123").build();
+          User.builder().name("John Doe").email("john@example.com").build();
 
       User savedUser =
           User.builder()
               .id(1L)
               .name("John Doe")
               .email("john@example.com")
-              .password("hashedPassword")
               .build();
 
       when(userRepositoryPort.findByEmail("john@example.com")).thenReturn(null);
-      when(passwordEncoder.encode("password123")).thenReturn("hashedPassword");
       when(userRepositoryPort.save(any(User.class))).thenReturn(savedUser);
 
       userService.createUser(user);
@@ -118,7 +111,7 @@ class UserServiceTest {
     @DisplayName("should not save event to outbox when email already exists")
     void shouldNotSaveEventWhenEmailExists() {
       User user =
-          User.builder().name("John Doe").email("john@example.com").password("password123").build();
+          User.builder().name("John Doe").email("john@example.com").build();
 
       User existingUser = User.builder().id(1L).email("john@example.com").build();
 
@@ -130,7 +123,6 @@ class UserServiceTest {
       assertTrue(exception.getMessage().contains("already exists"));
 
       verify(userRepositoryPort, never()).save(any(User.class));
-      verify(passwordEncoder, never()).encode(anyString());
       verify(outboxPort, never()).save(any(DomainEvent.class));
     }
   }
@@ -236,7 +228,6 @@ class UserServiceTest {
               .id(1L)
               .name("John Doe")
               .email("john@example.com")
-              .password("oldHashedPassword")
               .build();
 
       User updateRequest =
@@ -244,7 +235,6 @@ class UserServiceTest {
               .id(1L)
               .name("John Updated")
               .email("john.updated@example.com")
-              .password("newPassword")
               .build();
 
       User savedUser =
@@ -252,19 +242,16 @@ class UserServiceTest {
               .id(1L)
               .name("John Updated")
               .email("john.updated@example.com")
-              .password("newHashedPassword")
               .build();
 
       when(userRepositoryPort.find(1L)).thenReturn(existingUser);
       when(userRepositoryPort.findByEmail("john.updated@example.com")).thenReturn(null);
-      when(passwordEncoder.encode("newPassword")).thenReturn("newHashedPassword");
       when(userRepositoryPort.save(any(User.class))).thenReturn(savedUser);
 
       User result = userService.updateUser(updateRequest);
 
       assertEquals("John Updated", result.getName());
       assertEquals("john.updated@example.com", result.getEmail());
-      verify(passwordEncoder).encode("newPassword");
     }
 
     @Test
@@ -275,7 +262,6 @@ class UserServiceTest {
               .id(1L)
               .name("John Doe")
               .email("john@example.com")
-              .password("oldHashedPassword")
               .build();
 
       User updateRequest =
@@ -283,7 +269,6 @@ class UserServiceTest {
               .id(1L)
               .name("John Updated")
               .email("john.updated@example.com")
-              .password("newPassword")
               .build();
 
       User savedUser =
@@ -291,12 +276,10 @@ class UserServiceTest {
               .id(1L)
               .name("John Updated")
               .email("john.updated@example.com")
-              .password("newHashedPassword")
               .build();
 
       when(userRepositoryPort.find(1L)).thenReturn(existingUser);
       when(userRepositoryPort.findByEmail("john.updated@example.com")).thenReturn(null);
-      when(passwordEncoder.encode("newPassword")).thenReturn("newHashedPassword");
       when(userRepositoryPort.save(any(User.class))).thenReturn(savedUser);
 
       userService.updateUser(updateRequest);
@@ -324,7 +307,6 @@ class UserServiceTest {
               .id(1L)
               .name("John Doe")
               .email("john@example.com")
-              .password("oldHashedPassword")
               .build();
 
       User updateRequest =
@@ -332,69 +314,16 @@ class UserServiceTest {
               .id(1L)
               .name("John Updated")
               .email("john@example.com")
-              .password("newPassword")
               .build();
 
       when(userRepositoryPort.find(1L)).thenReturn(existingUser);
       when(userRepositoryPort.findByEmail("john@example.com")).thenReturn(existingUser);
-      when(passwordEncoder.encode("newPassword")).thenReturn("newHashedPassword");
       when(userRepositoryPort.save(any(User.class))).thenReturn(existingUser);
 
       User result = userService.updateUser(updateRequest);
 
       assertNotNull(result);
       verify(userRepositoryPort).save(any(User.class));
-    }
-
-    @Test
-    @DisplayName("should update user without changing password when password is null")
-    void shouldUpdateUserWithoutChangingPasswordWhenNull() {
-      User existingUser =
-          User.builder()
-              .id(1L)
-              .name("John Doe")
-              .email("john@example.com")
-              .password("oldHashedPassword")
-              .build();
-
-      User updateRequest =
-          User.builder()
-              .id(1L)
-              .name("John Updated")
-              .email("john@example.com")
-              .password(null)
-              .build();
-
-      when(userRepositoryPort.find(1L)).thenReturn(existingUser);
-      when(userRepositoryPort.findByEmail("john@example.com")).thenReturn(existingUser);
-      when(userRepositoryPort.save(any(User.class))).thenReturn(existingUser);
-
-      userService.updateUser(updateRequest);
-
-      verify(passwordEncoder, never()).encode(anyString());
-    }
-
-    @Test
-    @DisplayName("should update user without changing password when password is empty")
-    void shouldUpdateUserWithoutChangingPasswordWhenEmpty() {
-      User existingUser =
-          User.builder()
-              .id(1L)
-              .name("John Doe")
-              .email("john@example.com")
-              .password("oldHashedPassword")
-              .build();
-
-      User updateRequest =
-          User.builder().id(1L).name("John Updated").email("john@example.com").password("").build();
-
-      when(userRepositoryPort.find(1L)).thenReturn(existingUser);
-      when(userRepositoryPort.findByEmail("john@example.com")).thenReturn(existingUser);
-      when(userRepositoryPort.save(any(User.class))).thenReturn(existingUser);
-
-      userService.updateUser(updateRequest);
-
-      verify(passwordEncoder, never()).encode(anyString());
     }
 
     @Test

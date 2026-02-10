@@ -5,22 +5,43 @@ import static org.hamcrest.Matchers.*;
 
 import io.github.joaosimsic.infrastructure.BaseIntegrationTest;
 import io.github.joaosimsic.infrastructure.adapters.input.web.requests.UserRequest;
+import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 
 class UserControllerIT extends BaseIntegrationTest {
 
+  @Value("${app.jwt.secret}")
+  private String jwtSecret;
+
+  private RequestSpecification spec;
+
+  @BeforeEach
+  void setup() {
+    this.spec =
+        new RequestSpecBuilder()
+            .addHeader("X-Gateway-Secret", jwtSecret)
+            .addHeader("X-User-Id", "test-user-id")
+            .addHeader("X-User-Email", "test@example.com")
+            .setContentType(ContentType.JSON)
+            .build();
+  }
+
   @Test
   @DisplayName("Should create an user and persist it")
   void shouldCreateUserSuccessfully() {
-    UserRequest request = new UserRequest("Test User", "test@example.com", "password");
+    String uniqueEmail = "test-" + System.nanoTime() + "@example.com";
+    var request = new UserRequest("Test User", uniqueEmail, "password");
 
     given()
-        .contentType(ContentType.JSON)
+        .spec(spec)
         .body(request)
         .when()
         .post("/api/users")
@@ -28,36 +49,46 @@ class UserControllerIT extends BaseIntegrationTest {
         .statusCode(HttpStatus.CREATED.value())
         .header("Location", containsString("/api/users/"))
         .body("id", notNullValue())
-        .body("name", equalTo("Test User"))
-        .body("email", equalTo("test@example.com"))
+        .body("name", is(request.name()))
+        .body("email", is(request.email()))
         .body("password", nullValue());
   }
 
   @Test
   @DisplayName("Should return 409 Conflict when email already exists")
   void shouldReturnConflictForDuplicateEmail() {
-    UserRequest request = new UserRequest("First", "email@example.com", "password");
+    String email = "duplicate-" + System.nanoTime() + "@example.com";
+    var request = new UserRequest("First", email, "password");
 
-    given().contentType(ContentType.JSON).body(request).post("/api/users");
-
+    // First request should succeed
     given()
-        .contentType(ContentType.JSON)
+        .spec(spec)
+        .body(request)
+        .when()
+        .post("/api/users")
+        .then()
+        .statusCode(HttpStatus.CREATED.value());
+
+    // Second request with same email should fail with 409
+    given()
+        .spec(spec)
         .body(request)
         .when()
         .post("/api/users")
         .then()
         .statusCode(HttpStatus.CONFLICT.value())
-        .body("error", equalTo("Data Conflict"))
+        .body("error", is("Data Conflict"))
         .body("message", containsString("already exists"));
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"short", "no-at-sign", "too-long-email-address@domain.com..."})
+  @ValueSource(strings = {"invalid-email", "test@", "@domain.com", ""})
+  @DisplayName("Should return 400 for various invalid email formats")
   void shouldReturn400WhenEmailIsInvalid(String invalidEmail) {
-    UserRequest request = new UserRequest("Valid Name", invalidEmail, "password123");
+    var request = new UserRequest("Valid Name", invalidEmail, "password123");
 
     given()
-        .contentType(ContentType.JSON)
+        .spec(spec)
         .body(request)
         .when()
         .post("/api/users")
