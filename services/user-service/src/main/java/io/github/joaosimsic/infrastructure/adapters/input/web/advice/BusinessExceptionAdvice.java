@@ -31,12 +31,6 @@ public class BusinessExceptionAdvice {
         HttpStatus.UNPROCESSABLE_ENTITY, "Business Rule Violation", ex.getMessage(), request);
   }
 
-  @ExceptionHandler(InvalidCredentialsException.class)
-  public ResponseEntity<ErrorResponse> handleInvalidCredentials(
-      InvalidCredentialsException ex, HttpServletRequest request) {
-    return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid Credentials", ex.getMessage(), request);
-  }
-
   private ResponseEntity<ErrorResponse> buildResponse(
       HttpStatus status, String error, String message, HttpServletRequest request) {
     ErrorResponse response =
