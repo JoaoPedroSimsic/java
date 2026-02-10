@@ -1,12 +1,11 @@
 package io.github.joaosimsic.infrastructure.adapters.output.db.entities;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.Instant;
 
 @Entity
 @Table(name = "users")
@@ -17,9 +16,11 @@ public class UserEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Column(name = "external_id", unique = true)
+  private String externalId;
+
   private String name;
   private String email;
-  private String password;
 
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
