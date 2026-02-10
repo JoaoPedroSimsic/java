@@ -1,3 +1,28 @@
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: 
+              - "https://hermes-app.com"
+              - "https://admin.hermes-app.com"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - Content-Type
+              - Authorization
+              - X-Requested-With
+              - Accept
+              - Origin
+            allowCredentials: true
+            maxAge: 3600
+
 gateway:
   jwt:
     jwks-url: ${AUTH0_JWKS_URL}
