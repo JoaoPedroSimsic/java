@@ -1,6 +1,12 @@
 app:
   jwt:
     secret: "some-test-secret"
+  database:
+    retry:
+      max-attempts: 3
+      initial-backoff-ms: 100
+      multiplier: 2
+      max-delay-ms: 1000
 
 spring:
   autoconfigure:

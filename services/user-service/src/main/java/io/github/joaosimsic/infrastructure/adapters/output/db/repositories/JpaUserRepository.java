@@ -9,6 +9,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -22,15 +23,11 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class JpaUserRepository implements UserPort {
   private final JpaUserRepo repository;
   private final CacheManager cacheManager;
-
-  public JpaUserRepository(JpaUserRepo repository, CacheManager cacheManager) {
-    this.repository = repository;
-    this.cacheManager = cacheManager;
-  }
 
   @Override
   @CircuitBreaker(name = "userRepository")

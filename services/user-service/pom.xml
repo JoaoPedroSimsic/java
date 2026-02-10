@@ -219,6 +219,10 @@
           <systemPropertyVariables>
             <api.version>1.44</api.version>
           </systemPropertyVariables>
+          <parallel>classes</parallel>
+          <threadCount>4</threadCount>
+          <forkCount>1C</forkCount>
+          <reuseForks>true</reuseForks>
         </configuration>
       </plugin>
       <plugin>
@@ -253,6 +257,10 @@
           <systemPropertyVariables>
             <api.version>1.44</api.version>
           </systemPropertyVariables>
+          <parallel>classes</parallel>
+          <threadCount>4</threadCount>
+          <forkCount>1C</forkCount>
+          <reuseForks>true</reuseForks>
         </configuration>
         <executions>
           <execution>

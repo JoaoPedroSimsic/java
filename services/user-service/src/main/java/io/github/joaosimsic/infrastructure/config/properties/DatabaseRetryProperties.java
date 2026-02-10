@@ -18,5 +18,8 @@ public class DatabaseRetryProperties {
   private long initialBackoffMs;
 
   @Min(1)
-  private long maxBackoffMs;
+  private double multiplier;
+
+  @Min(1)
+  private long maxDelayMs;
 }
