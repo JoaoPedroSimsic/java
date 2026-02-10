@@ -3,10 +3,7 @@ server:
 
 app:
   jwt:
-    private-key: ${JWT_PRIVATE_KEY}
-    public-key: ${JWT_PUBLIC_KEY}
-    key-id: ${JWT_KEY_ID:hermes-key-1}
-    expiration-ms: ${JWT_EXPIRATION_MS}
+    secret: ${JWT_SECRET}
   outbox:
     poll-interval: 5000
     batch-size: 20
