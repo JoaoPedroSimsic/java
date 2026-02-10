@@ -1,4 +1,10 @@
 {
+  "groups": [
+    {
+      "name": "app",
+      "description": "Application-specific configuration properties"
+    }
+  ],
   "properties": [
     {
       "name": "app.jwt.private-key",
@@ -39,6 +45,30 @@
       "type": "java.lang.Integer",
       "description": "Maximum number of attempts before marking an entry as failed",
       "defaultValue": 5
+    },
+    {
+      "name": "app.database.retry.max-attempts",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of attempts before backoff",
+      "defaultValue": 5
+    },
+    {
+      "name": "app.database.retry.initial-backoff-ms",
+      "type": "java.lang.Long",
+      "description": "Initial backoff time",
+      "defaultValue": 2000
+    },
+    {
+      "name": "app.database.retry.max-backoff-ms",
+      "type": "java.lang.Long",
+      "description": "Maximum backoff time",
+      "defaultValue": 10000
+    },
+    {
+      "name": "app.database.retry.multiplier",
+      "type": "java.lang.Integer",
+      "description": "multiplier of each failed retry",
+      "defaultValue": 2
     }
   ]
 }
