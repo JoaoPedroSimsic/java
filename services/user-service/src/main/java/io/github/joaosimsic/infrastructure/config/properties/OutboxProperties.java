@@ -18,5 +18,5 @@ public class OutboxProperties {
   private int maxAttempts;
 
   @Min(100)
-  private long poolInterval;
+  private long pollInterval;
 }
