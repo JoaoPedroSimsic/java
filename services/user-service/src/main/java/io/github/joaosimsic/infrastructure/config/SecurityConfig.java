@@ -1,31 +1,29 @@
 package io.github.joaosimsic.infrastructure.config;
 
-import io.github.joaosimsic.infrastructure.adapters.input.web.filters.JwtFilter;
+import io.github.joaosimsic.infrastructure.adapters.input.web.filters.GatewayAuthFilter;
+import io.github.joaosimsic.infrastructure.adapters.input.web.filters.GatewayAuthenticationEntryPoint;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-  @Bean
-  PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+  private final GatewayAuthenticationEntryPoint authenticationEntryPoint;
+  private final GatewayAuthFilter gatewayAuthFilter;
 
   @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtFilter)
-      throws Exception {
-    return http.csrf(csrf -> csrf.disable())
-        .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+  SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    return http.csrf(AbstractHttpConfigurer::disable)
+        .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
@@ -35,7 +33,7 @@ public class SecurityConfig {
                     .permitAll()
                     .anyRequest()
                     .authenticated())
-        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterBefore(gatewayAuthFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
 }
