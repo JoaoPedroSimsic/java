@@ -10,19 +10,16 @@ import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.core.ports.output.UserPort;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Transactional(readOnly = true)
 public class UserService implements UserUseCase {
   private final UserPort userPort;
-  private final PasswordEncoder passwordEncoder;
   private final OutboxPort outboxPort;
 
-  public UserService(UserPort userPort, PasswordEncoder passwordEncoder, OutboxPort outboxPort) {
+  public UserService(UserPort userPort, OutboxPort outboxPort) {
     this.userPort = userPort;
-    this.passwordEncoder = passwordEncoder;
     this.outboxPort = outboxPort;
   }
 
@@ -37,10 +34,6 @@ public class UserService implements UserUseCase {
       log.warn("Attempted to create user with existing email: {}", user.getEmail());
       throw new ConflictException("User with email " + user.getEmail() + " already exists");
     }
-
-    String hashedPassword = passwordEncoder.encode(user.getPassword());
-
-    user.setPassword(hashedPassword);
 
     User savedUser = userPort.save(user);
 
@@ -81,6 +74,42 @@ public class UserService implements UserUseCase {
   }
 
   @Override
+  public User findByExternalId(String externalId) {
+    return userPort.findByExternalId(externalId);
+  }
+
+  @Override
+  public User syncUser(String externalId, String email, String name) {
+    log.debug("Syncing user with externalId: {}", externalId);
+
+    User existingUser = userPort.findByExternalId(externalId);
+
+    if (existingUser != null) {
+      log.debug("User already exists with externalId: {}", externalId);
+      return existingUser;
+    }
+
+    User newUser =
+        User.builder()
+            .externalId(externalId)
+            .email(email)
+            // !change name logic
+            .name(name != null ? name : email)
+            .build();
+
+    User savedUser = userPort.save(newUser);
+
+    UserCreatedEvent event =
+        new UserCreatedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName());
+
+    outboxPort.save(event);
+
+    log.info("Created new user via sync with externalId: {}", externalId);
+
+    return savedUser;
+  }
+
+  @Override
   @Transactional
   public User updateUser(User user) {
     log.debug("Updating user with id: {}", user.getId());
@@ -99,13 +128,7 @@ public class UserService implements UserUseCase {
       throw new ConflictException("User with email " + user.getEmail() + " already exists");
     }
 
-    String password = user.getPassword();
-
-    if (password != null && !password.isEmpty()) {
-      password = passwordEncoder.encode(password);
-    }
-
-    existing.updateFields(user.getName(), user.getEmail(), password);
+    existing.updateFields(user.getName(), user.getEmail());
 
     User updatedUser = userPort.save(existing);
 
