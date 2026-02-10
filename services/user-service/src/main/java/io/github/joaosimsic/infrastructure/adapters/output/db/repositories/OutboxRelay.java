@@ -7,8 +7,8 @@ import io.github.joaosimsic.core.events.UserCreatedEvent;
 import io.github.joaosimsic.core.events.UserDeletedEvent;
 import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
+import io.github.joaosimsic.infrastructure.config.properties.OutboxProperties;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
-import io.github.joaosimsic.infrastructure.config.OutboxProperties;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ public class OutboxRelay {
   private final ObjectMapper objectMapper;
   private final OutboxProperties outboxProperties;
 
-  @Scheduled(fixedDelayString = "${app.outbox.pool-interval:5000}")
+  @Scheduled(fixedDelayString = "${app.outbox.poll-interval}")
   @Transactional
   public void processOutbox() {
     var entries = outboxPort.findUnprocessed(outboxProperties.getBatchSize());

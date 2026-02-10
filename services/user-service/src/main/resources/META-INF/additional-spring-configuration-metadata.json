@@ -59,16 +59,16 @@
       "defaultValue": 2000
     },
     {
-      "name": "app.database.retry.max-backoff-ms",
-      "type": "java.lang.Long",
-      "description": "Maximum backoff time",
-      "defaultValue": 10000
-    },
-    {
       "name": "app.database.retry.multiplier",
       "type": "java.lang.Integer",
       "description": "multiplier of each failed retry",
       "defaultValue": 2
+    },
+    {
+      "name": "app.database.retry.max-backoff-ms",
+      "type": "java.lang.Long",
+      "description": "Maximum backoff time",
+      "defaultValue": 10000
     }
   ]
 }
