@@ -1,7 +1,44 @@
 app:
   jwt:
-    private-key: "test-private-key"
-    public-key: "test-public-key"
+    private-key: |
+      -----BEGIN PRIVATE KEY-----
+      MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCp9pUY2+UtrHO5
+      j0jVpuwyVakPx4SHdZi7tIx+vi916n716pVBv5uavCiCFkk9rhtGa1rkFfb9wrmN
+      r6LjoBVScYCJHfXUm7GG4/k2sZp0CxDxEmXiiWhuM4loCxhtDNb+wimPnFhsIDzy
+      BzdGreia1+xSiC/avilEPeqjfOnyHmQT2wnyMpYHK8Q6P+VzFmMouBc5zOOThbRa
+      1DbBrKWywDkMnNpAjBSnuFxipYzl0cdsrWpzoZ0SzRGhdy3AcR9mmj6hsXLBlqXa
+      va9BTYwsb0C+puW93DuJjeHKry4vlGBTcDBpFcIOWeABgWNjsYzxA7TMRSqNbW8h
+      dbe0vKQLAgMBAAECggEAR+OMXN9lqFPw/uOkIvpfnUquH4Z8f+81ku9jHZjD6lQt
+      L0bxqsWow2IioCNdB0HFN5vg7eh8eAkNAujvNOhZHG31uAl8GVlhVXTHzGKCueKU
+      X+MwRQlpqnMSA3ft9PIhXdAyVBQFMnbQUG7M6pBUemoqAx6nXxZfzgWCYXRMX6Pa
+      k9lmdxvVce1r0FxACSKeHwRsnnxjGKqwNBs6K8JHKJLV1+8IyYI8HoM3KqLhEIjm
+      +vmnlusSQ3jN2104qbl1wpvyjl1SxV0wxnw4DzszyBD0JhoJ340KTHPMC1hlE3FM
+      /mn/ef7vpRVQp/cPV02/cAXxx6qU6P55ktcnCPVTAQKBgQDXcx++A1yD3k5m4efM
+      i/I6W8MfA3WbU1nVwyaSo/Ad8OeR9jxvc6iygvE1C+vu+fkJi8Ic0zDmF7uc6J5u
+      WbxAYYbAsiNY9tO+8sm56SNnKhO4zLMyugRtKxMwJVnSTcdPXk0vWuPItHtzoryu
+      EgGveNvavhvOoBnPl0iSM103cQKBgQDJ88/QeNNxae2QyYe/Tv6PeyV56+7MhqzI
+      9M+3aJyDOV5Run8lMuQR+aMe76QoMjzbGZSdyHWnZ7hEu/7CcKkz306MsNSlsvjH
+      ZgXZ5wWLmcVwPOJ8Lh0EJCFdzE1NSrpewfIwFMkMAYjQugPPRERz6bxpQpPHwuMm
+      zhEgxqItOwKBgGveK8pKjItJRh+kgxWaC5DEWJCyfrNhq9ymdC1+/r0+2/HsQp3a
+      Xl/hxzoz2dAwP0tUOb+MzTKmNzx8CrZdHy9spLbdeW0VRzaXAACghSUln/IqKp3/
+      HDA8HMNCMBJm9p76K9LFwr29/wEKPUU5prZf4FNIU0vERKf2qlLofIdBAoGAdGwW
+      0JLnKkmrx702gaYzgFm42BmYV9YHw+3F1XD8UXYAFtORusskyewFCq+SDg4wIQsV
+      LwTCNtjHVPCfxE4YbSv954OFg2SyoJkDJIRXIQxr0vF2i6o11g5SIfXGVpmO6VOb
+      n/ZLlJ1J1zJ1QcaUQ9JqaLAV66JBOzyuiRuZoMMCgYEA1UWK7sMK7+V3l/uZcfWi
+      zWSo1mZ/mNJOxEbSbzKaqI0gGSyuN8TkNRjCyXLrpZx0KFYm4msCYExwkoCf6l9R
+      RpG/Gp+8/2dnPRvhm1mFGXY2/dUt5VnkXHB+vpgvcVgWc2F+30xpN3075vAPp+1q
+      mFvwsLaNsrBIgHVRJre/lbw=
+      -----END PRIVATE KEY-----
+    public-key: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqfaVGNvlLaxzuY9I1abs
+      MlWpD8eEh3WYu7SMfr4vdep+9eqVQb+bmrwoghZJPa4bRmta5BX2/cK5ja+i46AV
+      UnGAiR311JuxhuP5NrGadAsQ8RJl4olobjOJaAsYbQzW/sIpj5xYbCA88gc3Rq3o
+      mtfsUogv2r4pRD3qo3zp8h5kE9sJ8jKWByvEOj/lcxZjKLgXOczjk4W0WtQ2wayl
+      ssA5DJzaQIwUp7hcYqWM5dHHbK1qc6GdEs0RoXctwHEfZpo+obFywZal2r2vQU2M
+      LG9Avqblvdw7iY3hyq8uL5RgU3AwaRXCDlngAYFjY7GM8QO0zEUqjW1vIXW3tLyk
+      CwIDAQAB
+      -----END PUBLIC KEY-----
     key-id: test-key
     expiration-ms: 3600000
 
