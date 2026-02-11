@@ -25,5 +25,6 @@ spring:
 
 gateway:
   jwt:
-    jwks-url: ${AUTH0_JWKS_URL}
-    expected-issuer: ${AUTH0_ISSUER}
+    jwks-url: ${COGNITO_JWKS_URL}
+    expected-issuer: ${COGNITO_ISSUER}
+    cache-ttl-seconds: 900
