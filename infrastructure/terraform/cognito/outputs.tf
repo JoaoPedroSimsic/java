@@ -49,8 +49,18 @@ output "oauth2_logout_url" {
 }
 
 output "github_login_url" {
-  description = "Direct URL for GitHub social login"
-  value       = "https://${aws_cognito_user_pool_domain.main.domain}.auth.${var.aws_region}.amazoncognito.com/oauth2/authorize?identity_provider=GitHub&response_type=code&client_id=${aws_cognito_user_pool_client.main.id}&redirect_uri=${urlencode(var.callback_urls[0])}&scope=email+openid+profile"
+  description = "URL to initiate GitHub OAuth login"
+  value       = "${aws_apigatewayv2_api.github_auth.api_endpoint}/auth/github"
+}
+
+output "github_auth_api_endpoint" {
+  description = "API Gateway endpoint for GitHub auth"
+  value       = aws_apigatewayv2_api.github_auth.api_endpoint
+}
+
+output "github_oauth_callback_url" {
+  description = "Set this URL as the 'Authorization callback URL' in your GitHub OAuth App settings"
+  value       = "${aws_apigatewayv2_api.github_auth.api_endpoint}/auth/github/callback"
 }
 
 output "env_variables" {
@@ -61,5 +71,6 @@ output "env_variables" {
     COGNITO_JWKS_URL     = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.main.id}/.well-known/jwks.json"
     COGNITO_ISSUER       = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.main.id}"
     COGNITO_DOMAIN       = "${aws_cognito_user_pool_domain.main.domain}.auth.${var.aws_region}.amazoncognito.com"
+    GITHUB_AUTH_URL      = "${aws_apigatewayv2_api.github_auth.api_endpoint}/auth/github"
   }
 }

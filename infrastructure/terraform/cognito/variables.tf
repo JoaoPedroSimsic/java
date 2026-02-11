@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for Cognito User Pool"
   type        = string
-  default     = "us-east-1"
+  default     = "sa-east-1"
 }
 
 variable "environment" {
@@ -104,6 +104,12 @@ variable "github_client_secret" {
   description = "GitHub OAuth App Client Secret"
   type        = string
   sensitive   = true
+}
+
+variable "frontend_url" {
+  description = "Frontend URL for OAuth callback redirects"
+  type        = string
+  default     = "http://localhost:3000"
 }
 
 variable "tags" {

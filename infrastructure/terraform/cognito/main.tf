@@ -120,7 +120,7 @@ resource "aws_cognito_user_pool" "main" {
     }
   }
 
-  deletion_protection = var.environment == "prod" ? "ACTIVE" : "INACTIVE"
+  deletion_protection = "INACTIVE"
 
   tags = {
     Name        = "${var.app_name}-${var.environment}-user-pool"
@@ -162,16 +162,14 @@ resource "aws_cognito_user_pool_client" "main" {
   callback_urls = var.callback_urls
   logout_urls   = var.logout_urls
 
-  supported_identity_providers = [
-    "COGNITO",
-    "GitHub"
-  ]
+  supported_identity_providers = ["COGNITO"]
 
   explicit_auth_flows = [
     "ALLOW_REFRESH_TOKEN_AUTH",
-    "ALLOW_USER_SRP_AUTH",      
+    "ALLOW_USER_SRP_AUTH",
     "ALLOW_CUSTOM_AUTH",
-    "ALLOW_USER_PASSWORD_AUTH" 
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_ADMIN_USER_PASSWORD_AUTH"
   ]
 
   read_attributes = [
@@ -196,8 +194,4 @@ resource "aws_cognito_user_pool_client" "main" {
   enable_token_revocation = true
 
   auth_session_validity = 3
-
-  depends_on = [
-    aws_cognito_identity_provider.github
-  ]
 }
