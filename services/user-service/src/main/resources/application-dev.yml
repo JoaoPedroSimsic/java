@@ -1,14 +1,14 @@
 spring:
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
 
   cloud:
     aws:
       region:
-        static: us-east-1
+        static: sa-east-1
       credentials:
         access-key: "dev"
         secret-key: "dev"
