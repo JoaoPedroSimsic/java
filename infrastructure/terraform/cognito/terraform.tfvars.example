@@ -1,0 +1,38 @@
+aws_region  = "us-east-1"
+environment = "prod"
+app_name    = "hermes"
+
+cognito_domain_prefix = "hermes-auth"
+
+callback_urls = [
+  "https://hermes-app.com/callback",
+  "https://hermes-app.com/auth/callback",
+  "http://localhost:3000/callback"  
+]
+
+logout_urls = [
+  "https://hermes-app.com",
+  "https://hermes-app.com/logout",
+  "http://localhost:3000"  
+]
+
+password_minimum_length    = 8
+password_require_lowercase = true
+password_require_uppercase = true
+password_require_numbers   = true
+password_require_symbols   = true
+
+mfa_configuration = "OPTIONAL"
+
+access_token_validity  = 5
+id_token_validity      = 30
+refresh_token_validity = 30
+
+github_client_id     = "your-github-client-id"
+github_client_secret = "your-github-client-secret"
+
+tags = {
+  Project     = "hermes"
+  Environment = "prod"
+  ManagedBy   = "terraform"
+}
