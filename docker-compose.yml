@@ -72,6 +72,15 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak
+    ports:
+      - "8180:8080"
+    command: start-dev --import-realm
+    volumes:
+      - ./infrastructure/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+
 volumes:
   pgdata:
   redis_data:
