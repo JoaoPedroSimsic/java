@@ -1,9 +1,9 @@
 server:
-  port: ${APP_PORT:8080}
+  port: ${APP_PORT}
 
 app:
   jwt:
-    secret: ${JWT_SECRET}
+    secret: ${GATEWAY_SECRET}
   outbox:
     poll-interval: 5000
     batch-size: 20

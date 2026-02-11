@@ -14,49 +14,41 @@
       "name": "app.jwt.secret",
       "type": "java.lang.String",
       "description": "JWT secret",
-      "defaultValue": "asdasdsadddggggggggggasfasfsfasafasfafasffafsafsff"
     },
     {
       "name": "app.outbox.poll-interval",
       "type": "java.lang.Long",
       "description": "Interval in milliseconds between outbox polling attempts",
-      "defaultValue": 5000
     },
     {
       "name": "app.outbox.batch-size",
       "type": "java.lang.Integer",
       "description": "Number of outbox entries to process per batch",
-      "defaultValue": 20
     },
     {
       "name": "app.outbox.max-attempts",
       "type": "java.lang.Integer",
       "description": "Maximum number of attempts before marking an entry as failed",
-      "defaultValue": 5
     },
     {
       "name": "app.database.retry.max-attempts",
       "type": "java.lang.Integer",
       "description": "Maximum number of attempts before backoff",
-      "defaultValue": 5
     },
     {
       "name": "app.database.retry.initial-backoff-ms",
       "type": "java.lang.Long",
       "description": "Initial backoff time",
-      "defaultValue": 2000
     },
     {
       "name": "app.database.retry.multiplier",
       "type": "java.lang.Integer",
       "description": "multiplier of each failed retry",
-      "defaultValue": 2
     },
     {
-      "name": "app.database.retry.max-backoff-ms",
+      "name": "app.database.retry.max-delay-ms",
       "type": "java.lang.Long",
-      "description": "Maximum backoff time",
-      "defaultValue": 10000
+      "description": "Maximum delay time",
     }
   ]
 }
