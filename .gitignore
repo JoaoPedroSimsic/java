@@ -37,3 +37,10 @@ build/
 !**/src/test/**/build/
 
 .vscode/
+
+.terraform*
+terraform.tfvars
+
+node_modules
+dist
+*.zip
