@@ -1,4 +1,4 @@
-import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import {
   CognitoIdentityProviderClient,
   AdminCreateUserCommand,
@@ -6,8 +6,8 @@ import {
   AdminSetUserPasswordCommand,
   AdminInitiateAuthCommand,
   AdminUpdateUserAttributesCommand,
-} from '@aws-sdk/client-cognito-identity-provider';
-import crypto from 'crypto';
+} from "@aws-sdk/client-cognito-identity-provider";
+import crypto from "crypto";
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 
@@ -38,39 +38,41 @@ interface GitHubTokenResponse {
   scope: string;
 }
 
-export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
+export const handler = async (
+  event: APIGatewayProxyEventV2,
+): Promise<APIGatewayProxyResultV2> => {
   const path = event.rawPath;
   const method = event.requestContext.http.method;
 
   try {
-    if (path === '/auth/github' && method === 'GET') {
-      return handleInitiate(event);
-    } else if (path === '/auth/github/callback' && method === 'GET') {
+    if (path === "/auth/github" && method === "GET") {
+      return handleInitiate();
+    } else if (path === "/auth/github/callback" && method === "GET") {
       return await handleCallback(event);
     } else {
       return {
         statusCode: 404,
         headers: corsHeaders(),
-        body: JSON.stringify({ error: 'Not found' }),
+        body: JSON.stringify({ error: "Not found" }),
       };
     }
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
     return {
       statusCode: 500,
       headers: corsHeaders(),
-      body: JSON.stringify({ error: 'Internal server error' }),
+      body: JSON.stringify({ error: "Internal server error" }),
     };
   }
 };
 
 function handleInitiate(): APIGatewayProxyResultV2 {
-  const state = crypto.randomBytes(16).toString('hex');
-  
+  const state = crypto.randomBytes(16).toString("hex");
+
   const params = new URLSearchParams({
     client_id: GITHUB_CLIENT_ID,
     redirect_uri: CALLBACK_URL,
-    scope: 'user:email read:user',
+    scope: "user:email read:user",
     state: state,
   });
 
@@ -81,47 +83,52 @@ function handleInitiate(): APIGatewayProxyResultV2 {
     headers: {
       ...corsHeaders(),
       Location: githubAuthUrl,
-      'Set-Cookie': `oauth_state=${state}; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
+      "Set-Cookie": `oauth_state=${state}; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
     },
-    body: '',
+    body: "",
   };
 }
 
-async function handleCallback(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
+async function handleCallback(
+  event: APIGatewayProxyEventV2,
+): Promise<APIGatewayProxyResultV2> {
   const code = event.queryStringParameters?.code;
   const error = event.queryStringParameters?.error;
 
   if (error) {
-    return redirectToFrontend({ error: 'GitHub authentication denied' });
+    return redirectToFrontend({ error: "GitHub authentication denied" });
   }
 
   if (!code) {
-    return redirectToFrontend({ error: 'Missing authorization code' });
+    return redirectToFrontend({ error: "Missing authorization code" });
   }
 
-  const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+  const tokenResponse = await fetch(
+    "https://github.com/login/oauth/access_token",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        client_id: GITHUB_CLIENT_ID,
+        client_secret: GITHUB_CLIENT_SECRET,
+        code: code,
+      }),
     },
-    body: JSON.stringify({
-      client_id: GITHUB_CLIENT_ID,
-      client_secret: GITHUB_CLIENT_SECRET,
-      code: code,
-    }),
-  });
+  );
 
   const tokenData = (await tokenResponse.json()) as GitHubTokenResponse;
 
   if (!tokenData.access_token) {
-    return redirectToFrontend({ error: 'Failed to get GitHub access token' });
+    return redirectToFrontend({ error: "Failed to get GitHub access token" });
   }
 
-  const userResponse = await fetch('https://api.github.com/user', {
+  const userResponse = await fetch("https://api.github.com/user", {
     headers: {
       Authorization: `Bearer ${tokenData.access_token}`,
-      Accept: 'application/json',
+      Accept: "application/json",
     },
   });
 
@@ -129,10 +136,10 @@ async function handleCallback(event: APIGatewayProxyEventV2): Promise<APIGateway
 
   let email = githubUser.email;
   if (!email) {
-    const emailsResponse = await fetch('https://api.github.com/user/emails', {
+    const emailsResponse = await fetch("https://api.github.com/user/emails", {
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     });
 
@@ -142,7 +149,9 @@ async function handleCallback(event: APIGatewayProxyEventV2): Promise<APIGateway
   }
 
   if (!email) {
-    return redirectToFrontend({ error: 'Could not retrieve email from GitHub' });
+    return redirectToFrontend({
+      error: "Could not retrieve email from GitHub",
+    });
   }
 
   const cognitoTokens = await createOrUpdateCognitoUser({
@@ -167,14 +176,14 @@ async function createOrUpdateCognitoUser(params: {
 }): Promise<{ accessToken: string; idToken: string; refreshToken: string }> {
   const { email, githubId, githubLogin, name } = params;
   const username = `github_${githubId}`;
-  const tempPassword = crypto.randomBytes(32).toString('base64') + '!Aa1';
+  const tempPassword = crypto.randomBytes(32).toString("base64") + "!Aa1";
 
   try {
     await cognitoClient.send(
       new AdminGetUserCommand({
         UserPoolId: USER_POOL_ID,
         Username: username,
-      })
+      }),
     );
 
     await cognitoClient.send(
@@ -182,29 +191,29 @@ async function createOrUpdateCognitoUser(params: {
         UserPoolId: USER_POOL_ID,
         Username: username,
         UserAttributes: [
-          { Name: 'email', Value: email },
-          { Name: 'email_verified', Value: 'true' },
-          { Name: 'name', Value: name },
-          { Name: 'preferred_username', Value: githubLogin },
-          { Name: 'custom:github_id', Value: githubId },
+          { Name: "email", Value: email },
+          { Name: "email_verified", Value: "true" },
+          { Name: "name", Value: name },
+          { Name: "preferred_username", Value: githubLogin },
+          { Name: "custom:github_id", Value: githubId },
         ],
-      })
+      }),
     );
   } catch (error) {
-    if ((error as any).name === 'UserNotFoundException') {
+    if ((error as any).name === "UserNotFoundException") {
       await cognitoClient.send(
         new AdminCreateUserCommand({
           UserPoolId: USER_POOL_ID,
           Username: username,
           UserAttributes: [
-            { Name: 'email', Value: email },
-            { Name: 'email_verified', Value: 'true' },
-            { Name: 'name', Value: name },
-            { Name: 'preferred_username', Value: githubLogin },
-            { Name: 'custom:github_id', Value: githubId },
+            { Name: "email", Value: email },
+            { Name: "email_verified", Value: "true" },
+            { Name: "name", Value: name },
+            { Name: "preferred_username", Value: githubLogin },
+            { Name: "custom:github_id", Value: githubId },
           ],
-          MessageAction: 'SUPPRESS',
-        })
+          MessageAction: "SUPPRESS",
+        }),
       );
 
       await cognitoClient.send(
@@ -213,7 +222,7 @@ async function createOrUpdateCognitoUser(params: {
           Username: username,
           Password: tempPassword,
           Permanent: true,
-        })
+        }),
       );
     } else {
       throw error;
@@ -224,12 +233,12 @@ async function createOrUpdateCognitoUser(params: {
     new AdminInitiateAuthCommand({
       UserPoolId: USER_POOL_ID,
       ClientId: CLIENT_ID,
-      AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
+      AuthFlow: "ADMIN_USER_PASSWORD_AUTH",
       AuthParameters: {
         USERNAME: username,
         PASSWORD: tempPassword,
       },
-    })
+    }),
   );
 
   await cognitoClient.send(
@@ -238,36 +247,38 @@ async function createOrUpdateCognitoUser(params: {
       Username: username,
       Password: tempPassword,
       Permanent: true,
-    })
+    }),
   );
 
   const finalAuthResponse = await cognitoClient.send(
     new AdminInitiateAuthCommand({
       UserPoolId: USER_POOL_ID,
       ClientId: CLIENT_ID,
-      AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
+      AuthFlow: "ADMIN_USER_PASSWORD_AUTH",
       AuthParameters: {
         USERNAME: username,
         PASSWORD: tempPassword,
       },
-    })
+    }),
   );
 
   return {
-    accessToken: finalAuthResponse.AuthenticationResult?.AccessToken || '',
-    idToken: finalAuthResponse.AuthenticationResult?.IdToken || '',
-    refreshToken: finalAuthResponse.AuthenticationResult?.RefreshToken || '',
+    accessToken: finalAuthResponse.AuthenticationResult?.AccessToken || "",
+    idToken: finalAuthResponse.AuthenticationResult?.IdToken || "",
+    refreshToken: finalAuthResponse.AuthenticationResult?.RefreshToken || "",
   };
 }
 
-function redirectToFrontend(params: Record<string, string | undefined>): APIGatewayProxyResultV2 {
+function redirectToFrontend(
+  params: Record<string, string | undefined>,
+): APIGatewayProxyResultV2 {
   const filteredParams: Record<string, string> = {};
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined) {
       filteredParams[key] = value;
     }
   }
-  
+
   const queryString = new URLSearchParams(filteredParams).toString();
   const redirectUrl = `${FRONTEND_URL}/auth/callback?${queryString}`;
 
@@ -277,14 +288,14 @@ function redirectToFrontend(params: Record<string, string | undefined>): APIGate
       ...corsHeaders(),
       Location: redirectUrl,
     },
-    body: '',
+    body: "",
   };
 }
 
 function corsHeaders() {
   return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    'Access-Control-Allow-Methods': 'GET,OPTIONS',
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    "Access-Control-Allow-Methods": "GET,OPTIONS",
   };
 }
