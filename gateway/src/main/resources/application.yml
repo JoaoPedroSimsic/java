@@ -1,5 +1,5 @@
 server:
-  port: ${GATEWAY_PORT}
+  port: ${SERVER_PORT}
 
 spring:
   application:
