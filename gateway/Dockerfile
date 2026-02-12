@@ -8,6 +8,8 @@ COPY pom.xml .
 COPY bom/pom.xml bom/
 COPY gateway/pom.xml gateway/
 
+RUN sed -i '/<module>services\/user-service<\/module>/d' pom.xml
+
 RUN chmod +x mvnw && ./mvnw dependency:go-offline -pl gateway -am -B
 
 COPY gateway/src gateway/src

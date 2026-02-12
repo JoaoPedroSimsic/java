@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
-@ConfigurationProperties(prefix = "gateway")
+@ConfigurationProperties(prefix = "spring")
 public record GatewayProperties(
     @Valid @NotNull JwtConfig jwt,
     @Valid @NotNull RateLimitConfig rateLimit,
