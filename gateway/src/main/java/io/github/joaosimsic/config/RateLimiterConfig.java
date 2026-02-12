@@ -41,6 +41,7 @@ public class RateLimiterConfig {
   }
 
   @Bean
+  @Primary
   ReactiveRedisTemplate<String, String> rateLimitRedisTemplate(
       ReactiveRedisConnectionFactory connectionFactory) {
     StringRedisSerializer serializer = new StringRedisSerializer();

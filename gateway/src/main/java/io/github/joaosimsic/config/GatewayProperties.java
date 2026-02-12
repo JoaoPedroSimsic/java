@@ -17,7 +17,7 @@ public record GatewayProperties(
       @NotBlank String jwksUrl, @Min(1) long cacheTtlSeconds, @NotBlank String expectedIssuer) {}
 
   public record RateLimitConfig(
-      @Valid @NotBlank RateDetails authenticated, @Valid @NotNull RateDetails unauthenticated) {
+      @Valid @NotNull RateDetails authenticated, @Valid @NotNull RateDetails unauthenticated) {
 
     public RateLimitConfig {
       if (authenticated == null) authenticated = new RateDetails(100, 150);

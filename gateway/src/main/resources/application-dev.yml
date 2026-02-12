@@ -1,4 +1,28 @@
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: 
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - Content-Type
+              - Authorization
+              - X-Requested-With
+              - Accept
+              - Origin
+            allowCredentials: true
+            maxAge: 3600
+
 gateway:
   jwt:
-    jwks-url: https://keycloak:8080/realms/hermes/protocol/openid-connect/certs
-    expected-issuer: http://localhost:8180/realms/hermes
+    jwks-url: ${KC_JWKS_URL}
+    expected-issuer: ${KC_JWT_ISSUER}
+    cache-ttl-seconds: ${CACHE_TTL_SECONDS}

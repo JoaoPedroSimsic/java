@@ -1,9 +1,9 @@
 server:
-  port: ${APP_PORT}
+  port: ${SERVER_PORT}
 
 app:
   jwt:
-    secret: ${GATEWAY_SECRET}
+    secret: ${APP_JWT_SECRET}
   outbox:
     poll-interval: 5000
     batch-size: 20
@@ -16,10 +16,12 @@ app:
       max-delay-ms: 10000
 
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE}
   datasource:
-    url: ${POSTGRES_URL}
-    username: ${APP_USER}
-    password: ${APP_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
       pool-name: AppHikariCP
       maximum-pool-size: 10
@@ -45,13 +47,13 @@ spring:
             log: true
 
   flyway:
-    user: ${FLYWAY_USER}
-    password: ${FLYWAY_PASSWORD}
+    user: ${SPRING_FLYWAY_USER}
+    password: ${SPRING_FLYWAY_PASSWORD}
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT:6379}
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
       timeout: 2000ms
       lettuce:
         pool:

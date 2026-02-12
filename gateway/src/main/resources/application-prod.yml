@@ -4,9 +4,7 @@ spring:
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins: 
-              - "https://hermes-app.com"
-              - "https://admin.hermes-app.com"
+            allowedOrigins: ${CORS_ALLOWED_ORIGINS}
             allowedMethods:
               - GET
               - POST
@@ -26,5 +24,5 @@ spring:
 gateway:
   jwt:
     jwks-url: ${COGNITO_JWKS_URL}
-    expected-issuer: ${COGNITO_ISSUER}
-    cache-ttl-seconds: 900
+    expected-issuer: ${COGNITO_JWT_ISSUER}
+    cache-ttl-seconds: ${CACHE_TTL_SECONDS}
