@@ -39,6 +39,8 @@ spring:
           predicates:
             - Path=/swagger-ui/**,/v3/api-docs/**
 
+gateway:
+  secret: ${GATEWAY_SECRET}
   rate-limit:
     authenticated:
       replenish-rate: ${RATE_LIMIT_AUTHENTICATED}

@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
-@ConfigurationProperties(prefix = "spring")
+@ConfigurationProperties(prefix = "gateway")
 public record GatewayProperties(
     @Valid @NotNull JwtConfig jwt,
     @Valid @NotNull RateLimitConfig rateLimit,
@@ -17,7 +17,7 @@ public record GatewayProperties(
       @NotBlank String jwksUrl, @Min(1) long cacheTtlSeconds, @NotBlank String expectedIssuer) {}
 
   public record RateLimitConfig(
-      @Valid @NotBlank RateDetails authenticated, @Valid @NotNull RateDetails unauthenticated) {
+      @Valid @NotNull RateDetails authenticated, @Valid @NotNull RateDetails unauthenticated) {
 
     public RateLimitConfig {
       if (authenticated == null) authenticated = new RateDetails(100, 150);
