@@ -1,32 +1,22 @@
-FROM eclipse-temurin:21-jdk-alpine AS builder
-
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
 COPY bom/pom.xml bom/
+RUN mvn install -f bom/pom.xml -q
+
 COPY gateway/pom.xml gateway/
-
-RUN sed -i '/<module>services\/user-service<\/module>/d' pom.xml
-
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -pl gateway -am -B
+RUN mvn dependency:go-offline -f gateway/pom.xml -q
 
 COPY gateway/src gateway/src
-
-RUN ./mvnw package -pl gateway -am -DskipTests -B
+RUN mvn package -f gateway/pom.xml -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
-
 WORKDIR /app
 
-RUN addgroup -g 1001 appgroup && \
-  adduser -u 1001 -G appgroup -D appuser
-
+RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -D appuser
 COPY --from=builder /app/gateway/target/*.jar app.jar
+RUN mkdir -p /app/logs && chown appuser:appgroup /app/logs
 
 USER appuser
-
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]
