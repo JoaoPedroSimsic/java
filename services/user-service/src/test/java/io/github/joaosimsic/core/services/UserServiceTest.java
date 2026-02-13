@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,7 +27,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -51,15 +49,9 @@ class UserServiceTest {
     @Test
     @DisplayName("should create user when email does not exist")
     void shouldCreateUser() {
-      User user =
-          User.builder().name("John Doe").email("john@example.com").build();
+      User user = User.builder().name("John Doe").email("john@example.com").build();
 
-      User savedUser =
-          User.builder()
-              .id(1L)
-              .name("John Doe")
-              .email("john@example.com")
-              .build();
+      User savedUser = User.builder().id(1L).name("John Doe").email("john@example.com").build();
 
       when(userRepositoryPort.findByEmail("john@example.com")).thenReturn(null);
       when(userRepositoryPort.save(any(User.class))).thenReturn(savedUser);
@@ -77,15 +69,9 @@ class UserServiceTest {
     @Test
     @DisplayName("should save UserCreatedEvent to outbox when user is created")
     void shouldSaveUserCreatedEventToOutbox() {
-      User user =
-          User.builder().name("John Doe").email("john@example.com").build();
+      User user = User.builder().name("John Doe").email("john@example.com").build();
 
-      User savedUser =
-          User.builder()
-              .id(1L)
-              .name("John Doe")
-              .email("john@example.com")
-              .build();
+      User savedUser = User.builder().id(1L).name("John Doe").email("john@example.com").build();
 
       when(userRepositoryPort.findByEmail("john@example.com")).thenReturn(null);
       when(userRepositoryPort.save(any(User.class))).thenReturn(savedUser);
@@ -110,8 +96,7 @@ class UserServiceTest {
     @Test
     @DisplayName("should not save event to outbox when email already exists")
     void shouldNotSaveEventWhenEmailExists() {
-      User user =
-          User.builder().name("John Doe").email("john@example.com").build();
+      User user = User.builder().name("John Doe").email("john@example.com").build();
 
       User existingUser = User.builder().id(1L).email("john@example.com").build();
 
@@ -223,26 +208,13 @@ class UserServiceTest {
     @Test
     @DisplayName("should update user when found and email is unique")
     void shouldUpdateUser() {
-      User existingUser =
-          User.builder()
-              .id(1L)
-              .name("John Doe")
-              .email("john@example.com")
-              .build();
+      User existingUser = User.builder().id(1L).name("John Doe").email("john@example.com").build();
 
       User updateRequest =
-          User.builder()
-              .id(1L)
-              .name("John Updated")
-              .email("john.updated@example.com")
-              .build();
+          User.builder().id(1L).name("John Updated").email("john.updated@example.com").build();
 
       User savedUser =
-          User.builder()
-              .id(1L)
-              .name("John Updated")
-              .email("john.updated@example.com")
-              .build();
+          User.builder().id(1L).name("John Updated").email("john.updated@example.com").build();
 
       when(userRepositoryPort.find(1L)).thenReturn(existingUser);
       when(userRepositoryPort.findByEmail("john.updated@example.com")).thenReturn(null);
@@ -257,26 +229,13 @@ class UserServiceTest {
     @Test
     @DisplayName("should save UserUpdatedEvent to outbox when user is updated")
     void shouldSaveUserUpdatedEventToOutbox() {
-      User existingUser =
-          User.builder()
-              .id(1L)
-              .name("John Doe")
-              .email("john@example.com")
-              .build();
+      User existingUser = User.builder().id(1L).name("John Doe").email("john@example.com").build();
 
       User updateRequest =
-          User.builder()
-              .id(1L)
-              .name("John Updated")
-              .email("john.updated@example.com")
-              .build();
+          User.builder().id(1L).name("John Updated").email("john.updated@example.com").build();
 
       User savedUser =
-          User.builder()
-              .id(1L)
-              .name("John Updated")
-              .email("john.updated@example.com")
-              .build();
+          User.builder().id(1L).name("John Updated").email("john.updated@example.com").build();
 
       when(userRepositoryPort.find(1L)).thenReturn(existingUser);
       when(userRepositoryPort.findByEmail("john.updated@example.com")).thenReturn(null);
@@ -302,19 +261,10 @@ class UserServiceTest {
     @Test
     @DisplayName("should update user keeping same email")
     void shouldUpdateUserKeepingSameEmail() {
-      User existingUser =
-          User.builder()
-              .id(1L)
-              .name("John Doe")
-              .email("john@example.com")
-              .build();
+      User existingUser = User.builder().id(1L).name("John Doe").email("john@example.com").build();
 
       User updateRequest =
-          User.builder()
-              .id(1L)
-              .name("John Updated")
-              .email("john@example.com")
-              .build();
+          User.builder().id(1L).name("John Updated").email("john@example.com").build();
 
       when(userRepositoryPort.find(1L)).thenReturn(existingUser);
       when(userRepositoryPort.findByEmail("john@example.com")).thenReturn(existingUser);

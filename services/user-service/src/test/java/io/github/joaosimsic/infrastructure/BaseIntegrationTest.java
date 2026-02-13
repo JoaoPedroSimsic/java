@@ -18,20 +18,23 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class BaseIntegrationTest {
 
   @LocalServerPort protected Integer port;
 
   @MockitoBean protected MessagePublisherPort messagePublisherPort;
 
+  @SuppressWarnings("resource")
   static final PostgreSQLContainer<?> postgres =
       new PostgreSQLContainer<>("postgres:15-alpine").withReuse(true);
 
+  @SuppressWarnings("resource")
   static final RedisContainer redis =
       new RedisContainer(DockerImageName.parse("redis:7-alpine")).withReuse(true);
 
+  @SuppressWarnings("resource")
   static final RabbitMQContainer rabbitmq =
       new RabbitMQContainer(DockerImageName.parse("rabbitmq:3-management-alpine")).withReuse(true);
 

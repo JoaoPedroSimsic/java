@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles("test")
-class MessageApplicationTests extends BaseIntegrationTest {
+class UserApplicationTests extends BaseIntegrationTest {
 
   @Test
   void contextLoads() {}
