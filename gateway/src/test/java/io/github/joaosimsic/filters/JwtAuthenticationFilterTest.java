@@ -31,16 +31,14 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
 
     when(redisTemplate.expire(anyString(), any())).thenReturn(Mono.just(true));
 
-    // Verify JWT validation passes (not 401) - downstream unavailability causes 5xx
-    var result =
-        webTestClient
-            .get()
-            .uri("/api/users/me")
-            .cookie("access_token", validToken)
-            .exchange()
-            .expectStatus()
-            .value(status -> {
-              // JWT filter should pass - we expect anything except 401 UNAUTHORIZED
+    webTestClient
+        .get()
+        .uri("/api/users/me")
+        .cookie("access_token", validToken)
+        .exchange()
+        .expectStatus()
+        .value(
+            status -> {
               if (status == 401) {
                 throw new AssertionError("Expected JWT authentication to pass, but got 401");
               }
