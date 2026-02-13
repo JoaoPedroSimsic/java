@@ -9,19 +9,17 @@ import io.github.joaosimsic.core.ports.input.UserUseCase;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.core.ports.output.UserPort;
 import java.util.List;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService implements UserUseCase {
   private final UserPort userPort;
   private final OutboxPort outboxPort;
-
-  public UserService(UserPort userPort, OutboxPort outboxPort) {
-    this.userPort = userPort;
-    this.outboxPort = outboxPort;
-  }
 
   @Override
   @Transactional

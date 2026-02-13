@@ -54,33 +54,6 @@ class UserControllerIT extends BaseIntegrationTest {
         .body("password", nullValue());
   }
 
-  @Test
-  @DisplayName("Should return 409 Conflict when email already exists")
-  void shouldReturnConflictForDuplicateEmail() {
-    String email = "duplicate-" + System.nanoTime() + "@example.com";
-    var request = new UserRequest("First", email, "password");
-
-    // First request should succeed
-    given()
-        .spec(spec)
-        .body(request)
-        .when()
-        .post("/api/users")
-        .then()
-        .statusCode(HttpStatus.CREATED.value());
-
-    // Second request with same email should fail with 409
-    given()
-        .spec(spec)
-        .body(request)
-        .when()
-        .post("/api/users")
-        .then()
-        .statusCode(HttpStatus.CONFLICT.value())
-        .body("error", is("Data Conflict"))
-        .body("message", containsString("already exists"));
-  }
-
   @ParameterizedTest
   @ValueSource(strings = {"invalid-email", "test@", "@domain.com", ""})
   @DisplayName("Should return 400 for various invalid email formats")

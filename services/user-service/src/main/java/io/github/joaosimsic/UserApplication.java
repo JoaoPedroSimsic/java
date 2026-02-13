@@ -6,9 +6,9 @@ import org.springframework.retry.annotation.EnableRetry;
 
 @SpringBootApplication
 @EnableRetry
-public class MessageApplication {
+public class UserApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(MessageApplication.class, args);
+    SpringApplication.run(UserApplication.class, args);
   }
 }
