@@ -5,7 +5,7 @@ import io.github.joaosimsic.core.domain.AuthUser;
 import io.github.joaosimsic.core.exceptions.business.AuthenticationException;
 import io.github.joaosimsic.core.exceptions.business.UserAlreadyExistsException;
 import io.github.joaosimsic.core.ports.output.AuthPort;
-import io.github.joaosimsic.infrastructure.config.CognitoProperties;
+import io.github.joaosimsic.infrastructure.config.properties.CognitoProperties;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;

@@ -8,7 +8,7 @@ import io.github.joaosimsic.infrastructure.adapters.input.web.dto.request.LoginR
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.AuthResponse;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.GitHubAuthUrlResponse;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.UserResponse;
-import io.github.joaosimsic.infrastructure.config.AuthProperties;
+import io.github.joaosimsic.infrastructure.config.properties.AuthProperties;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -125,35 +125,43 @@ public class AuthController {
 
   private void setAuthCookies(HttpServletResponse response, AuthTokens tokens) {
     Cookie accessTokenCookie = new Cookie("access_token", tokens.getAccessToken());
+
     accessTokenCookie.setHttpOnly(true);
     accessTokenCookie.setSecure(authProperties.getCookie().isSecure());
     accessTokenCookie.setPath("/");
     accessTokenCookie.setMaxAge(tokens.getExpiresIn());
     accessTokenCookie.setAttribute("SameSite", authProperties.getCookie().getSameSite());
+
     response.addCookie(accessTokenCookie);
 
     Cookie refreshTokenCookie = new Cookie("refresh_token", tokens.getRefreshToken());
+
     refreshTokenCookie.setHttpOnly(true);
     refreshTokenCookie.setSecure(authProperties.getCookie().isSecure());
     refreshTokenCookie.setPath("/api/auth");
     refreshTokenCookie.setMaxAge(tokens.getRefreshExpiresIn());
     refreshTokenCookie.setAttribute("SameSite", authProperties.getCookie().getSameSite());
+
     response.addCookie(refreshTokenCookie);
   }
 
   private void clearAuthCookies(HttpServletResponse response) {
     Cookie accessTokenCookie = new Cookie("access_token", "");
+
     accessTokenCookie.setHttpOnly(true);
     accessTokenCookie.setSecure(authProperties.getCookie().isSecure());
     accessTokenCookie.setPath("/");
     accessTokenCookie.setMaxAge(0);
+
     response.addCookie(accessTokenCookie);
 
     Cookie refreshTokenCookie = new Cookie("refresh_token", "");
+
     refreshTokenCookie.setHttpOnly(true);
     refreshTokenCookie.setSecure(authProperties.getCookie().isSecure());
     refreshTokenCookie.setPath("/api/auth");
     refreshTokenCookie.setMaxAge(0);
+
     response.addCookie(refreshTokenCookie);
   }
 

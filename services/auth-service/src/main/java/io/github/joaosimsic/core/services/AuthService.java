@@ -27,36 +27,42 @@ public class AuthService implements AuthUseCase {
     eventPublisher.publishUserRegistered(new UserRegisteredEvent(user.getId(), email, name));
 
     log.info("User registered successfully, logging in: {}", email);
+
     return authPort.login(email, password);
   }
 
   @Override
   public AuthTokens login(String email, String password) {
     log.info("Attempting login for user: {}", email);
+
     return authPort.login(email, password);
   }
 
   @Override
   public AuthTokens refresh(String refreshToken) {
     log.debug("Refreshing access token");
+
     return authPort.refreshToken(refreshToken);
   }
 
   @Override
   public void logout(String refreshToken) {
     log.info("Logging out user");
+
     authPort.logout(refreshToken);
   }
 
   @Override
   public String getGitHubAuthUrl(String redirectUri, String state) {
     log.debug("Generating GitHub auth URL");
+
     return authPort.getGitHubAuthUrl(redirectUri, state);
   }
 
   @Override
   public AuthTokens handleGitHubCallback(String code, String redirectUri) {
     log.info("Handling GitHub OAuth callback");
+
     AuthTokens tokens = authPort.exchangeCodeForTokens(code, redirectUri);
 
     AuthUser user = authPort.getUserInfo(tokens.getAccessToken());
@@ -70,6 +76,7 @@ public class AuthService implements AuthUseCase {
   @Override
   public AuthUser getCurrentUser(String accessToken) {
     log.debug("Fetching current user info");
+
     return authPort.getUserInfo(accessToken);
   }
 }

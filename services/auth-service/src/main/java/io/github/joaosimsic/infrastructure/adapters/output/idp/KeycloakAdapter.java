@@ -5,7 +5,7 @@ import io.github.joaosimsic.core.domain.AuthUser;
 import io.github.joaosimsic.core.exceptions.business.AuthenticationException;
 import io.github.joaosimsic.core.exceptions.business.UserAlreadyExistsException;
 import io.github.joaosimsic.core.ports.output.AuthPort;
-import io.github.joaosimsic.infrastructure.config.KeycloakProperties;
+import io.github.joaosimsic.infrastructure.config.properties.KeycloakProperties;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.Map;
