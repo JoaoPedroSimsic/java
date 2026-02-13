@@ -16,8 +16,7 @@
 > If merging to MAIN: Use the release type and the version as scope.
 > Example: release(v1.0.0): prepare production deployment
 
-## Description
-- Summary: 
+## Description: Summary of changes
 
 #### Key Files
 - `File Name`: Description of changes
