@@ -8,7 +8,7 @@ COPY services/auth-service/pom.xml services/auth-service/
 RUN mvn dependency:go-offline -f services/auth-service/pom.xml -q
 
 COPY services/auth-service/src services/auth-service/src
-RUN mvn package -f services/auth-service/pom.xml -DskipTests -q
+RUN mvn package -f services/auth-service/pom.xml -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
