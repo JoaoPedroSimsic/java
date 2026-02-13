@@ -8,12 +8,12 @@
   <artifactId>hermes</artifactId>
   <version>0.0.1</version>
   <packaging>pom</packaging>
-  <name>Hermes</name>
-  <description>Hermes messaging platform</description>
+  <name>hermes</name>
 
   <modules>
     <module>bom</module>
     <module>services/user-service</module>
+    <module>services/auth-service</module>
     <module>gateway</module>
   </modules>
 

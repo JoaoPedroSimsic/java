@@ -5,10 +5,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.github.joaosimsic</groupId>
-  <artifactId>message-bom</artifactId>
+  <artifactId>hermes-bom</artifactId>
   <version>0.0.1</version>
   <packaging>pom</packaging>
-  <name>Message Platform BOM</name>
+  <name>hermes-bom</name>
   <description>Bill of Materials for shared dependency versions</description>
 
   <properties>

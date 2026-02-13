@@ -12,10 +12,9 @@
   </parent>
 
   <groupId>io.github.joaosimsic</groupId>
-  <artifactId>api-gateway</artifactId>
+  <artifactId>gateway</artifactId>
   <version>0.0.1</version>
-  <name>API Gateway</name>
-  <description>API Gateway for Hermes platform</description>
+  <name>gateway</name>
 
   <properties>
     <java.version>21</java.version>
@@ -25,7 +24,7 @@
     <dependencies>
       <dependency>
         <groupId>io.github.joaosimsic</groupId>
-        <artifactId>message-bom</artifactId>
+        <artifactId>hermes-bom</artifactId>
         <version>0.0.1</version>
         <type>pom</type>
         <scope>import</scope>
