@@ -1,9 +1,12 @@
 package io.github.joaosimsic.filters;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.redis.testcontainers.RedisContainer;
 import io.github.joaosimsic.services.JwksService;
 import io.jsonwebtoken.Jwts;
@@ -12,32 +15,51 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
 
-/**
- * Integration tests for rate limiting using real Redis via Testcontainers. Run with: mvn verify
- * (requires Docker)
- */
 @Testcontainers(disabledWithoutDocker = true)
 @ActiveProfiles("test")
-@AutoConfigureWebTestClient(timeout = "30000")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class RateLimitIT {
 
   @Container static RedisContainer redis = new RedisContainer(RedisContainer.DEFAULT_IMAGE_NAME);
+
+  private static WireMockServer authServiceMock;
+  private static WireMockServer userServiceMock;
+
+  @BeforeAll
+  static void startWireMock() {
+    authServiceMock = new WireMockServer(WireMockConfiguration.wireMockConfig().port(8081));
+    userServiceMock = new WireMockServer(WireMockConfiguration.wireMockConfig().port(8082));
+    authServiceMock.start();
+    userServiceMock.start();
+
+    authServiceMock.stubFor(
+        any(urlPathMatching("/api/auth/.*"))
+            .willReturn(aResponse().withStatus(200).withBody("{}")));
+    userServiceMock.stubFor(
+        any(urlPathMatching("/api/users/.*"))
+            .willReturn(aResponse().withStatus(200).withBody("{}")));
+  }
+
+  @AfterAll
+  static void stopWireMock() {
+    if (authServiceMock != null) authServiceMock.stop();
+    if (userServiceMock != null) userServiceMock.stop();
+  }
 
   @DynamicPropertySource
   static void redisProperties(DynamicPropertyRegistry registry) {
@@ -132,7 +154,6 @@ public class RateLimitIT {
 
   @Test
   void shouldDifferentiateByUserEmailForAuthenticatedRequests() throws NoSuchAlgorithmException {
-    // Use unique emails for this test to avoid interference from other tests
     String user1Email = "differentiation-user1-" + System.currentTimeMillis() + "@example.com";
     String user2Email = "differentiation-user2-" + System.currentTimeMillis() + "@example.com";
 
@@ -180,7 +201,6 @@ public class RateLimitIT {
 
     assertThat(remaining1).isNotNull();
     assertThat(remaining2).isNotNull();
-    // Both users should have fresh rate limit buckets with nearly full limits
     assertThat(Integer.parseInt(remaining1)).isGreaterThan(140);
     assertThat(Integer.parseInt(remaining2)).isGreaterThan(140);
   }
