@@ -17,4 +17,8 @@ public interface AuthUseCase {
   AuthTokens handleGitHubCallback(String code, String redirectUri);
   
   AuthUser getCurrentUser(String accessToken);
+
+  void updateEmail(String userId, String newEmail);
+
+  void updatePassword(String userId, String currentPassword, String newPassword);
 }
