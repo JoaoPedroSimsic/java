@@ -12,27 +12,27 @@ spring:
     password: ${SPRING_RABBITMQ_PASSWORD}
 
 keycloak:
-  server-url: ${KEYCLOAK_SERVER_URL:}
-  realm: ${KEYCLOAK_REALM:}
-  client-id: ${KEYCLOAK_CLIENT_ID:}
+  server-url: ${KEYCLOAK_SERVER_URL}
+  realm: ${KEYCLOAK_REALM}
+  client-id: ${KEYCLOAK_CLIENT_ID}
   admin:
-    username: ${KEYCLOAK_ADMIN_USERNAME:}
-    password: ${KEYCLOAK_ADMIN_PASSWORD:}
+    username: ${KEYCLOAK_ADMIN_USERNAME}
+    password: ${KEYCLOAK_ADMIN_PASSWORD}
 
 cognito:
-  user-pool-id: ${COGNITO_USER_POOL_ID:}
-  client-id: ${COGNITO_CLIENT_ID:}
-  client-secret: ${COGNITO_CLIENT_SECRET:}
-  domain-url: ${COGNITO_DOMAIN_URL:}
-  region: ${AWS_REGION:us-east-1}
+  user-pool-id: ${COGNITO_USER_POOL_ID}
+  client-id: ${COGNITO_CLIENT_ID}
+  client-secret: ${COGNITO_CLIENT_SECRET}
+  domain-url: ${COGNITO_DOMAIN_URL}
+  region: ${AWS_REGION}
 
 auth:
   cookie:
-    domain: ${AUTH_COOKIE_DOMAIN:localhost}
-    secure: ${AUTH_COOKIE_SECURE:false}
-    same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
-    access-token-max-age: ${AUTH_ACCESS_TOKEN_MAX_AGE:300}
-    refresh-token-max-age: ${AUTH_REFRESH_TOKEN_MAX_AGE:1800}
+    domain: ${AUTH_COOKIE_DOMAIN}
+    secure: ${AUTH_COOKIE_SECURE}
+    same-site: ${AUTH_COOKIE_SAME_SITE}
+    access-token-max-age: ${AUTH_ACCESS_TOKEN_MAX_AGE}
+    refresh-token-max-age: ${AUTH_REFRESH_TOKEN_MAX_AGE}
   github:
     redirect-uri: ${GITHUB_REDIRECT_URI}
 

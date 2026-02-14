@@ -1,0 +1,34 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: test
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+auth:
+  cookie:
+    domain: localhost
+    secure: false
+    same-site: Lax
+  github:
+    redirect-uri: http://localhost:3000/callback
+
+keycloak:
+  server-url: http://localhost:8080
+  realm: test-realm
+  client-id: test-client
+  admin:
+    username: admin
+    password: admin
+
+cognito:
+  user-pool-id: test-pool-id
+  client-id: test-client-id
+  client-secret: test-client-secret
+  domain-url: https://test.auth.us-east-1.amazoncognito.com
+  region: us-east-1
