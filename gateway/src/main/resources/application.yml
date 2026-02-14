@@ -13,10 +13,26 @@ spring:
   cloud:
     gateway:
       routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL}
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                '[redis-rate-limiter.replenishRate]': ${RATE_LIMIT_UNAUTHENTICATED}
+                '[redis-rate-limiter.burstCapacity]': ${RATE_LIMIT_UNAUTHENTICATED_BURST}
+                '[redis-rate-limiter.requestedTokens]': 1
+                key-resolver: "#{@ipKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: authServiceCircuitBreaker
+                fallbackUri: forward:/fallback/auth-service
+
         - id: user-service
           uri: ${USER_SERVICE_URL}
           predicates:
-            - Path=/api/users/**,/api/auth/**
+            - Path=/api/users/**
           filters:
             - name: RequestRateLimiter
               args:
@@ -59,9 +75,18 @@ resilience4j:
         waitDurationInOpenState: 30000
         permittedNumberOfCallsInHalfOpenState: 3
         automaticTransitionFromOpenToHalfOpenEnabled: true
+      authServiceCircuitBreaker:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30000
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
   timelimiter:
     instances:
       userServiceCircuitBreaker:
+        timeoutDuration: 10s
+      authServiceCircuitBreaker:
         timeoutDuration: 10s
 
 management:
