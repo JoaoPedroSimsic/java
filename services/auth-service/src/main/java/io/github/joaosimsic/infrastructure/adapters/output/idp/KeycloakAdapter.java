@@ -276,4 +276,61 @@ public class KeycloakAdapter implements AuthPort {
         .refreshExpiresIn((Integer) response.get("refresh_expires_in"))
         .build();
   }
+
+  @Override
+  public void updateEmail(String userId, String newEmail) {
+    log.info("Updating email for user {} in Keycloak", userId);
+
+    RealmResource realmResource = keycloakAdminClient.realm(keycloakProperties.getRealm());
+    UsersResource usersResource = realmResource.users();
+
+    try {
+      UserRepresentation user = usersResource.get(userId).toRepresentation();
+      user.setEmail(newEmail);
+      user.setUsername(newEmail);
+
+      usersResource.get(userId).update(user);
+
+      log.info("Email updated successfully for user {} in Keycloak", userId);
+    } catch (Exception e) {
+      log.error("Failed to update email for user {} in Keycloak: {}", userId, e.getMessage());
+      throw new AuthenticationException("Failed to update email: " + e.getMessage());
+    }
+  }
+
+  @Override
+  public void updatePassword(String userId, String currentPassword, String newPassword) {
+    log.info("Updating password for user {} in Keycloak", userId);
+
+    RealmResource realmResource = keycloakAdminClient.realm(keycloakProperties.getRealm());
+    UsersResource usersResource = realmResource.users();
+
+    try {
+      UserRepresentation user = usersResource.get(userId).toRepresentation();
+
+      verifyCurrentPassword(user.getEmail(), currentPassword);
+
+      CredentialRepresentation credential = new CredentialRepresentation();
+      credential.setType(CredentialRepresentation.PASSWORD);
+      credential.setValue(newPassword);
+      credential.setTemporary(false);
+
+      usersResource.get(userId).resetPassword(credential);
+
+      log.info("Password updated successfully for user {} in Keycloak", userId);
+    } catch (AuthenticationException e) {
+      throw e;
+    } catch (Exception e) {
+      log.error("Failed to update password for user {} in Keycloak: {}", userId, e.getMessage());
+      throw new AuthenticationException("Failed to update password: " + e.getMessage());
+    }
+  }
+
+  private void verifyCurrentPassword(String email, String currentPassword) {
+    try {
+      login(email, currentPassword);
+    } catch (AuthenticationException e) {
+      throw new AuthenticationException("Current password is incorrect");
+    }
+  }
 }
