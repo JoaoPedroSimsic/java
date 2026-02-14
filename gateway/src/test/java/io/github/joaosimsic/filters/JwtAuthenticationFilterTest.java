@@ -5,20 +5,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.github.joaosimsic.GatewayApplicationTest;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.data.redis.core.ReactiveZSetOperations;
 import reactor.core.publisher.Mono;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
 
   @Test
+  @Order(1)
   void shouldFailWhenNoCookiePresent() {
     webTestClient.get().uri("/api/users/me").exchange().expectStatus().isUnauthorized();
   }
 
   @Test
+  @Order(2)
   @SuppressWarnings("unchecked")
   void shouldSucceedAndPassHeadersToDownstream() {
+
+    when(jwksService.getPublicKey(anyString())).thenReturn(Mono.just(keyPair.getPublic()));
+
     ReactiveZSetOperations<String, String> zSetOps = mock(ReactiveZSetOperations.class);
 
     when(redisTemplate.opsForZSet()).thenReturn(zSetOps);

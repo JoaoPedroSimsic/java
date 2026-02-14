@@ -46,7 +46,6 @@ public class RateLimitFilterTest extends GatewayApplicationTest {
 
     when(redisTemplate.expire(anyString(), any())).thenReturn(Mono.just(true));
 
-    // Verify rate limit passes (not 429) and remaining tokens are reported
     webTestClient
         .get()
         .uri("/api/auth/login")
