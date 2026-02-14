@@ -13,7 +13,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.test.annotation.DirtiesContext;
@@ -24,7 +23,6 @@ import reactor.core.publisher.Mono;
 
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@AutoConfigureWebTestClient(timeout = "30000")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class GatewayApplicationTest {
 
