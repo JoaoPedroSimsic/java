@@ -25,7 +25,7 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
   @Order(2)
   @SuppressWarnings("unchecked")
   void shouldSucceedAndPassHeadersToDownstream() {
-
+    // Re-apply jwksService mock to ensure it's properly configured
     when(jwksService.getPublicKey(anyString())).thenReturn(Mono.just(keyPair.getPublic()));
 
     ReactiveZSetOperations<String, String> zSetOps = mock(ReactiveZSetOperations.class);
@@ -40,17 +40,17 @@ public class JwtAuthenticationFilterTest extends GatewayApplicationTest {
 
     when(redisTemplate.expire(anyString(), any())).thenReturn(Mono.just(true));
 
+    // The presence of X-RateLimit headers proves JWT auth passed (rate limit filter runs after JWT filter)
+    // The downstream service is unavailable so we can't verify the actual response status,
+    // but if rate limit headers exist, it means the request passed both JWT and rate limit filters
     webTestClient
         .get()
         .uri("/api/users/me")
         .cookie("access_token", validToken)
         .exchange()
-        .expectStatus()
-        .value(
-            status -> {
-              if (status == 401) {
-                throw new AssertionError("Expected JWT authentication to pass, but got 401");
-              }
-            });
+        .expectHeader()
+        .exists("X-RateLimit-Limit")
+        .expectHeader()
+        .exists("X-RateLimit-Remaining");
   }
 }
