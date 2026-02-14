@@ -1,15 +1,15 @@
 server:
-  port: ${SERVER_PORT}
+  port: ${SERVER_PORT:8080}
 
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE}
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
   rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST}
-    port: ${SPRING_RABBITMQ_PORT}
-    username: ${SPRING_RABBITMQ_USERNAME}
-    password: ${SPRING_RABBITMQ_PASSWORD}
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
 keycloak:
   server-url: ${KEYCLOAK_SERVER_URL:}
@@ -34,7 +34,7 @@ auth:
     access-token-max-age: ${AUTH_ACCESS_TOKEN_MAX_AGE:300}
     refresh-token-max-age: ${AUTH_REFRESH_TOKEN_MAX_AGE:1800}
   github:
-    redirect-uri: ${GITHUB_REDIRECT_URI}
+    redirect-uri: ${GITHUB_REDIRECT_URI:http://localhost:3000/callback}
 
 management:
   endpoints:
