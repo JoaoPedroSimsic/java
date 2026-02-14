@@ -1,5 +1,6 @@
 package io.github.joaosimsic.infrastructure.config;
 
+import io.github.joaosimsic.core.events.AuthUserEmailUpdatedEvent;
 import io.github.joaosimsic.core.events.AuthUserRegisteredEvent;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -24,11 +25,13 @@ public class RabbitConfig {
   public static final String USER_UPDATED_QUEUE = "user.updated.queue";
   public static final String USER_DELETED_QUEUE = "user.deleted.queue";
   public static final String AUTH_USER_REGISTERED_QUEUE = "auth.user.registered.queue";
+  public static final String AUTH_USER_EMAIL_UPDATED_QUEUE = "auth.user.email.updated.queue";
 
   public static final String USER_CREATED_ROUTING_KEY = "user.created";
   public static final String USER_UPDATED_ROUTING_KEY = "user.updated";
   public static final String USER_DELETED_ROUTING_KEY = "user.deleted";
   public static final String AUTH_USER_REGISTERED_ROUTING_KEY = "auth.user.registered";
+  public static final String AUTH_USER_EMAIL_UPDATED_ROUTING_KEY = "auth.user.email.updated";
 
   @Bean
   TopicExchange userExchange() {
@@ -81,12 +84,23 @@ public class RabbitConfig {
   }
 
   @Bean
+  Queue authUserEmailUpdatedQueue() {
+    return new Queue(AUTH_USER_EMAIL_UPDATED_QUEUE);
+  }
+
+  @Bean
+  Binding authUserEmailUpdatedBinding(TopicExchange authExchange, Queue authUserEmailUpdatedQueue) {
+    return BindingBuilder.bind(authUserEmailUpdatedQueue).to(authExchange).with(AUTH_USER_EMAIL_UPDATED_ROUTING_KEY);
+  }
+
+  @Bean
   Jackson2JsonMessageConverter messageConverter() {
     Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
     DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
     
     Map<String, Class<?>> idClassMapping = new HashMap<>();
     idClassMapping.put("io.github.joaosimsic.core.events.UserRegisteredEvent", AuthUserRegisteredEvent.class);
+    idClassMapping.put("io.github.joaosimsic.core.events.UserEmailUpdatedEvent", AuthUserEmailUpdatedEvent.class);
     typeMapper.setIdClassMapping(idClassMapping);
     typeMapper.setTrustedPackages("io.github.joaosimsic.core.events");
     
