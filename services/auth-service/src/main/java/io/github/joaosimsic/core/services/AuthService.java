@@ -2,6 +2,7 @@ package io.github.joaosimsic.core.services;
 
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
+import io.github.joaosimsic.core.events.UserEmailUpdatedEvent;
 import io.github.joaosimsic.core.events.UserRegisteredEvent;
 import io.github.joaosimsic.core.ports.input.AuthUseCase;
 import io.github.joaosimsic.core.ports.output.EventPublisherPort;
@@ -78,5 +79,25 @@ public class AuthService implements AuthUseCase {
     log.debug("Fetching current user info");
 
     return authPort.getUserInfo(accessToken);
+  }
+
+  @Override
+  public void updateEmail(String userId, String newEmail) {
+    log.info("Updating email for user: {}", userId);
+
+    authPort.updateEmail(userId, newEmail);
+
+    eventPublisher.publishUserEmailUpdated(new UserEmailUpdatedEvent(userId, newEmail));
+
+    log.info("Email updated successfully for user: {}", userId);
+  }
+
+  @Override
+  public void updatePassword(String userId, String currentPassword, String newPassword) {
+    log.info("Updating password for user: {}", userId);
+
+    authPort.updatePassword(userId, currentPassword, newPassword);
+
+    log.info("Password updated successfully for user: {}", userId);
   }
 }
