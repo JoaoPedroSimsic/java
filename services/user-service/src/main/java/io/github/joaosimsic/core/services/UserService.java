@@ -119,14 +119,7 @@ public class UserService implements UserUseCase {
       throw new UserNotFoundException("User not found with id: " + user.getId());
     }
 
-    User existingEmail = userPort.findByEmail(user.getEmail());
-
-    if (existingEmail != null && !existingEmail.getId().equals(user.getId())) {
-      log.warn("Update failed - email already in use: {}", user.getEmail());
-      throw new ConflictException("User with email " + user.getEmail() + " already exists");
-    }
-
-    existing.updateFields(user.getName(), user.getEmail());
+    existing.updateName(user.getName());
 
     User updatedUser = userPort.save(existing);
 
@@ -136,6 +129,32 @@ public class UserService implements UserUseCase {
     outboxPort.save(event);
 
     log.info("Updated user with id: {}", updatedUser.getId());
+
+    return updatedUser;
+  }
+
+  @Override
+  @Transactional
+  public User updateUserName(Long id, String name) {
+    log.debug("Updating name for user with id: {}", id);
+
+    User existing = userPort.find(id);
+
+    if (existing == null) {
+      log.warn("Update failed - user not found with id: {}", id);
+      throw new UserNotFoundException("User not found with id: " + id);
+    }
+
+    existing.updateName(name);
+
+    User updatedUser = userPort.save(existing);
+
+    UserUpdatedEvent event =
+        new UserUpdatedEvent(updatedUser.getId(), updatedUser.getEmail(), updatedUser.getName());
+
+    outboxPort.save(event);
+
+    log.info("Updated name for user with id: {}", updatedUser.getId());
 
     return updatedUser;
   }
@@ -158,5 +177,23 @@ public class UserService implements UserUseCase {
     outboxPort.save(event);
 
     log.info("Deleted user with id: {}", id);
+  }
+
+  @Override
+  @Transactional
+  public void updateEmailByExternalId(String externalId, String newEmail) {
+    log.debug("Updating email for user with externalId: {}", externalId);
+
+    User user = userPort.findByExternalId(externalId);
+
+    if (user == null) {
+      log.warn("User not found with externalId: {}", externalId);
+      return;
+    }
+
+    user.setEmail(newEmail);
+    userPort.save(user);
+
+    log.info("Email updated for user with externalId: {}", externalId);
   }
 }

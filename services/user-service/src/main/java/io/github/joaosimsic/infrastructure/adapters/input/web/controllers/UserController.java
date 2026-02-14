@@ -4,6 +4,7 @@ import io.github.joaosimsic.core.domain.User;
 import io.github.joaosimsic.core.ports.input.UserUseCase;
 import io.github.joaosimsic.infrastructure.adapters.input.web.requests.UserRequest;
 import io.github.joaosimsic.infrastructure.adapters.input.web.requests.UserSyncRequest;
+import io.github.joaosimsic.infrastructure.adapters.input.web.requests.UserUpdateRequest;
 import io.github.joaosimsic.infrastructure.adapters.input.web.responses.UserResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -59,9 +60,8 @@ public class UserController {
   @PatchMapping("/{id}")
   public ResponseEntity<UserResponse> update(
       @PathVariable @Min(value = 1, message = "ID must be at least 1") Long id,
-      @Valid @RequestBody UserRequest request) {
-    User domainUser = User.builder().id(id).name(request.name()).email(request.email()).build();
-    User updatedUser = userUseCase.updateUser(domainUser);
+      @Valid @RequestBody UserUpdateRequest request) {
+    User updatedUser = userUseCase.updateUserName(id, request.name());
 
     return ResponseEntity.ok(UserResponse.fromDomain(updatedUser));
   }

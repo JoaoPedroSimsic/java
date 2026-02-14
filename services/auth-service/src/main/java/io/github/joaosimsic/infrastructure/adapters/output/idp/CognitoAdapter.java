@@ -201,4 +201,80 @@ public class CognitoAdapter implements AuthPort {
       throw new AuthenticationException("Failed to exchange authorization code");
     }
   }
+
+  @Override
+  public void updateEmail(String userId, String newEmail) {
+    log.info("Updating email for user {} in Cognito", userId);
+
+    try {
+      AdminUpdateUserAttributesRequest request =
+          AdminUpdateUserAttributesRequest.builder()
+              .userPoolId(cognitoProperties.getUserPoolId())
+              .username(userId)
+              .userAttributes(
+                  AttributeType.builder().name("email").value(newEmail).build(),
+                  AttributeType.builder().name("email_verified").value("true").build())
+              .build();
+
+      cognitoClient.adminUpdateUserAttributes(request);
+
+      log.info("Email updated successfully for user {} in Cognito", userId);
+    } catch (CognitoIdentityProviderException e) {
+      log.error("Failed to update email for user {} in Cognito: {}", userId, e.getMessage());
+      throw new AuthenticationException("Failed to update email: " + e.getMessage());
+    }
+  }
+
+  @Override
+  public void updatePassword(String userId, String currentPassword, String newPassword) {
+    log.info("Updating password for user {} in Cognito", userId);
+
+    try {
+      GetUserRequest getUserRequest =
+          GetUserRequest.builder()
+              .accessToken(getAccessTokenForUser(userId, currentPassword))
+              .build();
+      cognitoClient.getUser(getUserRequest);
+
+      AdminSetUserPasswordRequest passwordRequest =
+          AdminSetUserPasswordRequest.builder()
+              .userPoolId(cognitoProperties.getUserPoolId())
+              .username(userId)
+              .password(newPassword)
+              .permanent(true)
+              .build();
+
+      cognitoClient.adminSetUserPassword(passwordRequest);
+
+      log.info("Password updated successfully for user {} in Cognito", userId);
+    } catch (NotAuthorizedException e) {
+      throw new AuthenticationException("Current password is incorrect");
+    } catch (CognitoIdentityProviderException e) {
+      log.error("Failed to update password for user {} in Cognito: {}", userId, e.getMessage());
+      throw new AuthenticationException("Failed to update password: " + e.getMessage());
+    }
+  }
+
+  private String getAccessTokenForUser(String userId, String password) {
+    try {
+      AdminGetUserRequest getUserRequest =
+          AdminGetUserRequest.builder()
+              .userPoolId(cognitoProperties.getUserPoolId())
+              .username(userId)
+              .build();
+
+      AdminGetUserResponse userResponse = cognitoClient.adminGetUser(getUserRequest);
+      String email =
+          userResponse.userAttributes().stream()
+              .filter(a -> a.name().equals("email"))
+              .findFirst()
+              .map(AttributeType::value)
+              .orElseThrow(() -> new AuthenticationException("User email not found"));
+
+      AuthTokens tokens = login(email, password);
+      return tokens.getAccessToken();
+    } catch (CognitoIdentityProviderException e) {
+      throw new AuthenticationException("Failed to verify current password");
+    }
+  }
 }

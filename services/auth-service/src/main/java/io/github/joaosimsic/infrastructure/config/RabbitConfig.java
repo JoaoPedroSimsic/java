@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitConfig {
   public static final String AUTH_EXCHANGE = "auth.exchange";
   public static final String USER_REGISTERED_ROUTING_KEY = "auth.user.registered";
+  public static final String USER_EMAIL_UPDATED_ROUTING_KEY = "auth.user.email.updated";
 
   @Bean
   TopicExchange authExchange() {

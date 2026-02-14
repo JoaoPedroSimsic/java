@@ -15,13 +15,9 @@ public class User {
   private String name;
   private String email;
 
-  public void updateFields(String newName, String newEmail) {
+  public void updateName(String newName) {
     if (newName != null && !newName.isBlank()) {
       this.name = newName;
-    }
-
-    if (newEmail != null && !newEmail.isBlank()) {
-      this.email = newEmail;
     }
   }
 }

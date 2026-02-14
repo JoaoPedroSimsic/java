@@ -17,4 +17,8 @@ public interface AuthPort {
   AuthTokens exchangeCodeForTokens(String code, String redirectUri);
 
   AuthUser getUserInfo(String accessToken);
+
+  void updateEmail(String userId, String newEmail);
+
+  void updatePassword(String userId, String currentPassword, String newPassword);
 }

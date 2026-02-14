@@ -5,6 +5,8 @@ import io.github.joaosimsic.core.domain.AuthUser;
 import io.github.joaosimsic.core.ports.input.AuthUseCase;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.request.AuthRequest;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.request.LoginRequest;
+import io.github.joaosimsic.infrastructure.adapters.input.web.dto.request.UpdateEmailRequest;
+import io.github.joaosimsic.infrastructure.adapters.input.web.dto.request.UpdatePasswordRequest;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.AuthResponse;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.GitHubAuthUrlResponse;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.UserResponse;
@@ -121,6 +123,29 @@ public class AuthController {
 
     AuthUser user = authUseCase.getCurrentUser(accessToken);
     return ResponseEntity.ok(mapToUserResponse(user));
+  }
+
+  @PatchMapping("/email")
+  public ResponseEntity<Void> updateEmail(
+      @CookieValue(name = "access_token") String accessToken,
+      @Valid @RequestBody UpdateEmailRequest request) {
+
+    AuthUser user = authUseCase.getCurrentUser(accessToken);
+    authUseCase.updateEmail(user.getId(), request.getNewEmail());
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/password")
+  public ResponseEntity<Void> updatePassword(
+      @CookieValue(name = "access_token") String accessToken,
+      @Valid @RequestBody UpdatePasswordRequest request) {
+
+    AuthUser user = authUseCase.getCurrentUser(accessToken);
+    authUseCase.updatePassword(
+        user.getId(), request.getCurrentPassword(), request.getNewPassword());
+
+    return ResponseEntity.noContent().build();
   }
 
   private void setAuthCookies(HttpServletResponse response, AuthTokens tokens) {

@@ -14,7 +14,6 @@ import io.github.joaosimsic.core.domain.User;
 import io.github.joaosimsic.core.events.DomainEvent;
 import io.github.joaosimsic.core.events.UserCreatedEvent;
 import io.github.joaosimsic.core.events.UserDeletedEvent;
-import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.exceptions.business.*;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.core.ports.output.UserPort;
@@ -206,74 +205,36 @@ class UserServiceTest {
   class UpdateUser {
 
     @Test
-    @DisplayName("should update user when found and email is unique")
-    void shouldUpdateUser() {
-      User existingUser = User.builder().id(1L).name("John Doe").email("john@example.com").build();
-
-      User updateRequest =
-          User.builder().id(1L).name("John Updated").email("john.updated@example.com").build();
-
-      User savedUser =
-          User.builder().id(1L).name("John Updated").email("john.updated@example.com").build();
-
-      when(userRepositoryPort.find(1L)).thenReturn(existingUser);
-      when(userRepositoryPort.findByEmail("john.updated@example.com")).thenReturn(null);
-      when(userRepositoryPort.save(any(User.class))).thenReturn(savedUser);
-
-      User result = userService.updateUser(updateRequest);
-
-      assertEquals("John Updated", result.getName());
-      assertEquals("john.updated@example.com", result.getEmail());
-    }
-
-    @Test
-    @DisplayName("should save UserUpdatedEvent to outbox when user is updated")
-    void shouldSaveUserUpdatedEventToOutbox() {
-      User existingUser = User.builder().id(1L).name("John Doe").email("john@example.com").build();
-
-      User updateRequest =
-          User.builder().id(1L).name("John Updated").email("john.updated@example.com").build();
-
-      User savedUser =
-          User.builder().id(1L).name("John Updated").email("john.updated@example.com").build();
-
-      when(userRepositoryPort.find(1L)).thenReturn(existingUser);
-      when(userRepositoryPort.findByEmail("john.updated@example.com")).thenReturn(null);
-      when(userRepositoryPort.save(any(User.class))).thenReturn(savedUser);
-
-      userService.updateUser(updateRequest);
-
-      ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
-      verify(outboxPort).save(eventCaptor.capture());
-
-      DomainEvent capturedEvent = eventCaptor.getValue();
-      assertInstanceOf(UserUpdatedEvent.class, capturedEvent);
-
-      UserUpdatedEvent event = (UserUpdatedEvent) capturedEvent;
-      assertEquals(1L, event.userId());
-      assertEquals("john.updated@example.com", event.email());
-      assertEquals("John Updated", event.name());
-      assertEquals("USER_UPDATED", event.eventType());
-      assertEquals(1L, event.aggregateId());
-      assertNotNull(event.occurredAt());
-    }
-
-    @Test
-    @DisplayName("should update user keeping same email")
-    void shouldUpdateUserKeepingSameEmail() {
+    @DisplayName("should update user name")
+    void shouldUpdateUserName() {
       User existingUser = User.builder().id(1L).name("John Doe").email("john@example.com").build();
 
       User updateRequest =
           User.builder().id(1L).name("John Updated").email("john@example.com").build();
 
+      User updatedUser =
+          User.builder().id(1L).name("John Updated").email("john@example.com").build();
+
       when(userRepositoryPort.find(1L)).thenReturn(existingUser);
-      when(userRepositoryPort.findByEmail("john@example.com")).thenReturn(existingUser);
-      when(userRepositoryPort.save(any(User.class))).thenReturn(existingUser);
+      when(userRepositoryPort.save(any(User.class))).thenReturn(updatedUser);
 
       User result = userService.updateUser(updateRequest);
 
-      assertNotNull(result);
-      verify(userRepositoryPort).save(any(User.class));
+      assertEquals("John Updated", result.getName());
+      assertEquals("john@example.com", result.getEmail());
+
+      ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+      verify(userRepositoryPort).save(userCaptor.capture());
+      assertEquals("John Updated", userCaptor.getValue().getName());
+
+      ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
+      verify(outboxPort).save(eventCaptor.capture());
+
+      DomainEvent capturedEvent = eventCaptor.getValue();
+
+      assertNotNull(capturedEvent);
+      assertEquals(1L, capturedEvent.aggregateId());
+      assertNotNull(capturedEvent.occurredAt());
     }
 
     @Test
@@ -287,28 +248,6 @@ class UserServiceTest {
       UserNotFoundException exception =
           assertThrows(UserNotFoundException.class, () -> userService.updateUser(updateRequest));
       assertTrue(exception.getMessage().contains("1"));
-
-      verify(userRepositoryPort, never()).save(any(User.class));
-      verify(outboxPort, never()).save(any(DomainEvent.class));
-    }
-
-    @Test
-    @DisplayName("should throw ConflictException when email belongs to another user")
-    void shouldThrowConflictExceptionWhenEmailBelongsToAnotherUser() {
-      User existingUser = User.builder().id(1L).name("John Doe").email("john@example.com").build();
-
-      User anotherUser = User.builder().id(2L).name("Jane Doe").email("jane@example.com").build();
-
-      User updateRequest =
-          User.builder().id(1L).name("John Updated").email("jane@example.com").build();
-
-      when(userRepositoryPort.find(1L)).thenReturn(existingUser);
-      when(userRepositoryPort.findByEmail("jane@example.com")).thenReturn(anotherUser);
-
-      ConflictException exception =
-          assertThrows(ConflictException.class, () -> userService.updateUser(updateRequest));
-      assertTrue(exception.getMessage().contains("jane@example.com"));
-      assertTrue(exception.getMessage().contains("already exists"));
 
       verify(userRepositoryPort, never()).save(any(User.class));
       verify(outboxPort, never()).save(any(DomainEvent.class));

@@ -1,5 +1,6 @@
 package io.github.joaosimsic.infrastructure.adapters.output.messaging;
 
+import io.github.joaosimsic.core.events.UserEmailUpdatedEvent;
 import io.github.joaosimsic.core.events.UserRegisteredEvent;
 import io.github.joaosimsic.core.ports.output.EventPublisherPort;
 import io.github.joaosimsic.infrastructure.config.RabbitConfig;
@@ -24,5 +25,16 @@ public class RabbitMQEventPublisher implements EventPublisherPort {
         event
     );
     log.debug("User registered event published successfully");
+  }
+
+  @Override
+  public void publishUserEmailUpdated(UserEmailUpdatedEvent event) {
+    log.info("Publishing user email updated event for user: {}", event.externalId());
+    rabbitTemplate.convertAndSend(
+        RabbitConfig.AUTH_EXCHANGE,
+        RabbitConfig.USER_EMAIL_UPDATED_ROUTING_KEY,
+        event
+    );
+    log.debug("User email updated event published successfully");
   }
 }
