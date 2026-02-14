@@ -18,5 +18,9 @@ public interface UserUseCase {
 
   User updateUser(User user);
 
+  User updateUserName(Long id, String name);
+
   void deleteUser(Long id);
+
+  void updateEmailByExternalId(String externalId, String newEmail);
 }
