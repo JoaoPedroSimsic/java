@@ -25,6 +25,7 @@
     <spring-cloud-aws.version>3.0.0</spring-cloud-aws.version>
     <testcontainers-redis.version>2.2.2</testcontainers-redis.version>
     <maven-failsafe.version>3.5.2</maven-failsafe.version>
+    <events.version>1.0.0</events.version>
   </properties>
 
   <dependencyManagement>
@@ -35,6 +36,12 @@
         <version>${spring-boot.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.github.joaosimsic</groupId>
+        <artifactId>events</artifactId>
+        <version>${events.version}</version>
       </dependency>
 
       <dependency>
