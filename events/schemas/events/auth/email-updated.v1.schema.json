@@ -9,5 +9,6 @@
     "occurredAt": { "type": "string", "format": "date-time" },
     "eventType": { "type": "string", "default": "USER_REGISTERED" }
   },
-  "required": ["externalId", "newEmail", "occurredAt", "eventType"]
+  "required": ["externalId", "newEmail", "occurredAt", "eventType"],
+  "additionalProperties": false
 }

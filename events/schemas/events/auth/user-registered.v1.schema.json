@@ -24,5 +24,6 @@
       "default": "USER_REGISTERED"
     }
   },
-  "required": ["externalId", "email", "occurredAt", "eventType"]
+  "required": ["externalId", "email", "occurredAt", "eventType"],
+  "additionalProperties": false
 }
