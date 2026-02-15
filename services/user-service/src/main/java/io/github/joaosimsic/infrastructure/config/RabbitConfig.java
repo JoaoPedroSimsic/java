@@ -1,7 +1,9 @@
 package io.github.joaosimsic.infrastructure.config;
 
-import io.github.joaosimsic.core.events.AuthUserEmailUpdatedEvent;
-import io.github.joaosimsic.core.events.AuthUserRegisteredEvent;
+import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
+import io.github.joaosimsic.events.auth.UserRegisteredEvent;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -12,9 +14,6 @@ import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Configuration
 public class RabbitConfig {
@@ -80,7 +79,9 @@ public class RabbitConfig {
 
   @Bean
   Binding authUserRegisteredBinding(TopicExchange authExchange, Queue authUserRegisteredQueue) {
-    return BindingBuilder.bind(authUserRegisteredQueue).to(authExchange).with(AUTH_USER_REGISTERED_ROUTING_KEY);
+    return BindingBuilder.bind(authUserRegisteredQueue)
+        .to(authExchange)
+        .with(AUTH_USER_REGISTERED_ROUTING_KEY);
   }
 
   @Bean
@@ -90,21 +91,29 @@ public class RabbitConfig {
 
   @Bean
   Binding authUserEmailUpdatedBinding(TopicExchange authExchange, Queue authUserEmailUpdatedQueue) {
-    return BindingBuilder.bind(authUserEmailUpdatedQueue).to(authExchange).with(AUTH_USER_EMAIL_UPDATED_ROUTING_KEY);
+    return BindingBuilder.bind(authUserEmailUpdatedQueue)
+        .to(authExchange)
+        .with(AUTH_USER_EMAIL_UPDATED_ROUTING_KEY);
   }
 
   @Bean
   Jackson2JsonMessageConverter messageConverter() {
     Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
     DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
-    
+
     Map<String, Class<?>> idClassMapping = new HashMap<>();
-    idClassMapping.put("io.github.joaosimsic.core.events.UserRegisteredEvent", AuthUserRegisteredEvent.class);
-    idClassMapping.put("io.github.joaosimsic.core.events.UserEmailUpdatedEvent", AuthUserEmailUpdatedEvent.class);
+    idClassMapping.put(
+        "io.github.joaosimsic.core.events.UserRegisteredEvent", UserRegisteredEvent.class);
+
+    idClassMapping.put(
+        "io.github.joaosimsic.core.events.UserEmailUpdatedEvent", EmailUpdatedEvent.class);
+
     typeMapper.setIdClassMapping(idClassMapping);
+
     typeMapper.setTrustedPackages("io.github.joaosimsic.core.events");
-    
+
     converter.setJavaTypeMapper(typeMapper);
+
     return converter;
   }
 
@@ -112,7 +121,9 @@ public class RabbitConfig {
   SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
       ConnectionFactory connectionFactory, Jackson2JsonMessageConverter messageConverter) {
     SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+
     factory.setConnectionFactory(connectionFactory);
+
     factory.setMessageConverter(messageConverter);
     return factory;
   }
