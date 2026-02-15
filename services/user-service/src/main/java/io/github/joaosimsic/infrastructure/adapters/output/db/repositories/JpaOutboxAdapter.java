@@ -3,8 +3,11 @@ package io.github.joaosimsic.infrastructure.adapters.output.db.repositories;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.joaosimsic.core.domain.OutboxEntry;
-import io.github.joaosimsic.core.events.DomainEvent;
+
 import io.github.joaosimsic.core.exceptions.infrastructure.MessagingException;
+import io.github.joaosimsic.events.user.UserCreatedEvent;
+import io.github.joaosimsic.events.user.UserUpdatedEvent;
+import io.github.joaosimsic.events.user.UserDeletedEvent;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.infrastructure.adapters.output.db.entities.OutboxEntity;
 import io.github.joaosimsic.infrastructure.adapters.output.db.entities.OutboxStatus;
@@ -25,19 +28,52 @@ public class JpaOutboxAdapter implements OutboxPort {
 
   @Override
   @Transactional
-  public void save(DomainEvent event) {
+  public void save(UserCreatedEvent event) {
     try {
       String payload = objectMapper.writeValueAsString(event);
+      OutboxEntity entity = OutboxEntity.builder()
+          .id(UUID.randomUUID())
+          .aggregateType("USER")
+          .aggregateId(String.valueOf(event.getAggregateId()))
+          .eventType(event.getEventType())
+          .payload(payload)
+          .build();
+      repository.save(entity);
+    } catch (JsonProcessingException e) {
+      throw new MessagingException("Failed to serialize event");
+    }
+  }
 
-      OutboxEntity entity =
-          OutboxEntity.builder()
-              .id(UUID.randomUUID())
-              .aggregateType("USER")
-              .aggregateId(event.aggregateId().toString())
-              .eventType(event.eventType())
-              .payload(payload)
-              .build();
+  @Override
+  @Transactional
+  public void save(UserUpdatedEvent event) {
+    try {
+      String payload = objectMapper.writeValueAsString(event);
+      OutboxEntity entity = OutboxEntity.builder()
+          .id(UUID.randomUUID())
+          .aggregateType("USER")
+          .aggregateId(String.valueOf(event.getAggregateId()))
+          .eventType(event.getEventType())
+          .payload(payload)
+          .build();
+      repository.save(entity);
+    } catch (JsonProcessingException e) {
+      throw new MessagingException("Failed to serialize event");
+    }
+  }
 
+  @Override
+  @Transactional
+  public void save(UserDeletedEvent event) {
+    try {
+      String payload = objectMapper.writeValueAsString(event);
+      OutboxEntity entity = OutboxEntity.builder()
+          .id(UUID.randomUUID())
+          .aggregateType("USER")
+          .aggregateId(String.valueOf(event.getAggregateId()))
+          .eventType(event.getEventType())
+          .payload(payload)
+          .build();
       repository.save(entity);
     } catch (JsonProcessingException e) {
       throw new MessagingException("Failed to serialize event");

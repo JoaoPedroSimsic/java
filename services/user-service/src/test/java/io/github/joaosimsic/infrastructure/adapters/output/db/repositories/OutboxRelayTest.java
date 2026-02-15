@@ -14,9 +14,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.joaosimsic.core.domain.OutboxEntry;
 import io.github.joaosimsic.core.events.DomainEvent;
-import io.github.joaosimsic.core.events.UserCreatedEvent;
-import io.github.joaosimsic.core.events.UserDeletedEvent;
-import io.github.joaosimsic.core.events.UserUpdatedEvent;
+import io.github.joaosimsic.core.events.UserCreatedEventWrapper;
+import io.github.joaosimsic.core.events.UserDeletedEventWrapper;
+import io.github.joaosimsic.core.events.UserUpdatedEventWrapper;
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.infrastructure.config.properties.OutboxProperties;
@@ -111,14 +111,14 @@ class OutboxRelayTest {
       ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
       verify(messagePublisher).publish(eventCaptor.capture());
 
-      DomainEvent capturedEvent = eventCaptor.getValue();
-      assertInstanceOf(UserCreatedEvent.class, capturedEvent);
+       DomainEvent capturedEvent = eventCaptor.getValue();
+       assertInstanceOf(UserCreatedEventWrapper.class, capturedEvent);
 
-      UserCreatedEvent event = (UserCreatedEvent) capturedEvent;
-      assertEquals(1L, event.userId());
-      assertEquals("john@example.com", event.email());
-      assertEquals("John Doe", event.name());
-      assertEquals(occurredAt, event.occurredAt());
+       UserCreatedEventWrapper event = (UserCreatedEventWrapper) capturedEvent;
+       assertEquals(1L, event.aggregateId()); // From DomainEvent
+       assertEquals("john@example.com", event.getUserCreatedEvent().getEmail());
+       assertEquals("John Doe", event.getUserCreatedEvent().getName());
+       assertEquals(occurredAt, event.occurredAt()); // From DomainEvent
 
       verify(outboxPort).markAsProcessed(List.of(entryId));
     }
@@ -142,14 +142,14 @@ class OutboxRelayTest {
       ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
       verify(messagePublisher).publish(eventCaptor.capture());
 
-      DomainEvent capturedEvent = eventCaptor.getValue();
-      assertInstanceOf(UserUpdatedEvent.class, capturedEvent);
+       DomainEvent capturedEvent = eventCaptor.getValue();
+       assertInstanceOf(UserUpdatedEventWrapper.class, capturedEvent);
 
-      UserUpdatedEvent event = (UserUpdatedEvent) capturedEvent;
-      assertEquals(2L, event.userId());
-      assertEquals("jane.updated@example.com", event.email());
-      assertEquals("Jane Updated", event.name());
-      assertEquals(occurredAt, event.occurredAt());
+       UserUpdatedEventWrapper event = (UserUpdatedEventWrapper) capturedEvent;
+       assertEquals(2L, event.aggregateId());
+       assertEquals("jane.updated@example.com", event.getUserUpdatedEvent().getEmail());
+       assertEquals("Jane Updated", event.getUserUpdatedEvent().getName());
+       assertEquals(occurredAt, event.occurredAt());
 
       verify(outboxPort).markAsProcessed(List.of(entryId));
     }
@@ -173,12 +173,13 @@ class OutboxRelayTest {
       ArgumentCaptor<DomainEvent> eventCaptor = ArgumentCaptor.forClass(DomainEvent.class);
       verify(messagePublisher).publish(eventCaptor.capture());
 
-      DomainEvent capturedEvent = eventCaptor.getValue();
-      assertInstanceOf(UserDeletedEvent.class, capturedEvent);
+       DomainEvent capturedEvent = eventCaptor.getValue();
+       assertInstanceOf(UserDeletedEventWrapper.class, capturedEvent);
 
-      UserDeletedEvent event = (UserDeletedEvent) capturedEvent;
-      assertEquals(3L, event.userId());
-      assertEquals(occurredAt, event.occurredAt());
+       UserDeletedEventWrapper event = (UserDeletedEventWrapper) capturedEvent;
+       assertEquals(3L, event.aggregateId());
+       assertEquals(occurredAt, event.occurredAt());
+       assertEquals(3, event.getUserDeletedEvent().getUserId());
 
       verify(outboxPort).markAsProcessed(List.of(entryId));
     }

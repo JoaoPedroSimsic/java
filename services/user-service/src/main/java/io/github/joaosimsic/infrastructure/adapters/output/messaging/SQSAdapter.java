@@ -1,11 +1,10 @@
 package io.github.joaosimsic.infrastructure.adapters.output.messaging;
 
 import io.awspring.cloud.sqs.operations.SqsTemplate;
-import io.github.joaosimsic.core.events.DomainEvent;
-import io.github.joaosimsic.core.events.UserDeletedEvent;
-import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
 import io.github.joaosimsic.events.user.UserCreatedEvent;
+import io.github.joaosimsic.events.user.UserDeletedEvent;
+import io.github.joaosimsic.events.user.UserUpdatedEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -19,18 +18,17 @@ public class SQSAdapter implements MessagePublisherPort {
   }
 
   @Override
-  public void publish(DomainEvent event) {
-    String queueName = getQueueName(event);
-
-    sqsTemplate.send(queueName, event);
+  public void publish(UserCreatedEvent event) {
+    sqsTemplate.send("user-created-queue", event);
   }
 
-  private String getQueueName(DomainEvent event) {
-    return switch (event) {
-      case UserCreatedEvent e -> "user-created-queue";
-      case UserUpdatedEvent e -> "user-updated-queue";
-      case UserDeletedEvent e -> "user-deleted-queue";
-      default -> throw new IllegalArgumentException("Unknown event type: " + event.eventType());
-    };
+  @Override
+  public void publish(UserUpdatedEvent event) {
+    sqsTemplate.send("user-updated-queue", event);
+  }
+
+  @Override
+  public void publish(UserDeletedEvent event) {
+    sqsTemplate.send("user-deleted-queue", event);
   }
 }

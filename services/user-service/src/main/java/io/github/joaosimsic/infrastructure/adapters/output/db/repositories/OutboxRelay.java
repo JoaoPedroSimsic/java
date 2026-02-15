@@ -2,12 +2,13 @@ package io.github.joaosimsic.infrastructure.adapters.output.db.repositories;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.joaosimsic.core.domain.OutboxEntry;
-import io.github.joaosimsic.core.events.DomainEvent;
-import io.github.joaosimsic.core.events.UserDeletedEvent;
-import io.github.joaosimsic.core.events.UserUpdatedEvent;
+
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
 import io.github.joaosimsic.events.user.UserCreatedEvent;
+import io.github.joaosimsic.events.user.UserDeletedEvent;
+import io.github.joaosimsic.events.user.UserUpdatedEvent;
+
 import io.github.joaosimsic.infrastructure.config.properties.OutboxProperties;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
@@ -44,14 +45,18 @@ public class OutboxRelay {
       }
 
       try {
-        DomainEvent event = deserializeEvent(entry);
+        Object event = deserializeEvent(entry); // Cast to Object
 
-        messagePublisher.publish(event);
+        switch (entry.eventType()) {
+          case "USER_CREATED" -> messagePublisher.publish((UserCreatedEvent) event);
+          case "USER_UPDATED" -> messagePublisher.publish((UserUpdatedEvent) event);
+          case "USER_DELETED" -> messagePublisher.publish((UserDeletedEvent) event);
+          default -> throw new IllegalArgumentException("Unknown event type: " + entry.eventType());
+        }
 
         processedIds.add(entry.id());
       } catch (Exception e) {
         log.error("Failed to relay event {}: {}", entry.id(), e.getMessage());
-
         outboxPort.incrementAttempt(entry.id(), e.getMessage());
       }
     }
@@ -62,7 +67,7 @@ public class OutboxRelay {
     }
   }
 
-  private DomainEvent deserializeEvent(OutboxEntry entry) throws Exception {
+  private Object deserializeEvent(OutboxEntry entry) throws Exception {
     return switch (entry.eventType()) {
       case "USER_CREATED" -> objectMapper.readValue(entry.payload(), UserCreatedEvent.class);
       case "USER_UPDATED" -> objectMapper.readValue(entry.payload(), UserUpdatedEvent.class);

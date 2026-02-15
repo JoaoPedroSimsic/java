@@ -5,8 +5,9 @@
   "description": "Event published when a user is updated.",
   "type": "object",
   "properties": {
-    "userId": {
+    "aggregateId": {
       "type": "integer",
+      "format": "int64",
       "description": "The unique identifier of the updated user."
     },
     "email": {
@@ -22,8 +23,12 @@
       "type": "string",
       "format": "date-time",
       "description": "The timestamp when the user was updated."
+    },
+    "eventType": {
+      "type": "string",
+      "default": "USER_UPDATED"
     }
   },
-  "required": ["userId", "email", "name", "occurredAt"],
+  "required": ["aggregateId", "email", "name", "occurredAt", "eventType"],
   "additionalProperties": false
 }

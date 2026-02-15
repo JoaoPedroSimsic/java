@@ -4,8 +4,9 @@
   "title": "UserCreatedEvent",
   "type": "object",
   "properties": {
-    "userId": {
-      "type": "integer"
+    "aggregateId": {
+      "type": "integer",
+      "format": "int64"
     },
     "email": {
       "type": "string",
@@ -17,8 +18,12 @@
     "occurredAt": {
       "type": "string",
       "format": "date-time"
+    },
+    "eventType": {
+      "type": "string",
+      "default": "USER_CREATED"
     }
   },
-  "required": ["userId", "email", "name", "occurredAt"],
+  "required": ["aggregateId", "email", "name", "occurredAt", "eventType"],
   "additionalProperties": false
 }
