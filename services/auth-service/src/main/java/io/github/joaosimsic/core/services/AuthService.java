@@ -3,10 +3,11 @@ package io.github.joaosimsic.core.services;
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
 import io.github.joaosimsic.core.events.UserEmailUpdatedEvent;
-import io.github.joaosimsic.core.events.UserRegisteredEvent;
 import io.github.joaosimsic.core.ports.input.AuthUseCase;
-import io.github.joaosimsic.core.ports.output.EventPublisherPort;
 import io.github.joaosimsic.core.ports.output.AuthPort;
+import io.github.joaosimsic.core.ports.output.EventPublisherPort;
+import io.github.joaosimsic.events.auth.UserRegisteredEvent;
+import java.util.Date;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,15 @@ public class AuthService implements AuthUseCase {
 
     AuthUser user = authPort.createUser(name, email, password);
 
-    eventPublisher.publishUserRegistered(new UserRegisteredEvent(user.getId(), email, name));
+    var event =
+        new UserRegisteredEvent()
+            .withExternalId(user.getId())
+            .withEmail(email)
+            .withName(name)
+            .withOccurredAt(new Date())
+            .withEventType("USER_REGISTERED");
+
+    eventPublisher.publishUserRegistered(event);
 
     log.info("User registered successfully, logging in: {}", email);
 
@@ -68,8 +77,15 @@ public class AuthService implements AuthUseCase {
 
     AuthUser user = authPort.getUserInfo(tokens.getAccessToken());
 
-    eventPublisher.publishUserRegistered(
-        new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName()));
+    var event =
+        new UserRegisteredEvent()
+            .withExternalId(user.getId())
+            .withEmail(user.getEmail())
+            .withName(user.getName())
+            .withOccurredAt(new Date())
+            .withEventType("USER_REGISTERED");
+
+    eventPublisher.publishUserRegistered(event);
 
     return tokens;
   }
