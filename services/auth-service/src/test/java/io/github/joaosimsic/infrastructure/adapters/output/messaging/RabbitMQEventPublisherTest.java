@@ -1,10 +1,12 @@
 package io.github.joaosimsic.infrastructure.adapters.output.messaging;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
-import io.github.joaosimsic.core.events.UserEmailUpdatedEvent;
-import io.github.joaosimsic.core.events.UserRegisteredEvent;
+import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
+import io.github.joaosimsic.events.auth.UserRegisteredEvent;
 import io.github.joaosimsic.infrastructure.config.RabbitConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,9 +17,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(MockitoExtension.class)
 class RabbitMQEventPublisherTest {
@@ -38,7 +37,11 @@ class RabbitMQEventPublisherTest {
     @Test
     @DisplayName("should send event to correct exchange with correct routing key")
     void shouldSendEventToCorrectExchangeWithCorrectRoutingKey() {
-      UserRegisteredEvent event = new UserRegisteredEvent("user-123", "john@example.com", "John Doe");
+      var event =
+          new UserRegisteredEvent()
+              .withExternalId("user-123")
+              .withEmail("john@example.com")
+              .withName("John Doe");
 
       eventPublisher.publishUserRegistered(event);
 
@@ -68,7 +71,8 @@ class RabbitMQEventPublisherTest {
       String email = "test@example.com";
       String name = "Test User";
 
-      UserRegisteredEvent event = new UserRegisteredEvent(externalId, email, name);
+      var event =
+          new UserRegisteredEvent().withExternalId(externalId).withEmail(email).withName(name);
 
       eventPublisher.publishUserRegistered(event);
 
@@ -81,11 +85,11 @@ class RabbitMQEventPublisherTest {
               eventCaptor.capture());
 
       UserRegisteredEvent capturedEvent = eventCaptor.getValue();
-      assertEquals(externalId, capturedEvent.externalId());
-      assertEquals(email, capturedEvent.email());
-      assertEquals(name, capturedEvent.name());
-      assertNotNull(capturedEvent.occurredAt());
-      assertEquals("USER_REGISTERED", capturedEvent.eventType());
+      assertEquals(externalId, capturedEvent.getExternalId());
+      assertEquals(email, capturedEvent.getEmail());
+      assertEquals(name, capturedEvent.getName());
+      assertNotNull(capturedEvent.getOccurredAt());
+      assertEquals("USER_REGISTERED", capturedEvent.getEventType());
     }
   }
 
@@ -96,7 +100,9 @@ class RabbitMQEventPublisherTest {
     @Test
     @DisplayName("should send event to correct exchange with correct routing key")
     void shouldSendEventToCorrectExchangeWithCorrectRoutingKey() {
-      UserEmailUpdatedEvent event = new UserEmailUpdatedEvent("user-123", "newemail@example.com");
+
+      var event =
+          new EmailUpdatedEvent().withExternalId("user-123").withNewEmail("john@example.com");
 
       eventPublisher.publishUserEmailUpdated(event);
 
@@ -119,23 +125,23 @@ class RabbitMQEventPublisherTest {
       String externalId = "user-789";
       String newEmail = "updated@example.com";
 
-      UserEmailUpdatedEvent event = new UserEmailUpdatedEvent(externalId, newEmail);
+      var event = new EmailUpdatedEvent().withExternalId(externalId).withNewEmail(newEmail);
 
       eventPublisher.publishUserEmailUpdated(event);
 
-      ArgumentCaptor<UserEmailUpdatedEvent> eventCaptor =
-          ArgumentCaptor.forClass(UserEmailUpdatedEvent.class);
+      ArgumentCaptor<EmailUpdatedEvent> eventCaptor =
+          ArgumentCaptor.forClass(EmailUpdatedEvent.class);
       verify(rabbitTemplate)
           .convertAndSend(
               eq(RabbitConfig.AUTH_EXCHANGE),
               eq(RabbitConfig.USER_EMAIL_UPDATED_ROUTING_KEY),
               eventCaptor.capture());
 
-      UserEmailUpdatedEvent capturedEvent = eventCaptor.getValue();
-      assertEquals(externalId, capturedEvent.externalId());
-      assertEquals(newEmail, capturedEvent.newEmail());
-      assertNotNull(capturedEvent.occurredAt());
-      assertEquals("USER_EMAIL_UPDATED", capturedEvent.eventType());
+      EmailUpdatedEvent capturedEvent = eventCaptor.getValue();
+      assertEquals(externalId, capturedEvent.getExternalId());
+      assertEquals(newEmail, capturedEvent.getNewEmail());
+      assertNotNull(capturedEvent.getOccurredAt());
+      assertEquals("USER_EMAIL_UPDATED", capturedEvent.getEventType());
     }
   }
 }

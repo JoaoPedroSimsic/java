@@ -11,8 +11,8 @@ import static org.mockito.Mockito.when;
 
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
-import io.github.joaosimsic.core.events.UserEmailUpdatedEvent;
-import io.github.joaosimsic.core.events.UserRegisteredEvent;
+import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
+import io.github.joaosimsic.events.auth.UserRegisteredEvent;
 import io.github.joaosimsic.core.exceptions.business.UserAlreadyExistsException;
 import io.github.joaosimsic.core.ports.output.AuthPort;
 import io.github.joaosimsic.core.ports.output.EventPublisherPort;
@@ -99,11 +99,11 @@ class AuthServiceTest {
       verify(eventPublisher).publishUserRegistered(eventCaptor.capture());
 
       UserRegisteredEvent capturedEvent = eventCaptor.getValue();
-      assertEquals("user-123", capturedEvent.externalId());
-      assertEquals(email, capturedEvent.email());
-      assertEquals(name, capturedEvent.name());
-      assertNotNull(capturedEvent.occurredAt());
-      assertEquals("USER_REGISTERED", capturedEvent.eventType());
+      assertEquals("user-123", capturedEvent.getExternalId());
+      assertEquals(email, capturedEvent.getEmail());
+      assertEquals(name, capturedEvent.getName());
+      assertNotNull(capturedEvent.getOccurredAt());
+      assertEquals("USER_REGISTERED", capturedEvent.getEventType());
     }
 
     @Test
@@ -282,10 +282,10 @@ class AuthServiceTest {
       verify(eventPublisher).publishUserRegistered(eventCaptor.capture());
 
       UserRegisteredEvent capturedEvent = eventCaptor.getValue();
-      assertEquals("github-user-123", capturedEvent.externalId());
-      assertEquals("github@example.com", capturedEvent.email());
-      assertEquals("GitHub User", capturedEvent.name());
-      assertNotNull(capturedEvent.occurredAt());
+      assertEquals("github-user-123", capturedEvent.getExternalId());
+      assertEquals("github@example.com", capturedEvent.getEmail());
+      assertEquals("GitHub User", capturedEvent.getName());
+      assertNotNull(capturedEvent.getOccurredAt());
     }
   }
 
@@ -329,7 +329,7 @@ class AuthServiceTest {
 
       InOrder inOrder = inOrder(authPort, eventPublisher);
       inOrder.verify(authPort).updateEmail(userId, newEmail);
-      inOrder.verify(eventPublisher).publishUserEmailUpdated(any(UserEmailUpdatedEvent.class));
+      inOrder.verify(eventPublisher).publishUserEmailUpdated(any(EmailUpdatedEvent.class));
     }
 
     @Test
@@ -340,15 +340,15 @@ class AuthServiceTest {
 
       authService.updateEmail(userId, newEmail);
 
-      ArgumentCaptor<UserEmailUpdatedEvent> eventCaptor =
-          ArgumentCaptor.forClass(UserEmailUpdatedEvent.class);
+      ArgumentCaptor<EmailUpdatedEvent> eventCaptor =
+          ArgumentCaptor.forClass(EmailUpdatedEvent.class);
       verify(eventPublisher).publishUserEmailUpdated(eventCaptor.capture());
 
-      UserEmailUpdatedEvent capturedEvent = eventCaptor.getValue();
-      assertEquals(userId, capturedEvent.externalId());
-      assertEquals(newEmail, capturedEvent.newEmail());
-      assertNotNull(capturedEvent.occurredAt());
-      assertEquals("USER_EMAIL_UPDATED", capturedEvent.eventType());
+      EmailUpdatedEvent capturedEvent = eventCaptor.getValue();
+      assertEquals(userId, capturedEvent.getExternalId());
+      assertEquals(newEmail, capturedEvent.getNewEmail());
+      assertNotNull(capturedEvent.getOccurredAt());
+      assertEquals("USER_EMAIL_UPDATED", capturedEvent.getEventType());
     }
   }
 
