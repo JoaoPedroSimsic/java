@@ -2,10 +2,10 @@ package io.github.joaosimsic.core.services;
 
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
-import io.github.joaosimsic.core.events.UserEmailUpdatedEvent;
 import io.github.joaosimsic.core.ports.input.AuthUseCase;
 import io.github.joaosimsic.core.ports.output.AuthPort;
 import io.github.joaosimsic.core.ports.output.EventPublisherPort;
+import io.github.joaosimsic.events.auth.EmailUpdatedEvent;
 import io.github.joaosimsic.events.auth.UserRegisteredEvent;
 import java.util.Date;
 import lombok.RequiredArgsConstructor;
@@ -103,7 +103,14 @@ public class AuthService implements AuthUseCase {
 
     authPort.updateEmail(userId, newEmail);
 
-    eventPublisher.publishUserEmailUpdated(new UserEmailUpdatedEvent(userId, newEmail));
+    var event =
+        new EmailUpdatedEvent()
+            .withExternalId(userId)
+            .withNewEmail(newEmail)
+            .withOccurredAt(new Date())
+            .withEventType("USER_EMAIL_UPDATED");
+
+    eventPublisher.publishUserEmailUpdated(event);
 
     log.info("Email updated successfully for user: {}", userId);
   }
