@@ -99,6 +99,7 @@ public class RabbitConfig {
   @Bean
   Jackson2JsonMessageConverter messageConverter() {
     Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+
     DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
 
     Map<String, Class<?>> idClassMapping = new HashMap<>();

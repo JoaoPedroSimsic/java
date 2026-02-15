@@ -1,10 +1,10 @@
 package io.github.joaosimsic.infrastructure.adapters.output.messaging;
 
 import io.github.joaosimsic.core.events.DomainEvent;
-import io.github.joaosimsic.core.events.UserCreatedEvent;
 import io.github.joaosimsic.core.events.UserDeletedEvent;
 import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
+import io.github.joaosimsic.events.user.UserCreatedEvent;
 import io.github.joaosimsic.infrastructure.config.RabbitConfig;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Profile;

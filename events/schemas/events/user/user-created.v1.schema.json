@@ -1,27 +1,22 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.io/joaosimsic/schemas/events/user-created.v1.schema.json",
-  "title": "User Created Event",
-  "description": "Event published when a new user is created.",
+  "title": "UserCreatedEvent",
   "type": "object",
   "properties": {
     "userId": {
-      "type": "integer",
-      "description": "The unique identifier of the created user."
+      "type": "integer"
     },
     "email": {
       "type": "string",
-      "format": "email",
-      "description": "The email address of the created user."
+      "format": "email"
     },
     "name": {
-      "type": "string",
-      "description": "The name of the created user."
+      "type": "string"
     },
     "occurredAt": {
       "type": "string",
-      "format": "date-time",
-      "description": "The timestamp when the user was created."
+      "format": "date-time"
     }
   },
   "required": ["userId", "email", "name", "occurredAt"],

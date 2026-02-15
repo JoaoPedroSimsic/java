@@ -2,10 +2,10 @@ package io.github.joaosimsic.infrastructure.adapters.output.messaging;
 
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import io.github.joaosimsic.core.events.DomainEvent;
-import io.github.joaosimsic.core.events.UserCreatedEvent;
 import io.github.joaosimsic.core.events.UserDeletedEvent;
 import io.github.joaosimsic.core.events.UserUpdatedEvent;
 import io.github.joaosimsic.core.ports.output.MessagePublisherPort;
+import io.github.joaosimsic.events.user.UserCreatedEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
