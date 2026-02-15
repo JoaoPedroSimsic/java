@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.github.joaosimsic</groupId>
+  <artifactId>events</artifactId>
+  <version>1.0.0</version>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>2.15.2</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jsonschema2pojo</groupId>
+        <artifactId>jsonschema2pojo-maven-plugin</artifactId>
+        <version>1.2.1</version>
+        <configuration>
+          <sourceDirectory>${basedir}/schemas/events</sourceDirectory>
+          <targetPackage>io.github.joaosimsic.events</targetPackage>
+          <generateBuilders>true</generateBuilders>
+          <useTitleAsClassname>true</useTitleAsClassname>
+          <includeConstructors>true</includeConstructors>
+          <includeAdditionalProperties>false</includeAdditionalProperties>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

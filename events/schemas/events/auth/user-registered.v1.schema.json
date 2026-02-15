@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hermes.com/schemas/events/auth/user-registered.v1.schema.json",
+  "title": "UserRegisteredEvent",
+  "type": "object",
+  "properties": {
+    "externalId": {
+      "type": "string",
+      "description": "The unique identifier from the Auth provider (e.g., Keycloak/Cognito ID)"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "name": {
+      "type": "string"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "eventType": {
+      "type": "string",
+      "default": "USER_REGISTERED"
+    }
+  },
+  "required": ["externalId", "email", "occurredAt", "eventType"]
+}
