@@ -10,6 +10,10 @@ export class AuthService {
   private readonly API_URL = environment.apiUrl;
 
   login(credentials: AuthRequest): Observable<AuthResponse> {
-      return this.http.post<AuthResponse>(`${this.API_URL}/auth/login`, credentials);
+    return this.http.post<AuthResponse>(`${this.API_URL}/auth/login`, credentials);
+  }
+
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.API_URL}/auth/logout`, {});
   }
 }
