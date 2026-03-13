@@ -42,7 +42,7 @@ export class AuthStore {
       .logout()
       .pipe(
         finalize(() => {
-          this._user.set(null); //
+          this._user.set(null);
         }),
       )
       .subscribe();
