@@ -1,0 +1,27 @@
+<div class="hermes-card max-w-md mx-auto mt-20">
+  <h1 class="text-2xl font-bold mb-6">Login</h1>
+
+  <form [formGroup]="loginForm" (ngSubmit)="handleLogin()" class="flex flex-col gap-4">
+    <app-input
+      id="email-field"
+      label="Email Address"
+      type="email"
+      [control]="loginForm.controls.email"
+    />
+
+    <app-input
+      id="password-field"
+      label="Password"
+      type="password"
+      [control]="loginForm.controls.password"
+    />
+
+    <button
+      type="submit"
+      [disabled]="loginForm.invalid"
+      class="bg-hermes-primary text-white py-2 rounded-md disabled:opacity-50"
+    >
+      Sign In
+    </button>
+  </form>
+</div>

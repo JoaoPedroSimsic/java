@@ -25,9 +25,10 @@ patches:
         spec:
           containers:
           - name: keycloak
-            readinessProbe:
-              initialDelaySeconds: 30
-              periodSeconds: 5
-            livenessProbe:
-              initialDelaySeconds: 60
-              periodSeconds: 15
+            resources:
+              requests:
+                memory: "1536Mi"
+                cpu: "500m"
+              limits:
+                memory: "3Gi"
+                cpu: "1000m"

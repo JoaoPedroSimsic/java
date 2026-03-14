@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-base: oklch(12% 0.01 260);
+  --color-surface: oklch(22% 0.02 260);
+  --color-surface-muted: oklch(28% 0.02 260);
+  --color-surface-emphasis: oklch(35% 0.03 260);
+  --color-surface-hover: oklch(42% 0.04 260);
+
+  --color-primary: oklch(70% 0.18 150);
+  --color-primary-hover: oklch(75% 0.16 150);
+
+  --color-main: oklch(98% 0.005 0);
+  --color-muted: oklch(80% 0.02 260);
+  --color-inverse: oklch(10% 0.01 260);
+
+  --color-success: oklch(70% 0.15 145);
+  --color-warning: oklch(80% 0.16 85);
+  --color-error: oklch(65% 0.2 25);
+}
+
+@utility glass {
+  @apply backdrop-blur-md bg-base/80 border border-surface-emphasis;
+}
+
+/* Optional: A lighter version for hover states or accents */
+@utility glass-light {
+  @apply backdrop-blur-lg bg-main/10 border border-main/20;
+}
+
+html {
+  scroll-behavior: smooth;
+}
