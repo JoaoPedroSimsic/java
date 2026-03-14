@@ -1,0 +1,278 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-03-14T03:30:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_hermes",
+      "_type": "workspace",
+      "name": "Hermes API",
+      "description": "Complete API for Hermes platform",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "name": "Base Environment",
+      "parentId": "wrk_hermes",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "access_token": ""
+      }
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "name": "Auth",
+      "parentId": "wrk_hermes"
+    },
+    {
+      "_id": "fld_users",
+      "_type": "request_group",
+      "name": "Users",
+      "parentId": "wrk_hermes"
+    },
+    {
+      "_id": "fld_websocket",
+      "_type": "request_group",
+      "name": "WebSocket",
+      "parentId": "wrk_hermes"
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "name": "Health",
+      "parentId": "wrk_hermes"
+    },
+    {
+      "_id": "req_register",
+      "_type": "request",
+      "name": "Register",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/register",
+      "parentId": "fld_auth",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"securePassword123\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "parentId": "fld_auth",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"dev@hermes.local\",\n  \"password\": \"password123\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "_id": "req_logout",
+      "_type": "request",
+      "name": "Logout",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/logout",
+      "parentId": "fld_auth",
+      "headers": []
+    },
+    {
+      "_id": "req_refresh",
+      "_type": "request",
+      "name": "Refresh Token",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/refresh",
+      "parentId": "fld_auth",
+      "headers": []
+    },
+    {
+      "_id": "req_github",
+      "_type": "request",
+      "name": "GitHub OAuth URL",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/github",
+      "parentId": "fld_auth",
+      "parameters": [
+        { "name": "redirectUri", "value": "http://localhost:3000/auth/callback" }
+      ]
+    },
+    {
+      "_id": "req_github_callback",
+      "_type": "request",
+      "name": "GitHub Callback",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/github/callback",
+      "parentId": "fld_auth",
+      "parameters": [
+        { "name": "code", "value": "" },
+        { "name": "state", "value": "" }
+      ]
+    },
+    {
+      "_id": "req_me",
+      "_type": "request",
+      "name": "Get Current User",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/me",
+      "parentId": "fld_auth",
+      "headers": []
+    },
+    {
+      "_id": "req_update_email",
+      "_type": "request",
+      "name": "Update Email",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/auth/email",
+      "parentId": "fld_auth",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"newemail@example.com\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "_id": "req_update_password",
+      "_type": "request",
+      "name": "Update Password",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/auth/password",
+      "parentId": "fld_auth",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"currentPassword\": \"oldPassword123\",\n  \"newPassword\": \"newSecurePassword456\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "_id": "req_list_users",
+      "_type": "request",
+      "name": "List Users",
+      "method": "GET",
+      "url": "{{ _.base_url }}/users",
+      "parentId": "fld_users",
+      "headers": []
+    },
+    {
+      "_id": "req_create_user",
+      "_type": "request",
+      "name": "Create User",
+      "method": "POST",
+      "url": "{{ _.base_url }}/users",
+      "parentId": "fld_users",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"externalId\": \"cognito-123\",\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "_id": "req_get_user",
+      "_type": "request",
+      "name": "Get User by ID",
+      "method": "GET",
+      "url": "{{ _.base_url }}/users/1",
+      "parentId": "fld_users",
+      "headers": []
+    },
+    {
+      "_id": "req_update_user",
+      "_type": "request",
+      "name": "Update User",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/users/1",
+      "parentId": "fld_users",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Jane Doe\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "_id": "req_delete_user",
+      "_type": "request",
+      "name": "Delete User",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/users/1",
+      "parentId": "fld_users",
+      "headers": []
+    },
+    {
+      "_id": "req_sync_user",
+      "_type": "request",
+      "name": "Sync User",
+      "method": "POST",
+      "url": "{{ _.base_url }}/users/sync",
+      "parentId": "fld_users",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"externalId\": \"cognito-abc123\",\n  \"email\": \"john@example.com\",\n  \"name\": \"John Doe\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
+      "_id": "req_ws_connect",
+      "_type": "websocket_request",
+      "name": "WebSocket Connection",
+      "description": "Real-time messaging WebSocket.\n\nAuthentication (in priority order):\n1. Subprotocol: bearer.<token>\n2. Cookie: access_token\n3. Query param: ?token=<token>\n\nClient-to-Server:\n- send_message, mark_read, typing, ping\n\nServer-to-Client:\n- message, pong, read_receipt, presence, ack, error, rate_limit_info, system",
+      "url": "ws://localhost:8081/ws",
+      "parentId": "fld_websocket",
+      "headers": [
+        { "name": "Sec-WebSocket-Protocol", "value": "bearer.{{ _.access_token }}" }
+      ]
+    },
+    {
+      "_id": "req_ws_health",
+      "_type": "request",
+      "name": "WS Gateway Health",
+      "method": "GET",
+      "url": "http://localhost:8081/health",
+      "parentId": "fld_health",
+      "headers": []
+    },
+    {
+      "_id": "req_ws_healthz",
+      "_type": "request",
+      "name": "WS Gateway Probe",
+      "method": "GET",
+      "url": "http://localhost:8081/healthz",
+      "parentId": "fld_health",
+      "headers": []
+    },
+    {
+      "_id": "req_http_health",
+      "_type": "request",
+      "name": "HTTP Gateway Health",
+      "method": "GET",
+      "url": "{{ _.base_url }}/actuator/health",
+      "parentId": "fld_health",
+      "headers": []
+    },
+    {
+      "_id": "req_http_info",
+      "_type": "request",
+      "name": "HTTP Gateway Info",
+      "method": "GET",
+      "url": "{{ _.base_url }}/actuator/info",
+      "parentId": "fld_health",
+      "headers": []
+    }
+  ]
+}
