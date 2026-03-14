@@ -10,6 +10,7 @@ build:
       context: .
       docker:
         dockerfile: gateways/http-gateway/Dockerfile
+        network: host
       sync:
         manual:
           - src: 'gateways/http-gateway/src/main/resources/**/*'
@@ -19,6 +20,7 @@ build:
       context: .
       docker:
         dockerfile: services/auth-service/Dockerfile
+        network: host
       sync:
         manual:
           - src: 'services/auth-service/src/main/resources/**/*'
@@ -28,6 +30,7 @@ build:
       context: .
       docker:
         dockerfile: services/user-service/Dockerfile
+        network: host
       sync:
         manual:
           - src: 'services/user-service/src/main/resources/**/*'
@@ -37,6 +40,7 @@ build:
       context: gateways/ws-gateway
       docker:
         dockerfile: Dockerfile
+        network: host
 
 manifests:
   kustomize:
