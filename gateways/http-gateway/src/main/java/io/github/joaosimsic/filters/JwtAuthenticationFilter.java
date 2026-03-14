@@ -26,7 +26,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
   private final GatewayProperties props;
 
   private static final List<String> PUBLIC_PATHS =
-      List.of("/swagger-ui", "/v3/api-docs", "/actuator", "/auth");
+      List.of(
+          "/swagger-ui",
+          "/v3/api-docs",
+          "/actuator",
+          "/auth/register",
+          "/auth/login",
+          "/auth/refresh",
+          "/auth/github");
 
   @Override
   public int getOrder() {
