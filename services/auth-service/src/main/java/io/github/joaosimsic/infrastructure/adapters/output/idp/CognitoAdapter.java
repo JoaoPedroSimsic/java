@@ -1,5 +1,7 @@
 package io.github.joaosimsic.infrastructure.adapters.output.idp;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
 import io.github.joaosimsic.core.exceptions.business.AuthenticationException;
@@ -7,6 +9,7 @@ import io.github.joaosimsic.core.exceptions.business.UserAlreadyExistsException;
 import io.github.joaosimsic.core.ports.output.AuthPort;
 import io.github.joaosimsic.infrastructure.config.properties.CognitoProperties;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import java.util.Base64;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -167,6 +170,60 @@ public class CognitoAdapter implements AuthPort {
   public AuthUser recoverUserInfo(Exception e, String accessToken) {
     log.warn("IdP Failure. Falling back to cache for token. Error: {}", e.getMessage());
     return getFromCache("authUsers", accessToken, AuthUser.class);
+  }
+
+  @Override
+  public AuthUser parseIdToken(String idToken) {
+    try {
+      // JWT format: header.payload.signature
+      String[] parts = idToken.split("\\.");
+      if (parts.length != 3) {
+        throw new AuthenticationException("Invalid ID token format");
+      }
+
+      // Decode the payload (second part)
+      String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+      ObjectMapper mapper = new ObjectMapper();
+      Map<String, Object> claims = mapper.readValue(payload, new TypeReference<>() {});
+
+      // Try to get name from various claims (GitHub users may not have 'name' claim set)
+      String name = (String) claims.get("name");
+      if (name == null || name.isBlank()) {
+        // Fallback: try given_name + family_name
+        String givenName = (String) claims.get("given_name");
+        String familyName = (String) claims.get("family_name");
+        if (givenName != null || familyName != null) {
+          name = ((givenName != null ? givenName : "") + " " + (familyName != null ? familyName : "")).trim();
+        }
+      }
+      if (name == null || name.isBlank()) {
+        // Fallback: use preferred_username or cognito:username
+        name = (String) claims.get("preferred_username");
+        if (name == null) {
+          name = (String) claims.get("cognito:username");
+        }
+      }
+      if (name == null || name.isBlank()) {
+        // Last resort: use email prefix
+        String email = (String) claims.get("email");
+        if (email != null && email.contains("@")) {
+          name = email.substring(0, email.indexOf("@"));
+        }
+      }
+
+      log.debug("Parsed ID token - sub: {}, email: {}, name: {}", 
+          claims.get("sub"), claims.get("email"), name);
+
+      return AuthUser.builder()
+          .id((String) claims.get("sub"))
+          .email((String) claims.get("email"))
+          .name(name)
+          .emailVerified(Boolean.TRUE.equals(claims.get("email_verified")))
+          .build();
+    } catch (Exception e) {
+      log.error("Failed to parse ID token: {}", e.getMessage());
+      throw new AuthenticationException("Failed to parse ID token");
+    }
   }
 
   @Override

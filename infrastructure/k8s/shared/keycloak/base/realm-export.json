@@ -58,6 +58,28 @@
       }
     }
   ],
+  "identityProviderMappers": [
+    {
+      "name": "github-name-mapper",
+      "identityProviderAlias": "github",
+      "identityProviderMapper": "github-user-attribute-mapper",
+      "config": {
+        "syncMode": "FORCE",
+        "jsonField": "name",
+        "userAttribute": "name"
+      }
+    },
+    {
+      "name": "github-email-mapper",
+      "identityProviderAlias": "github",
+      "identityProviderMapper": "github-user-attribute-mapper",
+      "config": {
+        "syncMode": "FORCE",
+        "jsonField": "email",
+        "userAttribute": "email"
+      }
+    }
+  ],
   "clients": [
     {
       "clientId": "hermes-app",
@@ -71,14 +93,13 @@
       "serviceAccountsEnabled": false,
       "authorizationServicesEnabled": false,
       "fullScopeAllowed": true,
-      "rootUrl": "http://localhost:3000",
-      "baseUrl": "http://localhost:3000",
-      "redirectUris": ["http://localhost:3000/*", "http://localhost:8080/*"],
-      "webOrigins": ["http://localhost:3000", "http://localhost:8080"],
+      "rootUrl": "http://localhost:4200",
+      "baseUrl": "http://localhost:4200",
+      "redirectUris": ["http://localhost:4200/*", "http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:4200", "http://localhost:3000"],
       "protocol": "openid-connect",
       "attributes": {
-        "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:3000/*"
+        "post.logout.redirect.uris": "http://localhost:4200/*"
       },
       "protocolMappers": [
         {

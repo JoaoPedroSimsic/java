@@ -10,9 +10,18 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "keycloak")
 public record KeycloakProperties(
     @NotBlank String serverUrl,
+    String externalUrl,
     @NotBlank String realm,
     @NotBlank String clientId,
     @Valid @NotNull Admin admin) {
+
+  /**
+   * Returns the external URL for browser redirects (e.g., OAuth flows).
+   * Falls back to serverUrl if externalUrl is not configured.
+   */
+  public String getExternalUrl() {
+    return externalUrl != null && !externalUrl.isBlank() ? externalUrl : serverUrl;
+  }
 
   public record Admin(@NotBlank String username, @NotBlank String password) {}
 }

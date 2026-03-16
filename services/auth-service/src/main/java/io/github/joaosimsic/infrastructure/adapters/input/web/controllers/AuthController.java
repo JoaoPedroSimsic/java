@@ -109,16 +109,14 @@ public class AuthController {
   public ResponseEntity<AuthResponse> handleGitHubCallback(
       @RequestParam String code, @RequestParam String redirectUri, HttpServletResponse response) {
 
-    AuthTokens tokens = authUseCase.handleGitHubCallback(code, redirectUri);
+    var result = authUseCase.handleGitHubCallback(code, redirectUri);
 
-    setAuthCookies(response, tokens);
-
-    AuthUser user = authUseCase.getCurrentUser(tokens.getAccessToken());
+    setAuthCookies(response, result.tokens());
 
     return ResponseEntity.ok(
         AuthResponse.builder()
             .message("GitHub login successful")
-            .user(mapToUserResponse(user))
+            .user(mapToUserResponse(result.user()))
             .build());
   }
 

@@ -4,8 +4,11 @@ import { RouterOutlet } from '@angular/router';
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+  template: `
+    <main class="bg-base min-h-screen">
+      <router-outlet />
+    </main>
+  `,
 })
 export class App {
   protected readonly title = signal('hermes');

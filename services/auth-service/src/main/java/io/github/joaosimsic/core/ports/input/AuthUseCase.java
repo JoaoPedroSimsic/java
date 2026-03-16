@@ -2,6 +2,7 @@ package io.github.joaosimsic.core.ports.input;
 
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
+import io.github.joaosimsic.core.domain.GitHubAuthResult;
 
 public interface AuthUseCase {
   AuthTokens register(String name, String email, String password);
@@ -14,7 +15,7 @@ public interface AuthUseCase {
   
   String getGitHubAuthUrl(String redirectUri, String state);
   
-  AuthTokens handleGitHubCallback(String code, String redirectUri);
+  GitHubAuthResult handleGitHubCallback(String code, String redirectUri);
   
   AuthUser getCurrentUser(String accessToken);
 
