@@ -50,7 +50,7 @@ class KeycloakAdapterTest {
     KeycloakProperties.Admin admin = new KeycloakProperties.Admin("admin-user", "admin-password");
 
     keycloakProperties =
-        new KeycloakProperties("http://localhost:8080", "test-realm", "test-client", admin);
+        new KeycloakProperties("http://localhost:8080", null, "test-realm", "test-client", admin);
 
     keycloakAdapter = new KeycloakAdapter(keycloakAdminClient, keycloakProperties, cacheManager);
   }

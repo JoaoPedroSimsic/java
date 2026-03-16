@@ -20,6 +20,7 @@ cognito:
 
 keycloak:
   server-url: ${KC_SERVER_URL}
+  external-url: ${KC_EXTERNAL_URL:}
   realm: ${KEYCLOAK_REALM}
   client-id: ${KEYCLOAK_CLIENT_ID}
   admin:

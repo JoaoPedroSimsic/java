@@ -4,7 +4,7 @@ spring:
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins: "${CORS_ALLOWED_ORIGINS}"
+            allowedOriginPatterns: "${FRONTEND_URL}"
             allowedMethods:
               - GET
               - POST
@@ -36,8 +36,6 @@ management:
       access: none
 
 gateway:
-  cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS}
   jwt:
     jwks-url: ${COGNITO_JWKS_URL}
     expected-issuer: ${COGNITO_JWT_ISSUER}

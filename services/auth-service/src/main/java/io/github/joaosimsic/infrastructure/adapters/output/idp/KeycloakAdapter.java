@@ -1,5 +1,7 @@
 package io.github.joaosimsic.infrastructure.adapters.output.idp;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
 import io.github.joaosimsic.core.exceptions.business.AuthenticationException;
@@ -8,6 +10,7 @@ import io.github.joaosimsic.core.ports.output.AuthPort;
 import io.github.joaosimsic.infrastructure.config.properties.KeycloakProperties;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.ws.rs.core.Response;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -206,6 +209,57 @@ public class KeycloakAdapter implements AuthPort {
   }
 
   @Override
+  public AuthUser parseIdToken(String idToken) {
+    try {
+      // JWT format: header.payload.signature
+      String[] parts = idToken.split("\\.");
+      if (parts.length != 3) {
+        throw new AuthenticationException("Invalid ID token format");
+      }
+
+      // Decode the payload (second part)
+      String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+      ObjectMapper mapper = new ObjectMapper();
+      Map<String, Object> claims = mapper.readValue(payload, new TypeReference<>() {});
+
+      // Try to get name from various claims (GitHub users may not have 'name' claim set)
+      String name = (String) claims.get("name");
+      if (name == null || name.isBlank()) {
+        // Fallback: try given_name + family_name
+        String givenName = (String) claims.get("given_name");
+        String familyName = (String) claims.get("family_name");
+        if (givenName != null || familyName != null) {
+          name = ((givenName != null ? givenName : "") + " " + (familyName != null ? familyName : "")).trim();
+        }
+      }
+      if (name == null || name.isBlank()) {
+        // Fallback: use preferred_username (typically GitHub username)
+        name = (String) claims.get("preferred_username");
+      }
+      if (name == null || name.isBlank()) {
+        // Last resort: use email prefix
+        String email = (String) claims.get("email");
+        if (email != null && email.contains("@")) {
+          name = email.substring(0, email.indexOf("@"));
+        }
+      }
+
+      log.debug("Parsed ID token - sub: {}, email: {}, name: {}", 
+          claims.get("sub"), claims.get("email"), name);
+
+      return AuthUser.builder()
+          .id((String) claims.get("sub"))
+          .email((String) claims.get("email"))
+          .name(name)
+          .emailVerified(Boolean.TRUE.equals(claims.get("email_verified")))
+          .build();
+    } catch (Exception e) {
+      log.error("Failed to parse ID token: {}", e.getMessage());
+      throw new AuthenticationException("Failed to parse ID token");
+    }
+  }
+
+  @Override
   @CacheEvict(value = "authUsers", allEntries = true)
   public void updateEmail(String userId, String newEmail) {
     log.info("Updating email for user {} in Keycloak", userId);
@@ -255,7 +309,8 @@ public class KeycloakAdapter implements AuthPort {
 
   @Override
   public String getGitHubAuthUrl(String redirectUri, String state) {
-    return UriComponentsBuilder.fromUriString(keycloakProperties.serverUrl())
+    // Use external URL for browser redirects (user-facing OAuth flow)
+    return UriComponentsBuilder.fromUriString(keycloakProperties.getExternalUrl())
         .path("/realms/" + keycloakProperties.realm() + "/protocol/openid-connect/auth")
         .queryParam("client_id", keycloakProperties.clientId())
         .queryParam("redirect_uri", redirectUri)
@@ -277,6 +332,7 @@ public class KeycloakAdapter implements AuthPort {
     formData.add("redirect_uri", redirectUri);
 
     try {
+      log.debug("Exchanging code for tokens at: {}", tokenUrl);
       Map<String, Object> response =
           webClient
               .post()
@@ -287,9 +343,10 @@ public class KeycloakAdapter implements AuthPort {
               .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
               .block();
 
+      log.debug("Token exchange response keys: {}", response != null ? response.keySet() : "null");
       return mapToAuthTokens(response);
     } catch (WebClientResponseException e) {
-      log.error("Code exchange failed. Status: {}", e.getStatusCode());
+      log.error("Code exchange failed. Status: {}, Body: {}", e.getStatusCode(), e.getResponseBodyAsString());
       throw new AuthenticationException("Failed to exchange authorization code");
     }
   }

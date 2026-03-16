@@ -62,9 +62,9 @@ deploy:
 
 portForward:
   - resourceType: service
-    resourceName: ingress-nginx-controller
-    namespace: ingress-nginx
-    port: 80
+    resourceName: http-gateway
+    namespace: hermes-dev
+    port: 8081
     localPort: 8080
 
 verify:

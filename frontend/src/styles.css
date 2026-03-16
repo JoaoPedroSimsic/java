@@ -23,7 +23,6 @@
   @apply backdrop-blur-md bg-base/80 border border-surface-emphasis;
 }
 
-/* Optional: A lighter version for hover states or accents */
 @utility glass-light {
   @apply backdrop-blur-lg bg-main/10 border border-main/20;
 }

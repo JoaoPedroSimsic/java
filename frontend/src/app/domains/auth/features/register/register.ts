@@ -4,20 +4,20 @@ import { RouterLink } from '@angular/router';
 import { AuthInput, AuthService, AuthStore } from '@domains/auth/index';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, AuthInput],
   template: `
-    <div class="min-h-screen bg-base relative overflow-hidden flex items-center justify-center px-6">
+    <div class="min-h-screen bg-base relative overflow-hidden flex items-center justify-center px-6 py-12">
       <div
         class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_top,var(--color-surface)_0%,transparent_50%)] opacity-50 pointer-events-none"
       ></div>
 
       <div
-        class="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl pointer-events-none"
+        class="absolute top-40 right-20 w-80 h-80 bg-primary/20 rounded-full blur-3xl pointer-events-none"
       ></div>
       <div
-        class="absolute bottom-20 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none"
+        class="absolute bottom-10 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none"
       ></div>
 
       <div class="relative w-full max-w-md">
@@ -26,8 +26,8 @@ import { AuthInput, AuthService, AuthStore } from '@domains/auth/index';
         </a>
 
         <div class="glass-light rounded-3xl p-8 md:p-10 shadow-2xl">
-          <h1 class="text-2xl md:text-3xl font-bold text-main mb-2">Welcome back</h1>
-          <p class="text-muted mb-8">Sign in to continue to Hermes</p>
+          <h1 class="text-2xl md:text-3xl font-bold text-main mb-2">Create your account</h1>
+          <p class="text-muted mb-8">Join Hermes and start messaging</p>
 
           @if (authStore.error()) {
             <div
@@ -37,13 +37,22 @@ import { AuthInput, AuthService, AuthStore } from '@domains/auth/index';
             </div>
           }
 
-          <form [formGroup]="loginForm" (ngSubmit)="handleLogin()" class="flex flex-col gap-5">
+          <form [formGroup]="registerForm" (ngSubmit)="handleRegister()" class="flex flex-col gap-5">
+            <app-auth-input
+              id="name"
+              label="Full Name"
+              type="text"
+              placeholder="John Doe"
+              [control]="registerForm.controls.name"
+              [errorMessage]="nameErrorMessage"
+            />
+
             <app-auth-input
               id="email"
               label="Email Address"
               type="email"
               placeholder="you@example.com"
-              [control]="loginForm.controls.email"
+              [control]="registerForm.controls.email"
               [errorMessage]="emailErrorMessage"
             />
 
@@ -51,9 +60,10 @@ import { AuthInput, AuthService, AuthStore } from '@domains/auth/index';
               id="password"
               label="Password"
               type="password"
-              placeholder="Enter your password"
-              [control]="loginForm.controls.password"
-              errorMessage="Password is required"
+              placeholder="Min. 8 characters"
+              [control]="registerForm.controls.password"
+              [errorMessage]="passwordErrorMessage"
+              hint="Must be at least 8 characters"
             />
 
             <button
@@ -65,9 +75,9 @@ import { AuthInput, AuthService, AuthStore } from '@domains/auth/index';
                 <span
                   class="animate-spin h-5 w-5 border-2 border-inverse border-t-transparent rounded-full"
                 ></span>
-                Signing in...
+                Creating account...
               } @else {
-                Sign In
+                Create Account
               }
             </button>
           </form>
@@ -78,14 +88,14 @@ import { AuthInput, AuthService, AuthStore } from '@domains/auth/index';
             </div>
             <div class="relative flex justify-center">
               <span class="px-4 text-sm text-muted bg-surface p-1 rounded-xl">
-                or continue with
+                or sign up with
               </span>
             </div>
           </div>
 
           <button
             type="button"
-            (click)="loginWithGitHub()"
+            (click)="signUpWithGitHub()"
             class="w-full py-3.5 px-6 rounded-xl bg-surface/50 border border-surface-emphasis text-main font-semibold hover:bg-surface-hover transition-all flex items-center justify-center gap-3"
           >
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -95,47 +105,69 @@ import { AuthInput, AuthService, AuthStore } from '@domains/auth/index';
             </svg>
             Continue with GitHub
           </button>
+
+          <p class="mt-6 text-xs text-center text-muted leading-relaxed">
+            By creating an account, you agree to our
+            <a href="#" class="text-primary hover:underline">Terms of Service</a>
+            and
+            <a href="#" class="text-primary hover:underline">Privacy Policy</a>
+          </p>
         </div>
 
         <p class="mt-8 text-center text-muted">
-          Don't have an account?
+          Already have an account?
           <a
-            routerLink="/signup"
+            routerLink="/login"
             class="text-primary font-semibold hover:underline underline-offset-2"
           >
-            Sign up
+            Sign in
           </a>
         </p>
       </div>
     </div>
   `,
 })
-export class Login {
+export class Register {
   protected readonly authStore = inject(AuthStore);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(NonNullableFormBuilder);
 
-  loginForm = this.fb.group({
+  registerForm = this.fb.group({
+    name: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
-  get emailErrorMessage(): string {
-    const emailControl = this.loginForm.controls.email;
-    if (emailControl.errors?.['required']) return 'Email is required';
-    if (emailControl.errors?.['email']) return 'Please enter a valid email address';
+  get nameErrorMessage(): string {
+    const control = this.registerForm.controls.name;
+    if (control.errors?.['required']) return 'Name is required';
+    if (control.errors?.['minlength']) return 'Name must be at least 2 characters';
     return '';
   }
 
-  handleLogin() {
-    if (this.loginForm.invalid) {
-      this.loginForm.markAllAsTouched();
-      return;
-    }
-    this.authStore.login(this.loginForm.getRawValue());
+  get emailErrorMessage(): string {
+    const control = this.registerForm.controls.email;
+    if (control.errors?.['required']) return 'Email is required';
+    if (control.errors?.['email']) return 'Please enter a valid email address';
+    return '';
   }
 
-  loginWithGitHub() {
+  get passwordErrorMessage(): string {
+    const control = this.registerForm.controls.password;
+    if (control.errors?.['required']) return 'Password is required';
+    if (control.errors?.['minlength']) return 'Password must be at least 8 characters';
+    return '';
+  }
+
+  handleRegister() {
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
+      return;
+    }
+    this.authStore.register(this.registerForm.getRawValue());
+  }
+
+  signUpWithGitHub() {
     const redirectUri = `${window.location.origin}/auth/github/callback`;
     this.authService.getGitHubAuthUrl(redirectUri).subscribe((res) => {
       window.location.href = res.authUrl;

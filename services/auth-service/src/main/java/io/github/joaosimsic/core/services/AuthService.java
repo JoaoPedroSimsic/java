@@ -2,6 +2,7 @@ package io.github.joaosimsic.core.services;
 
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
+import io.github.joaosimsic.core.domain.GitHubAuthResult;
 import io.github.joaosimsic.core.ports.input.AuthUseCase;
 import io.github.joaosimsic.core.ports.output.AuthPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
@@ -72,12 +73,13 @@ public class AuthService implements AuthUseCase {
   }
 
   @Override
-  public AuthTokens handleGitHubCallback(String code, String redirectUri) {
+  public GitHubAuthResult handleGitHubCallback(String code, String redirectUri) {
     log.info("Handling GitHub OAuth callback");
 
     AuthTokens tokens = authPort.exchangeCodeForTokens(code, redirectUri);
 
-    AuthUser user = authPort.getUserInfo(tokens.getAccessToken());
+    // Parse user info from ID token instead of calling userinfo endpoint
+    AuthUser user = authPort.parseIdToken(tokens.getIdToken());
 
     var event =
         new UserRegisteredEvent()
@@ -90,7 +92,7 @@ public class AuthService implements AuthUseCase {
 
     outboxPort.save(event, String.valueOf(user.getId()), "AUTH", event.getEventType());
 
-    return tokens;
+    return new GitHubAuthResult(tokens, user);
   }
 
   @Override
