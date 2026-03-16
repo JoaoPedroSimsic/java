@@ -49,7 +49,7 @@ export class GitHubCallback implements OnInit {
       .pipe(
         tap((res) => {
           this.authStore.setUser(res.user);
-          this.router.navigate(['/']);
+          this.router.navigate(['/home']);
         }),
         catchError((err) => {
           this.error = err.error?.message || 'Failed to complete GitHub sign in.';
