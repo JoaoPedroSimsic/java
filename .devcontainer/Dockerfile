@@ -1,5 +1,9 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
+# Base image uses `vscode`; rename to `hermes` to match remoteUser and mount paths.
+RUN groupmod -n hermes vscode \
+    && usermod -l hermes -d /home/hermes -m vscode
+
 ARG KUBECTL_VERSION=v1.30.1
 ARG SKAFFOLD_VERSION=v2.13.2
 ARG MINIKUBE_VERSION=v1.35.0

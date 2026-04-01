@@ -11,12 +11,12 @@
   },
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-    "source=${localEnv:HOME}/.kube,target=/home/vscode/.kube,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.minikube,target=/home/vscode/.minikube,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/.kube,target=/home/hermes/.kube,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.minikube,target=/home/hermes/.minikube,type=bind,consistency=cached"
   ],
   "containerEnv": {
-    "MINIKUBE_HOME": "/home/vscode/.minikube",
-    "KUBECONFIG": "/home/vscode/.kube/config"
+    "MINIKUBE_HOME": "/home/hermes/.minikube",
+    "KUBECONFIG": "/home/hermes/.kube/config"
   },
   "runArgs": [
     "--network=host"
