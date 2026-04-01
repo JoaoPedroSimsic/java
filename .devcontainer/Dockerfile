@@ -29,7 +29,7 @@ RUN curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kub
 RUN curl -fsSL "https://storage.googleapis.com/skaffold/releases/${SKAFFOLD_VERSION}/skaffold-linux-amd64" -o /usr/local/bin/skaffold \
     && chmod +x /usr/local/bin/skaffold
 
-# minikube
+# minikube (use with Docker driver + mounted host docker.sock; no separate host install required)
 RUN curl -fsSL "https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64" -o /usr/local/bin/minikube \
     && chmod +x /usr/local/bin/minikube
 

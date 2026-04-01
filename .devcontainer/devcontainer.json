@@ -5,6 +5,7 @@
     "context": ".."
   },
   "remoteUser": "vscode",
+  "initializeCommand": "mkdir -p \"${localEnv:HOME}/.kube\" \"${localEnv:HOME}/.minikube\"",
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
   },
