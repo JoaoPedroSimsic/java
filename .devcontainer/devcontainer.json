@@ -1,0 +1,40 @@
+{
+  "name": "hermes-dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    "source=${localEnv:HOME}/.kube,target=/home/vscode/.kube,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.minikube,target=/home/vscode/.minikube,type=bind,consistency=cached"
+  ],
+  "containerEnv": {
+    "MINIKUBE_HOME": "/home/vscode/.minikube",
+    "KUBECONFIG": "/home/vscode/.kube/config"
+  },
+  "runArgs": [
+    "--network=host"
+  ],
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker",
+        "vmware.vscode-spring-boot",
+        "vscjava.vscode-java-pack",
+        "golang.go",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      }
+    }
+  }
+}
