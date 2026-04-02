@@ -1,0 +1,42 @@
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns: "${FRONTEND_URL}"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - Content-Type
+              - Authorization
+              - X-Requested-With
+              - Accept
+              - Origin
+            allowCredentials: true
+            maxAge: 3600
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics 
+  endpoint:
+    health:
+      show-details: never 
+      probes:
+        enabled: true
+    gateway:
+      enabled: false
+      access: none
+
+gateway:
+  jwt:
+    jwks-url: ${COGNITO_JWKS_URL}
+    expected-issuer: ${COGNITO_JWT_ISSUER}
+    cache-ttl-seconds: ${CACHE_TTL_SECONDS}

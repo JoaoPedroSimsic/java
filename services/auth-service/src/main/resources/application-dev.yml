@@ -1,0 +1,29 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" 
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+    redis:
+      enabled: true
+cognito:
+  userPoolId: "unused-in-dev"
+  clientId: "unused-in-dev"
+  clientSecret: "unused-in-dev"
+  domainUrl: "unused-in-dev"
+  region: "us-east-1"
+
+keycloak:
+  server-url: ${KC_SERVER_URL}
+  external-url: ${KC_EXTERNAL_URL:}
+  realm: ${KEYCLOAK_REALM}
+  client-id: ${KEYCLOAK_CLIENT_ID}
+  admin:
+    username: ${KEYCLOAK_ADMIN}
+    password: ${KEYCLOAK_ADMIN_PASSWORD}
+

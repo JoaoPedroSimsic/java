@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../base
+patches:
+- patch: "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: hermes-ingress\n\
+    \  annotations:\n    cert-manager.io/cluster-issuer: letsencrypt-prod\n    nginx.ingress.kubernetes.io/ssl-redirect:\
+    \ \"true\"\n    nginx.ingress.kubernetes.io/force-ssl-redirect: \"true\"\n   \
+    \ nginx.ingress.kubernetes.io/rate-limit: \"100\"\nspec:\n  tls:\n    - hosts:\n\
+    \        - hermes.yourdomain.com\n      secretName: hermes-prod-tls\n  rules:\n\
+    \    - host: hermes.yourdomain.com"
+labels:
+- pairs:
+    environment: prod
+  includeSelectors: true

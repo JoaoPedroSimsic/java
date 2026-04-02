@@ -1,9 +1,9 @@
 server:
-  port: ${SERVER_PORT}
+  port: ${USER_SERVICE_PORT}
 
 app:
   jwt:
-    secret: ${APP_JWT_SECRET}
+    secret: ${GATEWAY_SECRET}
   outbox:
     poll-interval: 5000
     batch-size: 20
@@ -17,11 +17,11 @@ app:
 
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE}
+    active: ${USER_PROFILE}
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:postgresql://${USER_DB_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${APP_USER}
+    password: ${APP_PASSWORD}
     hikari:
       pool-name: AppHikariCP
       maximum-pool-size: 10
@@ -47,13 +47,13 @@ spring:
             log: true
 
   flyway:
-    user: ${SPRING_FLYWAY_USER}
-    password: ${SPRING_FLYWAY_PASSWORD}
+    user: ${FLYWAY_USER}
+    password: ${FLYWAY_PASSWORD}
 
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST}
-      port: ${SPRING_DATA_REDIS_PORT}
+      host: ${USER_CACHE_HOST}
+      port: ${REDIS_PORT}
       timeout: 2000ms
       lettuce:
         pool:
@@ -86,14 +86,16 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,circuitbreakers,caches
+        include: health, info
   endpoint:
     health:
-      show-details: always
+      probes:
+        enabled: true
+      show-details: never
   health:
-    circuitbreakers:
+    livenessState:
       enabled: true
-    redis:
+    readinessState:
       enabled: true
 
 logging:

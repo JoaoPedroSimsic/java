@@ -7,7 +7,8 @@
     "externalId": { "type": "string" },
     "newEmail": { "type": "string" },
     "occurredAt": { "type": "string", "format": "date-time" },
-    "eventType": { "type": "string", "default": "USER_REGISTERED" }
+    "eventType": { "type": "string", "default": "USER_EMAIL_UPDATED" },
+    "traceId": { "type": "string", "description": "Trace ID for distributed tracing" }
   },
   "required": ["externalId", "newEmail", "occurredAt", "eventType"],
   "additionalProperties": false

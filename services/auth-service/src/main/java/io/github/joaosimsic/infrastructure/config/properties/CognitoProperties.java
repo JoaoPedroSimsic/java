@@ -1,16 +1,14 @@
 package io.github.joaosimsic.infrastructure.config.properties;
 
-import lombok.Data;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
 
-@Data
-@Configuration
+@Validated
 @ConfigurationProperties(prefix = "cognito")
-public class CognitoProperties {
-  private String userPoolId;
-  private String clientId;
-  private String clientSecret;
-  private String domainUrl;
-  private String region;
-}
+public record CognitoProperties(
+    @NotBlank String userPoolId,
+    @NotBlank String clientId,
+    @NotBlank String clientSecret,
+    @NotBlank String domainUrl,
+    @NotBlank String region) {}

@@ -47,13 +47,11 @@ class OutboxRelayTest {
   private OutboxProperties outboxProperties;
 
   @BeforeEach
-  void setUp() {
+  void setup() {
     objectMapper = new ObjectMapper();
     objectMapper.registerModule(new JavaTimeModule());
 
-    outboxProperties = new OutboxProperties();
-    outboxProperties.setBatchSize(20);
-    outboxProperties.setMaxAttempts(5);
+    outboxProperties = new OutboxProperties(20, 5, 1L);
 
     outboxRelay = new OutboxRelay(outboxPort, messagePublisher, objectMapper, outboxProperties);
   }
@@ -65,11 +63,10 @@ class OutboxRelayTest {
     @Test
     @DisplayName("should do nothing when no unprocessed entries")
     void shouldDoNothingWhenNoUnprocessedEntries() {
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize())).thenReturn(List.of());
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize())).thenReturn(List.of());
 
       outboxRelay.processOutbox();
 
-      // Verify no publish method was called for any event type
       verify(messagePublisher, never()).publish(any(UserCreatedEvent.class));
       verify(messagePublisher, never()).publish(any(UserUpdatedEvent.class));
       verify(messagePublisher, never()).publish(any(UserDeletedEvent.class));
@@ -83,7 +80,7 @@ class OutboxRelayTest {
 
       OutboxEntry entry = new OutboxEntry(entryId, "1", "User", "USER_CREATED", "{}", 5);
 
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize())).thenReturn(List.of(entry));
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize())).thenReturn(List.of(entry));
 
       outboxRelay.processOutbox();
 
@@ -103,7 +100,7 @@ class OutboxRelayTest {
 
       OutboxEntry entry = new OutboxEntry(entryId, "1", "User", "USER_CREATED", payload, 0);
 
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize())).thenReturn(List.of(entry));
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize())).thenReturn(List.of(entry));
 
       outboxRelay.processOutbox();
 
@@ -132,7 +129,7 @@ class OutboxRelayTest {
 
       OutboxEntry entry = new OutboxEntry(entryId, "2", "User", "USER_UPDATED", payload, 0);
 
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize())).thenReturn(List.of(entry));
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize())).thenReturn(List.of(entry));
 
       outboxRelay.processOutbox();
 
@@ -161,7 +158,7 @@ class OutboxRelayTest {
 
       OutboxEntry entry = new OutboxEntry(entryId, "3", "User", "USER_DELETED", payload, 0);
 
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize())).thenReturn(List.of(entry));
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize())).thenReturn(List.of(entry));
 
       outboxRelay.processOutbox();
 
@@ -187,7 +184,7 @@ class OutboxRelayTest {
 
       OutboxEntry entry = new OutboxEntry(entryId, "1", "User", "UNKNOWN_EVENT", payload, 0);
 
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize())).thenReturn(List.of(entry));
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize())).thenReturn(List.of(entry));
 
       outboxRelay.processOutbox();
 
@@ -204,7 +201,7 @@ class OutboxRelayTest {
 
       OutboxEntry entry = new OutboxEntry(entryId, "1", "User", "USER_CREATED", invalidPayload, 0);
 
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize())).thenReturn(List.of(entry));
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize())).thenReturn(List.of(entry));
 
       outboxRelay.processOutbox();
 
@@ -224,7 +221,7 @@ class OutboxRelayTest {
 
       OutboxEntry entry = new OutboxEntry(entryId, "1", "User", "USER_CREATED", payload, 0);
 
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize())).thenReturn(List.of(entry));
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize())).thenReturn(List.of(entry));
       doThrow(new RuntimeException("Connection failed"))
           .when(messagePublisher)
           .publish(any(UserCreatedEvent.class));
@@ -259,7 +256,7 @@ class OutboxRelayTest {
       OutboxEntry entry2 = new OutboxEntry(entryId2, "2", "User", "USER_UPDATED", payload2, 0);
       OutboxEntry entry3 = new OutboxEntry(entryId3, "3", "User", "USER_DELETED", payload3, 0);
 
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize()))
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize()))
           .thenReturn(List.of(entry1, entry2, entry3));
 
       outboxRelay.processOutbox();
@@ -288,7 +285,7 @@ class OutboxRelayTest {
       OutboxEntry entry1 = new OutboxEntry(entryId1, "1", "User", "USER_CREATED", payload1, 0);
       OutboxEntry entry2 = new OutboxEntry(entryId2, "2", "User", "USER_DELETED", payload2, 0);
 
-      when(outboxPort.findUnprocessed(outboxProperties.getBatchSize()))
+      when(outboxPort.findUnprocessed(outboxProperties.batchSize()))
           .thenReturn(List.of(entry1, entry2));
 
       outboxRelay.processOutbox();

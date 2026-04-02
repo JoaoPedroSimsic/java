@@ -9,6 +9,7 @@ import io.github.joaosimsic.infrastructure.adapters.input.web.dto.request.Update
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.request.UpdatePasswordRequest;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.AuthResponse;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.GitHubAuthUrlResponse;
+import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.LoginResponse;
 import io.github.joaosimsic.infrastructure.adapters.input.web.dto.response.UserResponse;
 import io.github.joaosimsic.infrastructure.config.properties.AuthProperties;
 import jakarta.servlet.http.Cookie;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -50,7 +51,7 @@ public class AuthController {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<AuthResponse> login(
+  public ResponseEntity<LoginResponse> login(
       @Valid @RequestBody LoginRequest request, HttpServletResponse response) {
 
     AuthTokens tokens = authUseCase.login(request.getEmail(), request.getPassword());
@@ -60,7 +61,11 @@ public class AuthController {
     AuthUser user = authUseCase.getCurrentUser(tokens.getAccessToken());
 
     return ResponseEntity.ok(
-        AuthResponse.builder().message("Login successful").user(mapToUserResponse(user)).build());
+        LoginResponse.builder()
+            .message("Login successful")
+            .user(mapToUserResponse(user))
+            .accessToken(tokens.getAccessToken())
+            .build());
   }
 
   @PostMapping("/logout")
@@ -104,16 +109,14 @@ public class AuthController {
   public ResponseEntity<AuthResponse> handleGitHubCallback(
       @RequestParam String code, @RequestParam String redirectUri, HttpServletResponse response) {
 
-    AuthTokens tokens = authUseCase.handleGitHubCallback(code, redirectUri);
+    var result = authUseCase.handleGitHubCallback(code, redirectUri);
 
-    setAuthCookies(response, tokens);
-
-    AuthUser user = authUseCase.getCurrentUser(tokens.getAccessToken());
+    setAuthCookies(response, result.tokens());
 
     return ResponseEntity.ok(
         AuthResponse.builder()
             .message("GitHub login successful")
-            .user(mapToUserResponse(user))
+            .user(mapToUserResponse(result.user()))
             .build());
   }
 
@@ -152,20 +155,20 @@ public class AuthController {
     Cookie accessTokenCookie = new Cookie("access_token", tokens.getAccessToken());
 
     accessTokenCookie.setHttpOnly(true);
-    accessTokenCookie.setSecure(authProperties.getCookie().isSecure());
+    accessTokenCookie.setSecure(authProperties.cookie().secure());
     accessTokenCookie.setPath("/");
     accessTokenCookie.setMaxAge(tokens.getExpiresIn());
-    accessTokenCookie.setAttribute("SameSite", authProperties.getCookie().getSameSite());
+    accessTokenCookie.setAttribute("SameSite", authProperties.cookie().sameSite());
 
     response.addCookie(accessTokenCookie);
 
     Cookie refreshTokenCookie = new Cookie("refresh_token", tokens.getRefreshToken());
 
     refreshTokenCookie.setHttpOnly(true);
-    refreshTokenCookie.setSecure(authProperties.getCookie().isSecure());
-    refreshTokenCookie.setPath("/api/auth");
+    refreshTokenCookie.setSecure(authProperties.cookie().secure());
+    refreshTokenCookie.setPath("/auth");
     refreshTokenCookie.setMaxAge(tokens.getRefreshExpiresIn());
-    refreshTokenCookie.setAttribute("SameSite", authProperties.getCookie().getSameSite());
+    refreshTokenCookie.setAttribute("SameSite", authProperties.cookie().sameSite());
 
     response.addCookie(refreshTokenCookie);
   }
@@ -174,7 +177,7 @@ public class AuthController {
     Cookie accessTokenCookie = new Cookie("access_token", "");
 
     accessTokenCookie.setHttpOnly(true);
-    accessTokenCookie.setSecure(authProperties.getCookie().isSecure());
+    accessTokenCookie.setSecure(authProperties.cookie().secure());
     accessTokenCookie.setPath("/");
     accessTokenCookie.setMaxAge(0);
 
@@ -183,8 +186,8 @@ public class AuthController {
     Cookie refreshTokenCookie = new Cookie("refresh_token", "");
 
     refreshTokenCookie.setHttpOnly(true);
-    refreshTokenCookie.setSecure(authProperties.getCookie().isSecure());
-    refreshTokenCookie.setPath("/api/auth");
+    refreshTokenCookie.setSecure(authProperties.cookie().secure());
+    refreshTokenCookie.setPath("/auth");
     refreshTokenCookie.setMaxAge(0);
 
     response.addCookie(refreshTokenCookie);

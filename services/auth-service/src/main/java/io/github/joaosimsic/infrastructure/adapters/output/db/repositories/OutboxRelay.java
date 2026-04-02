@@ -29,14 +29,14 @@ public class OutboxRelay {
   @Scheduled(fixedDelayString = "${app.outbox.poll-interval}")
   @Transactional
   public void processOutbox() {
-    var entries = outboxPort.findUnprocessed(outboxProperties.getBatchSize());
+    var entries = outboxPort.findUnprocessed(outboxProperties.batchSize());
 
     if (entries.isEmpty()) return;
 
     List<UUID> processedIds = new ArrayList<>();
 
     for (OutboxEntry entry : entries) {
-      if (entry.attempts() >= outboxProperties.getMaxAttempts()) {
+      if (entry.attempts() >= outboxProperties.maxAttempts()) {
         outboxPort.markAsFailed(entry.id(), "Max attempts reached");
         continue;
       }

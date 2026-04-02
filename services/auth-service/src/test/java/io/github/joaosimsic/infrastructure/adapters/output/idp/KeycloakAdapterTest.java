@@ -1,5 +1,6 @@
 package io.github.joaosimsic.infrastructure.adapters.output.idp;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,10 +47,10 @@ class KeycloakAdapterTest {
 
   @BeforeEach
   void setUp() {
-    keycloakProperties = new KeycloakProperties();
-    keycloakProperties.setServerUrl("http://localhost:8080");
-    keycloakProperties.setRealm("test-realm");
-    keycloakProperties.setClientId("test-client");
+    KeycloakProperties.Admin admin = new KeycloakProperties.Admin("admin-user", "admin-password");
+
+    keycloakProperties =
+        new KeycloakProperties("http://localhost:8080", null, "test-realm", "test-client", admin);
 
     keycloakAdapter = new KeycloakAdapter(keycloakAdminClient, keycloakProperties, cacheManager);
   }
@@ -110,7 +111,7 @@ class KeycloakAdapterTest {
       assertEquals(email, capturedUser.getUsername());
       assertEquals(email, capturedUser.getEmail());
       assertTrue(capturedUser.isEnabled());
-      assertTrue(capturedUser.isEmailVerified());
+      assertFalse(capturedUser.isEmailVerified());
       assertEquals(Collections.emptyList(), capturedUser.getRequiredActions());
       assertEquals(name, capturedUser.getAttributes().get("name").get(0));
 
@@ -155,10 +156,10 @@ class KeycloakAdapterTest {
 
       String result = keycloakAdapter.getGitHubAuthUrl(redirectUri, state);
 
-      assertTrue(result.contains(keycloakProperties.getServerUrl()));
-      assertTrue(result.contains("/realms/" + keycloakProperties.getRealm()));
+      assertTrue(result.contains(keycloakProperties.serverUrl()));
+      assertTrue(result.contains("/realms/" + keycloakProperties.realm()));
       assertTrue(result.contains("/protocol/openid-connect/auth"));
-      assertTrue(result.contains("client_id=" + keycloakProperties.getClientId()));
+      assertTrue(result.contains("client_id=" + keycloakProperties.clientId()));
       assertTrue(result.contains("redirect_uri=" + redirectUri));
       assertTrue(result.contains("state=" + state));
       assertTrue(result.contains("response_type=code"));

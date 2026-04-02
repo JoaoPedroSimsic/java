@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-postgres-init-script
+  labels:
+    app: user-postgres
+    component: database
+data:
+  init-db.sh: |
+    #!/bin/bash
+    set -e
+    
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+        -- Create Flyway user with migration privileges
+        CREATE USER $FLYWAY_USER WITH PASSWORD '$FLYWAY_PASSWORD';
+        GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO $FLYWAY_USER;
+        GRANT ALL ON SCHEMA public TO $FLYWAY_USER;
+        
+        -- Create application user with limited privileges
+        CREATE USER $APP_USER WITH PASSWORD '$APP_PASSWORD';
+        GRANT CONNECT ON DATABASE $POSTGRES_DB TO $APP_USER;
+        GRANT USAGE ON SCHEMA public TO $APP_USER;
+        
+        -- Grant default privileges for future tables/sequences created by Flyway
+        ALTER DEFAULT PRIVILEGES FOR ROLE $FLYWAY_USER IN SCHEMA public 
+          GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO $APP_USER;
+        ALTER DEFAULT PRIVILEGES FOR ROLE $FLYWAY_USER IN SCHEMA public 
+          GRANT USAGE, SELECT ON SEQUENCES TO $APP_USER;
+    EOSQL
+    
+    echo "Database initialization completed successfully"

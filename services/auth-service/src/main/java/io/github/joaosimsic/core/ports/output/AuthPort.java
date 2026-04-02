@@ -18,6 +18,8 @@ public interface AuthPort {
 
   AuthUser getUserInfo(String accessToken);
 
+  AuthUser parseIdToken(String idToken);
+
   void updateEmail(String userId, String newEmail);
 
   void updatePassword(String userId, String currentPassword, String newPassword);

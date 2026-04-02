@@ -1,0 +1,146 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: hermes
+build:
+  local:
+    useBuildkit: true
+  artifacts:
+    - image: http-gateway
+      context: .
+      docker:
+        dockerfile: gateways/http-gateway/Dockerfile
+        network: host
+      sync:
+        manual:
+          - src: 'gateways/http-gateway/src/main/resources/**/*'
+            dest: /app/resources
+
+    - image: auth-service
+      context: .
+      docker:
+        dockerfile: services/auth-service/Dockerfile
+        network: host
+      sync:
+        manual:
+          - src: 'services/auth-service/src/main/resources/**/*'
+            dest: /app/resources
+
+    - image: user-service
+      context: .
+      docker:
+        dockerfile: services/user-service/Dockerfile
+        network: host
+      sync:
+        manual:
+          - src: 'services/user-service/src/main/resources/**/*'
+            dest: /app/resources
+
+    - image: ws-gateway
+      context: gateways/ws-gateway
+      docker:
+        dockerfile: Dockerfile
+        network: host
+
+manifests:
+  kustomize:
+    paths:
+      - infrastructure/k8s/clusters/dev
+    buildArgs:
+      - "--load-restrictor=LoadRestrictionsNone"
+      - "--enable-helm"
+
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - "--server-side"
+        - "--force-conflicts"
+  statusCheck: true
+  statusCheckDeadlineSeconds: 420
+  tolerateFailuresUntilDeadline: true
+
+portForward:
+  - resourceType: service
+    resourceName: http-gateway
+    namespace: hermes-dev
+    port: 8081
+    localPort: 8080
+
+verify:
+  - name: http-gateway-health
+    executionMode:
+      kubernetesCluster:
+        overrides: '{"metadata":{"namespace":"hermes-dev"}}'
+    container:
+      name: http-gateway-check
+      image: curlimages/curl:8.5.0
+      command: ["sh", "-c"]
+      args:
+        - |
+          for i in $(seq 1 30); do
+            if curl -sf http://http-gateway:8081/actuator/health; then
+              echo "API Gateway is healthy"
+              exit 0
+            fi
+            echo "Waiting for API Gateway... attempt $i"
+            sleep 2
+          done
+          echo "API Gateway health check failed"
+          exit 1
+  - name: auth-service-health
+    executionMode:
+      kubernetesCluster:
+        overrides: '{"metadata":{"namespace":"hermes-dev"}}'
+    container:
+      name: auth-service-check
+      image: curlimages/curl:8.5.0
+      command: ["sh", "-c"]
+      args:
+        - |
+          for i in $(seq 1 30); do
+            if curl -sf http://auth-service:8083/actuator/health; then
+              echo "Auth Service is healthy"
+              exit 0
+            fi
+            echo "Waiting for Auth Service... attempt $i"
+            sleep 2
+          done
+          echo "Auth Service health check failed"
+          exit 1
+  - name: user-service-health
+    executionMode:
+      kubernetesCluster:
+        overrides: '{"metadata":{"namespace":"hermes-dev"}}'
+    container:
+      name: user-service-check
+      image: curlimages/curl:8.5.0
+      command: ["sh", "-c"]
+      args:
+        - |
+          for i in $(seq 1 30); do
+            if curl -sf http://user-service:8084/actuator/health; then
+              echo "User Service is healthy"
+              exit 0
+            fi
+            echo "Waiting for User Service... attempt $i"
+            sleep 2
+          done
+          echo "User Service health check failed"
+          exit 1
+
+profiles:
+  - name: prod
+    manifests:
+      kustomize:
+        paths:
+          - infrastructure/k8s/clusters/prod
+        buildArgs:
+          - "--load-restrictor=LoadRestrictionsNone"
+          - "--enable-helm"
+    build:
+      artifacts:
+        - image: http-gateway
+        - image: auth-service
+        - image: user-service
+        - image: ws-gateway

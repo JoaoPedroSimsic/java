@@ -44,10 +44,10 @@ class UserControllerIT extends BaseIntegrationTest {
         .spec(spec)
         .body(request)
         .when()
-        .post("/api/users")
+        .post("/users")
         .then()
         .statusCode(HttpStatus.CREATED.value())
-        .header("Location", containsString("/api/users/"))
+        .header("Location", containsString("/users/"))
         .body("id", notNullValue())
         .body("name", is(request.name()))
         .body("email", is(request.email()))
@@ -64,7 +64,7 @@ class UserControllerIT extends BaseIntegrationTest {
         .spec(spec)
         .body(request)
         .when()
-        .post("/api/users")
+        .post("/users")
         .then()
         .statusCode(HttpStatus.BAD_REQUEST.value());
   }

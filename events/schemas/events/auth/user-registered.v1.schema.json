@@ -22,6 +22,10 @@
     "eventType": {
       "type": "string",
       "default": "USER_REGISTERED"
+    },
+    "traceId": {
+      "type": "string",
+      "description": "Trace ID for distributed tracing"
     }
   },
   "required": ["externalId", "email", "occurredAt", "eventType"],

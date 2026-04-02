@@ -2,6 +2,7 @@ package io.github.joaosimsic.core.services;
 
 import io.github.joaosimsic.core.domain.AuthTokens;
 import io.github.joaosimsic.core.domain.AuthUser;
+import io.github.joaosimsic.core.domain.GitHubAuthResult;
 import io.github.joaosimsic.core.ports.input.AuthUseCase;
 import io.github.joaosimsic.core.ports.output.AuthPort;
 import io.github.joaosimsic.core.ports.output.OutboxPort;
@@ -10,6 +11,7 @@ import io.github.joaosimsic.events.auth.UserRegisteredEvent;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -32,7 +34,8 @@ public class AuthService implements AuthUseCase {
             .withEmail(email)
             .withName(name)
             .withOccurredAt(Instant.now())
-            .withEventType("USER_REGISTERED");
+            .withEventType("USER_REGISTERED")
+            .withTraceId(MDC.get("traceId"));
 
     outboxPort.save(event, String.valueOf(user.getId()), "AUTH", event.getEventType());
 
@@ -70,12 +73,13 @@ public class AuthService implements AuthUseCase {
   }
 
   @Override
-  public AuthTokens handleGitHubCallback(String code, String redirectUri) {
+  public GitHubAuthResult handleGitHubCallback(String code, String redirectUri) {
     log.info("Handling GitHub OAuth callback");
 
     AuthTokens tokens = authPort.exchangeCodeForTokens(code, redirectUri);
 
-    AuthUser user = authPort.getUserInfo(tokens.getAccessToken());
+    // Parse user info from ID token instead of calling userinfo endpoint
+    AuthUser user = authPort.parseIdToken(tokens.getIdToken());
 
     var event =
         new UserRegisteredEvent()
@@ -83,11 +87,12 @@ public class AuthService implements AuthUseCase {
             .withEmail(user.getEmail())
             .withName(user.getName())
             .withOccurredAt(Instant.now())
-            .withEventType("USER_REGISTERED");
+            .withEventType("USER_REGISTERED")
+            .withTraceId(MDC.get("traceId"));
 
     outboxPort.save(event, String.valueOf(user.getId()), "AUTH", event.getEventType());
 
-    return tokens;
+    return new GitHubAuthResult(tokens, user);
   }
 
   @Override
@@ -108,7 +113,8 @@ public class AuthService implements AuthUseCase {
             .withExternalId(userId)
             .withNewEmail(newEmail)
             .withOccurredAt(Instant.now())
-            .withEventType("USER_EMAIL_UPDATED");
+            .withEventType("USER_EMAIL_UPDATED")
+            .withTraceId(MDC.get("traceId"));
 
     outboxPort.save(event, String.valueOf(userId), "AUTH", event.getEventType());
 

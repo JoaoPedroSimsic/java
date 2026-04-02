@@ -1,14 +1,14 @@
 server:
-  port: ${SERVER_PORT}
+  port: ${AUTH_SERVICE_PORT}
 
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE}
+    active: ${AUTH_PROFILE}
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:postgresql://${AUTH_DB_HOST}:${POSTGRES_PORT}/${POSTGRES_DB} 
+    username: ${APP_USER}
+    password: ${APP_PASSWORD}
     hikari:
       pool-name: AppHikariCP
       maximum-pool-size: 10
@@ -25,10 +25,14 @@ spring:
       ddl-auto: none
     show-sql: false
 
+  flyway:
+    user: ${FLYWAY_USER}
+    password: ${FLYWAY_PASSWORD}
+
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST}
-      port: ${SPRING_DATA_REDIS_PORT}
+      host: ${AUTH_CACHE_HOST}
+      port: ${REDIS_PORT}
 
   cache:
     type: redis
@@ -38,10 +42,10 @@ spring:
       cache-null-values: false
 
   rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST}
-    port: ${SPRING_RABBITMQ_PORT}
-    username: ${SPRING_RABBITMQ_USERNAME}
-    password: ${SPRING_RABBITMQ_PASSWORD}
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
 
 resilience4j:
   circuitbreaker:
@@ -59,24 +63,9 @@ resilience4j:
 
 app:
   outbox:
-    poll-interval: 5000
-    batch-size: 20
-    max-attempts: 5
-
-keycloak:
-  server-url: ${KEYCLOAK_SERVER_URL}
-  realm: ${KEYCLOAK_REALM}
-  client-id: ${KEYCLOAK_CLIENT_ID}
-  admin:
-    username: ${KEYCLOAK_ADMIN_USERNAME}
-    password: ${KEYCLOAK_ADMIN_PASSWORD}
-
-cognito:
-  user-pool-id: ${COGNITO_USER_POOL_ID}
-  client-id: ${COGNITO_CLIENT_ID}
-  client-secret: ${COGNITO_CLIENT_SECRET}
-  domain-url: ${COGNITO_DOMAIN_URL}
-  region: ${AWS_REGION}
+    poll-interval: ${OUTBOX_POLL_INTERVAL}
+    batch-size: ${OUTBOX_BATCH_SIZE}
+    max-attempts: ${OUTBOX_MAX_ATTEMPTS}
 
 auth:
   cookie:
@@ -92,14 +81,16 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,circuitbreakers,caches
+        include: health, info
   endpoint:
     health:
-      show-details: always
+      probes:
+        enabled: true
+      show-details: never 
   health:
-    circuitbreakers:
+    livenessState:
       enabled: true
-    redis:
+    readinessState:
       enabled: true
 
 logging:

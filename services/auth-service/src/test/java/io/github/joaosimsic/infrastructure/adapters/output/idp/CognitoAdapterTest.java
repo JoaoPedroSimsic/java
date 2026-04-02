@@ -1,5 +1,6 @@
 package io.github.joaosimsic.infrastructure.adapters.output.idp;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,12 +52,13 @@ class CognitoAdapterTest {
 
   @BeforeEach
   void setUp() {
-    cognitoProperties = new CognitoProperties();
-    cognitoProperties.setUserPoolId("us-east-1_testPool");
-    cognitoProperties.setClientId("test-client-id");
-    cognitoProperties.setClientSecret("test-client-secret");
-    cognitoProperties.setDomainUrl("https://test.auth.us-east-1.amazoncognito.com");
-    cognitoProperties.setRegion("us-east-1");
+    cognitoProperties =
+        new CognitoProperties(
+            "us-east-1_testPool",
+            "test-client-id",
+            "test-client-secret",
+            "https://test.auth.us-east-1.amazoncognito.com",
+            "us-east-1");
 
     cognitoAdapter = new CognitoAdapter(cognitoClient, cognitoProperties, cacheManager);
   }
@@ -78,7 +80,7 @@ class CognitoAdapterTest {
                   AttributeType.builder().name("sub").value("user-uuid-123").build(),
                   AttributeType.builder().name("email").value(email).build(),
                   AttributeType.builder().name("name").value(name).build(),
-                  AttributeType.builder().name("email_verified").value("true").build())
+                  AttributeType.builder().name("email_verified").value("false").build())
               .build();
 
       AdminCreateUserResponse createResponse =
@@ -131,7 +133,7 @@ class CognitoAdapterTest {
           attributes.stream().anyMatch(a -> a.name().equals("name") && a.value().equals(name)));
       assertTrue(
           attributes.stream()
-              .anyMatch(a -> a.name().equals("email_verified") && a.value().equals("true")));
+              .anyMatch(a -> a.name().equals("email_verified") && a.value().equals("false")));
     }
 
     @Test
@@ -290,7 +292,7 @@ class CognitoAdapterTest {
                   AttributeType.builder().name("sub").value("user-123").build(),
                   AttributeType.builder().name("email").value("john@example.com").build(),
                   AttributeType.builder().name("name").value("John Doe").build(),
-                  AttributeType.builder().name("email_verified").value("true").build())
+                  AttributeType.builder().name("email_verified").value("false").build())
               .build();
 
       when(cognitoClient.getUser(any(GetUserRequest.class))).thenReturn(getUserResponse);
@@ -301,7 +303,7 @@ class CognitoAdapterTest {
       assertEquals("user-123", result.getId());
       assertEquals("john@example.com", result.getEmail());
       assertEquals("John Doe", result.getName());
-      assertTrue(result.isEmailVerified());
+      assertFalse(result.isEmailVerified());
     }
   }
 
@@ -317,9 +319,9 @@ class CognitoAdapterTest {
 
       String result = cognitoAdapter.getGitHubAuthUrl(redirectUri, state);
 
-      assertTrue(result.contains(cognitoProperties.getDomainUrl()));
+      assertTrue(result.contains(cognitoProperties.domainUrl()));
       assertTrue(result.contains("identity_provider=GitHub"));
-      assertTrue(result.contains("client_id=" + cognitoProperties.getClientId()));
+      assertTrue(result.contains("client_id=" + cognitoProperties.clientId()));
       assertTrue(result.contains("redirect_uri=" + redirectUri));
       assertTrue(result.contains("state=" + state));
       assertTrue(result.contains("response_type=code"));

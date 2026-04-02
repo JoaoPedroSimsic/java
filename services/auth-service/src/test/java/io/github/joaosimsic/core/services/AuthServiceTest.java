@@ -106,11 +106,11 @@ class AuthServiceTest {
     void shouldHandleGitHubFlow() {
       String code = "auth-code";
       String redirectUri = "http://localhost:3000";
-      AuthTokens tokens = AuthTokens.builder().accessToken("token").build();
+      AuthTokens tokens = AuthTokens.builder().accessToken("token").idToken("id-token").build();
       AuthUser user = AuthUser.builder().id("gh-123").email("gh@test.com").name("GH User").build();
 
       when(authPort.exchangeCodeForTokens(code, redirectUri)).thenReturn(tokens);
-      when(authPort.getUserInfo("token")).thenReturn(user);
+      when(authPort.parseIdToken("id-token")).thenReturn(user);
 
       authService.handleGitHubCallback(code, redirectUri);
 

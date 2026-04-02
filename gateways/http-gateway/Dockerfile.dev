@@ -1,0 +1,18 @@
+FROM eclipse-temurin:21-jdk-alpine
+
+WORKDIR /app
+
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+COPY bom/pom.xml bom/
+
+COPY gateways/http-gateway gateways/http-gateway
+
+RUN sed -i '/<module>services\/.*<\/module>/d' pom.xml
+
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -pl gateways/http-gateway -am -B
+
+EXPOSE 8080
+
+ENTRYPOINT ["./mvnw", "spring-boot:run", "-pl", "gateways/http-gateway"]

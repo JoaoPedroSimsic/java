@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: http-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: http-gateway
+  template:
+    metadata:
+      labels:
+        app: http-gateway
+      annotations:
+        prometheus.io/scrape: "true"           
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8081"
+    spec:
+      initContainers:
+      - name: wait-for-redis
+        image: redis:7-alpine
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Redis connectivity..."
+          until redis-cli -h gateway-cache -p 6379 ping 2>/dev/null | grep -q PONG; do
+            echo "Waiting for Redis to be ready..."
+            sleep 2
+          done
+          echo "Redis is ready!"
+      - name: wait-for-keycloak
+        image: curlimages/curl:8.5.0
+        command:
+        - sh
+        - -c
+        - |
+            attempts=0
+            max_attempts=60
+            until curl -s -f -o /dev/null --connect-timeout 5 http://keycloak:8180/realms/hermes; do
+              attempts=$((attempts + 1))
+              if [ $attempts -ge $max_attempts ]; then
+                echo "Keycloak check timed out after $max_attempts attempts"
+                exit 1
+              fi
+              echo "Attempt $attempts/$max_attempts: Waiting for Keycloak..."
+              sleep 5
+            done
+            echo "Keycloak is ready!"
+      - name: wait-for-rabbitmq
+        image: curlimages/curl:8.5.0
+        command:
+        - sh
+        - -c
+        - |
+          until curl -sf --connect-timeout 5 http://rabbitmq:15672/api/healthchecks/node -u ${RABBITMQ_USER}:${RABBITMQ_PASSWORD}; do
+            echo "Waiting for RabbitMQ management API..."
+            sleep 3
+          done
+          echo "RabbitMQ is ready!"
+        env:
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secrets
+              key: RABBITMQ_USERNAME
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secrets
+              key: RABBITMQ_PASSWORD
+      containers:
+        - name: http-gateway
+          image: http-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: gateway-config
+            - secretRef:
+                name: gateway-secrets
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            failureThreshold: 30
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3

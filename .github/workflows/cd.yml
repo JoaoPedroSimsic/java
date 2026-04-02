@@ -13,10 +13,10 @@ jobs:
     environment: production
     strategy:
       matrix:
-        service: [gateway, auth-service, user-service]
+        service: [http-gateway, auth-service, user-service]
         include:
-          - service: gateway
-            path: gateway
+          - service: http-gateway
+            path: gateways/http-gateway
           - service: auth-service
             path: services/auth-service
           - service: user-service

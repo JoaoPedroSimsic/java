@@ -6,7 +6,7 @@
 
   <groupId>io.github.joaosimsic</groupId>
   <artifactId>hermes</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <packaging>pom</packaging>
   <name>hermes</name>
 
@@ -14,7 +14,7 @@
     <module>bom</module>
     <module>services/user-service</module>
     <module>services/auth-service</module>
-    <module>gateway</module>
+    <module>gateways/http-gateway</module>
     <module>events</module>
   </modules>
 

@@ -1,21 +1,27 @@
 package io.github.joaosimsic.infrastructure.config.properties;
 
-import lombok.Data;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
 
-@Data
-@Configuration
+@Validated
 @ConfigurationProperties(prefix = "keycloak")
-public class KeycloakProperties {
-  private String serverUrl;
-  private String realm;
-  private String clientId;
-  private Admin admin = new Admin();
+public record KeycloakProperties(
+    @NotBlank String serverUrl,
+    String externalUrl,
+    @NotBlank String realm,
+    @NotBlank String clientId,
+    @Valid @NotNull Admin admin) {
 
-  @Data
-  public static class Admin {
-    private String username;
-    private String password;
+  /**
+   * Returns the external URL for browser redirects (e.g., OAuth flows).
+   * Falls back to serverUrl if externalUrl is not configured.
+   */
+  public String getExternalUrl() {
+    return externalUrl != null && !externalUrl.isBlank() ? externalUrl : serverUrl;
   }
+
+  public record Admin(@NotBlank String username, @NotBlank String password) {}
 }

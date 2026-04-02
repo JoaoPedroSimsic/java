@@ -2,16 +2,22 @@ FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
 COPY bom/pom.xml bom/
-RUN mvn install -f bom/pom.xml -q
-
-COPY events/ events/
-RUN mvn install -f events/pom.xml -q
-
+COPY events/pom.xml events/
 COPY services/auth-service/pom.xml services/auth-service/
-RUN mvn dependency:go-offline -f services/auth-service/pom.xml -q
+
+RUN --mount=type=cache,target=/root/.m2 \
+  mvn install -f bom/pom.xml -DskipTests
+
+COPY events/schemas events/schemas
+RUN --mount=type=cache,target=/root/.m2 \
+  mvn install -f events/pom.xml -DskipTests
+
+RUN --mount=type=cache,target=/root/.m2 \
+  mvn -f services/auth-service/pom.xml dependency:resolve
 
 COPY services/auth-service/src services/auth-service/src
-RUN mvn package -f services/auth-service/pom.xml -DskipTests
+RUN --mount=type=cache,target=/root/.m2 \
+  mvn -f services/auth-service/pom.xml package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app

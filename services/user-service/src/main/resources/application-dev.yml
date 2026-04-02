@@ -4,6 +4,16 @@ spring:
     port: ${RABBITMQ_PORT}
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
+    listener:
+      simple:
+        acknowledge-mode: auto
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+          multiplier: 2.0
+          max-interval: 10000
 
   cloud:
     aws:
@@ -14,4 +24,18 @@ spring:
         secret-key: "dev"
       sqs:
         enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" 
+  endpoint:
+    health:
+      show-details: always 
+  health:
+    circuitbreakers:
+      enabled: true
+    redis:
+      enabled: true
 

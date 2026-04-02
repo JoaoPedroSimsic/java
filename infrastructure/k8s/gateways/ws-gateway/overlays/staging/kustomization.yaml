@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../base
+configMapGenerator:
+- name: ws-gateway-config
+  behavior: replace
+  envs:
+  - params.env
+secretGenerator:
+- name: ws-gateway-secrets
+  envs:
+  - secrets.env
+patches:
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ws-gateway
+    spec:
+      replicas: 2
+      template:
+        spec:
+          containers:
+          - name: ws-gateway
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+labels:
+- pairs:
+    environment: staging
+  includeSelectors: true

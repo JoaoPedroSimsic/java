@@ -18,7 +18,7 @@ public class CognitoConfig {
   @Bean
   CognitoIdentityProviderClient cognitoIdentityProviderClient() {
     return CognitoIdentityProviderClient.builder()
-        .region(Region.of(cognitoProperties.getRegion()))
+        .region(Region.of(cognitoProperties.region()))
         .build();
   }
 }

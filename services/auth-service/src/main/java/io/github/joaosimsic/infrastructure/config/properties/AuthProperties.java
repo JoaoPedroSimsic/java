@@ -1,27 +1,22 @@
 package io.github.joaosimsic.infrastructure.config.properties;
 
-import lombok.Data;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
 
-@Data
-@Configuration
+@Validated
 @ConfigurationProperties(prefix = "auth")
-public class AuthProperties {
-  private Cookie cookie = new Cookie();
-  private Github github = new Github();
+public record AuthProperties(@Valid @NotNull Cookie cookie, @Valid @NotNull Github github) {
 
-  @Data
-  public static class Cookie {
-    private String domain = "localhost";
-    private boolean secure = false;
-    private String sameSite = "Lax";
-    private int accessTokenMaxAge = 300;
-    private int refreshTokenMaxAge = 1800;
-  }
+  public record Cookie(
+      @NotBlank String domain,
+      boolean secure,
+      @NotBlank String sameSite,
+      @Min(1) int accessTokenMaxAge,
+      @Min(1) int refreshTokenMaxAge) {}
 
-  @Data
-  public static class Github {
-    private String redirectUri;
-  }
+  public record Github(@NotBlank String redirectUri) {}
 }

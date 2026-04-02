@@ -1,0 +1,104 @@
+server:
+  port: ${HTTP_GATEWAY_PORT}
+
+spring:
+  application:
+    name: http-gateway
+  profiles:
+    active: ${GATEWAY_PROFILE}
+
+  data:
+    redis:
+      host: ${GATEWAY_CACHE_HOST}
+      port: ${REDIS_PORT}
+
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://${AUTH_SERVICE_HOST}:${AUTH_SERVICE_PORT}
+          predicates:
+            - Path=/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                '[redis-rate-limiter.replenishRate]': ${RATE_LIMIT_UNAUTHENTICATED}
+                '[redis-rate-limiter.burstCapacity]': ${RATE_LIMIT_UNAUTHENTICATED_BURST}
+                '[redis-rate-limiter.requestedTokens]': 1
+                key-resolver: "#{@ipKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: authServiceCircuitBreaker
+                fallbackUri: forward:/fallback/auth-service
+
+        - id: user-service
+          uri: http://${USER_SERVICE_HOST}:${USER_SERVICE_PORT}
+          predicates:
+            - Path=/users/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                '[redis-rate-limiter.replenishRate]': ${RATE_LIMIT_AUTHENTICATED}
+                '[redis-rate-limiter.burstCapacity]': ${RATE_LIMIT_AUTHENTICATED_BURST}
+                '[redis-rate-limiter.requestedTokens]': 1
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: userServiceCircuitBreaker
+                fallbackUri: forward:/fallback/user-service
+
+        - id: jwks
+          uri: http://${USER_SERVICE_HOST}:${USER_SERVICE_PORT}
+          predicates:
+            - Path=/.well-known/jwks.json
+
+        - id: user-service-docs
+          uri: http://${USER_SERVICE_HOST}:${USER_SERVICE_PORT}
+          predicates:
+            - Path=/swagger-ui/**,/v3/api-docs/**
+
+gateway:
+  secret: ${GATEWAY_SECRET}
+  rate-limit:
+    authenticated:
+      replenish-rate: ${RATE_LIMIT_AUTHENTICATED}
+      burst-capacity: ${RATE_LIMIT_AUTHENTICATED_BURST}
+    unauthenticated:
+      replenish-rate: ${RATE_LIMIT_UNAUTHENTICATED}
+      burst-capacity: ${RATE_LIMIT_UNAUTHENTICATED_BURST}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userServiceCircuitBreaker:
+        slidingWindowSize: ${CB_SLIDING_WINDOW_SIZE}
+        minimumNumberOfCalls: ${CB_MINIMUM_NUMBER_OF_CALLS}
+        failureRateThreshold: ${CB_FAILURE_RATE_THRESHOLD}
+        waitDurationInOpenState: ${CB_WAIT_DURATION_OPEN_STATE_SECONDS}000
+        permittedNumberOfCallsInHalfOpenState: ${CB_PERMITTED_CALLS_HALF_OPEN}
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+      authServiceCircuitBreaker:
+        slidingWindowSize: ${CB_SLIDING_WINDOW_SIZE}
+        minimumNumberOfCalls: ${CB_MINIMUM_NUMBER_OF_CALLS}
+        failureRateThreshold: ${CB_FAILURE_RATE_THRESHOLD}
+        waitDurationInOpenState: ${CB_WAIT_DURATION_OPEN_STATE_SECONDS}000
+        permittedNumberOfCallsInHalfOpenState: ${CB_PERMITTED_CALLS_HALF_OPEN}
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+  timelimiter:
+    instances:
+      userServiceCircuitBreaker:
+        timeoutDuration: ${TIME_LIMITER_TIMEOUT_SECONDS}s
+      authServiceCircuitBreaker:
+        timeoutDuration: ${TIME_LIMITER_TIMEOUT_SECONDS}s
+
+management:
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+logging:
+  level:
+    '[io.github.joaosimsic.gateway]': DEBUG
+    '[org.springframework.cloud.gateway]': DEBUG

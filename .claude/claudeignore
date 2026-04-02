@@ -1,0 +1,100 @@
+# Dependencies & package managers
+node_modules/
+**/node_modules/
+.pnp/
+.pnp.js
+
+# Java / Maven / Gradle
+target/
+**/target/
+build/
+**/build/
+.gradle/
+**/.gradle/
+out/
+**/out/
+*.class
+*.jar
+
+# Frontend / Angular / bundlers
+dist/
+**/dist/
+.angular/
+**/.angular/
+.cache/
+**/.cache/
+.parcel-cache/
+.turbo/
+.next/
+.nuxt/
+.svelte-kit/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Logs & temp
+*.log
+*.log.*
+**/log/
+tmp/
+temp/
+*.tmp
+*.swp
+*~
+
+# IDE & editors
+.idea/
+**/.idea/
+.vscode/
+**/.vscode/
+*.iml
+.project
+.classpath
+.settings/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & local env (never index)
+.env
+.env.*
+!.env.example
+*.pem
+!public.pem
+
+# Git
+.git/
+
+# Terraform / infra artifacts
+.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Test & coverage
+coverage/
+**/coverage/
+.nyc_output/
+**/htmlcov/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+
+# Docker (large layers / local exports)
+*.tar
+
+# Archives (often vendor drops)
+*.zip
+*.gz
+*.tgz
+*.rar
+*.7z
+
+# Maven wrapper binary (regenerated)
+.mvn/wrapper/maven-wrapper.jar
+
+# Large generated / binary blobs
+*.min.js.map
+*.wasm

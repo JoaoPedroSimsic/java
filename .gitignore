@@ -38,19 +38,8 @@ build/
 
 .vscode/
 
-**/.terraform/*
-*.tfstate
-*.tfstate.*
-crash.log
-crash.*.log
-*.tfvars
-*.tfvars.json
-!terraform.tfvars.example
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-
 node_modules
 dist
 *.zip
+
+CLAUDE.md

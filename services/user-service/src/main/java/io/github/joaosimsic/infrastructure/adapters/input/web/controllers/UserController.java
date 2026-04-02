@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 @Validated
 public class UserController {
   private final UserUseCase userUseCase;
