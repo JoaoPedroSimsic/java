@@ -62,7 +62,7 @@ export class AuthStore {
       .pipe(
         tap((res) => {
           this._user.set(res.user);
-          this.router.navigate(['/']);
+          this.router.navigate(['/home']);
         }),
         catchError((err: HttpErrorResponse) => {
           const message = err.error?.message || 'An unexpected error occurred';
@@ -84,7 +84,7 @@ export class AuthStore {
       .pipe(
         tap((res) => {
           this._user.set(res.user);
-          this.router.navigate(['/']);
+          this.router.navigate(['/home']);
         }),
         catchError((err: HttpErrorResponse) => {
           const message = err.error?.message || 'An unexpected error occurred';
