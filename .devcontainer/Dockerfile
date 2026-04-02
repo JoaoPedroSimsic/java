@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
-# Base image uses `vscode`; rename to `hermes` to match remoteUser and mount paths.
+# Keep a stable non-default username for this project.
 RUN groupmod -n hermes vscode \
     && usermod -l hermes -d /home/hermes -m vscode
 
@@ -21,8 +21,11 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         openjdk-21-jdk \
         maven \
         golang \
-        nodejs \
-        npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Angular CLI 21+ requires Node.js >=20.19 or >=22.12 (Ubuntu apt ships an older default).
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # kubectl

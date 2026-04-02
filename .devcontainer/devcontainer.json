@@ -19,7 +19,9 @@
     "KUBECONFIG": "/home/hermes/.kube/config"
   },
   "runArgs": [
-    "--network=host"
+    "--network=host",
+    "--ulimit",
+    "nofile=1048576:1048576"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "customizations": {
