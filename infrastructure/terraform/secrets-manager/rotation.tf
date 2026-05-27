@@ -61,13 +61,13 @@ resource "aws_iam_role_policy" "rotation_lambda" {
 }
 
 resource "aws_lambda_function" "rotation" {
-  count         = var.enable_automatic_rotation ? 1 : 0
-  function_name = local.rotation_lambda_name
-  role          = aws_iam_role.rotation_lambda[0].arn
-  handler       = "index.handler"
-  runtime       = "nodejs20.x"
-  timeout       = 30
-  filename      = data.archive_file.rotation_lambda.output_path
+  count            = var.enable_automatic_rotation ? 1 : 0
+  function_name    = local.rotation_lambda_name
+  role             = aws_iam_role.rotation_lambda[0].arn
+  handler          = "index.handler"
+  runtime          = "nodejs20.x"
+  timeout          = 30
+  filename         = data.archive_file.rotation_lambda.output_path
   source_code_hash = data.archive_file.rotation_lambda.output_base64sha256
 
   environment {

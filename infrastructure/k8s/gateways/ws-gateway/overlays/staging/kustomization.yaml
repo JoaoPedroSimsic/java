@@ -4,7 +4,6 @@ resources:
 - ../../base
 configMapGenerator:
 - name: ws-gateway-config
-  behavior: replace
   envs:
   - params.env
 patches:
