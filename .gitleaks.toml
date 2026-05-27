@@ -1,0 +1,9 @@
+title = "hermes gitleaks config"
+
+[allowlist]
+description = "detect-secrets baseline and other known false positives"
+paths = [
+  '''(?:^|/)\.secrets\.baseline$''',
+  '''(?:^|/).*\.example$''',
+  '''(?:^|/).*\.example\..*$''',
+]
