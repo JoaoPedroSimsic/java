@@ -5,6 +5,7 @@ namespace: vault
 
 resources:
   - namespace.yaml
+  - network-policy.yaml
 
 patches:
   # Helm test pod must not be applied via kubectl (Skaffold counts it as a workload).

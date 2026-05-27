@@ -58,7 +58,7 @@ Health probes use `/actuator/health` with `show-details: never` (or `when_author
 | RabbitMQ | — | `RABBITMQ_DEFAULT_USER/PASS`, `RABBITMQ_USERNAME/PASSWORD` |
 | Keycloak | `GITHUB_CLIENT_ID`, `POSTGRES_DB` | `KEYCLOAK_ADMIN*`, `GITHUB_CLIENT_SECRET` |
 
-Dynamic credentials (Vault database engine, short-lived Keycloak admin tokens) are deferred to Phase D.
+Dynamic credentials (Vault database engine, short-lived Keycloak admin tokens) are available in **Phase D** — see [`infrastructure/secrets/PHASE-D.md`](secrets/PHASE-D.md) for dev opt-in database static roles.
 
 ## Regenerating overlay config
 
@@ -70,4 +70,4 @@ cd infrastructure/k8s
 ./setup-env.sh dev --local-secrets   # offline fallback with secrets.env
 ```
 
-See also: `infrastructure/vault/README.md`, `infrastructure/terraform/secrets-manager/README.md`, `infrastructure/k8s/secrets.env.example`.
+See also: `infrastructure/vault/README.md`, `infrastructure/terraform/secrets-manager/README.md`, `infrastructure/terraform/secrets-manager/ROTATION.md`, `infrastructure/secrets/DR.md`, `infrastructure/secrets/SECURITY.md`, `infrastructure/k8s/secrets.env.example`.

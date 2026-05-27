@@ -147,6 +147,16 @@ profiles:
         buildArgs:
           - "--load-restrictor=LoadRestrictionsNone"
           - "--enable-helm"
+  - name: dynamic-secrets
+    manifests:
+      kustomize:
+        paths:
+          - infrastructure/k8s/shared/external-secrets/overlays/dev
+          - infrastructure/k8s/shared/external-secrets/manifests/dev-dynamic
+          - infrastructure/k8s/clusters/dev
+        buildArgs:
+          - "--load-restrictor=LoadRestrictionsNone"
+          - "--enable-helm"
   - name: prod
     manifests:
       kustomize:

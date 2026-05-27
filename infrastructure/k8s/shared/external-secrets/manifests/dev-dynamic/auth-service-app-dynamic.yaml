@@ -1,0 +1,22 @@
+# Merge APP_USER / APP_PASSWORD from Vault database static role into auth-service-secrets.
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: auth-service-app-dynamic
+spec:
+  refreshInterval: 15m
+  secretStoreRef:
+    name: vault-hermes-dev-database
+    kind: ClusterSecretStore
+  target:
+    name: auth-service-secrets
+    creationPolicy: Merge
+  data:
+    - secretKey: APP_USER
+      remoteRef:
+        key: static-creds/hermes-auth-app-static
+        property: username
+    - secretKey: APP_PASSWORD
+      remoteRef:
+        key: static-creds/hermes-auth-app-static
+        property: password

@@ -81,6 +81,12 @@ Production Kubernetes deploys must **not** use `secrets.env` or Kustomize `secre
 
 See `.github/workflows/deploy-k8s-prod.yml` for a GitHub Actions OIDC skeleton.
 
+## Rotation and DR
+
+- Manual rotation procedures: [ROTATION.md](ROTATION.md)
+- Automatic rotation (Phase D): [PHASE-D.md](../../secrets/PHASE-D.md) — set `enable_automatic_rotation = true`
+- Disaster recovery (new account/region): [DR.md](../../secrets/DR.md)
+
 ## Staging
 
 Use the same module with `environment = "staging"` and a separate `terraform.tfvars` (or workspace). ESO manifests live under `manifests/staging/` with ClusterSecretStore `aws-hermes-staging`.

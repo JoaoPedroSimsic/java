@@ -142,6 +142,36 @@ infrastructure/k8s/setup-env.sh dev --local-secrets
 make back-local
 ```
 
+## Operations — backup and recovery
+
+### Default dev server (in-memory)
+
+The dev Helm profile (`server.dev.enabled: true`) stores all KV data **in process memory**. Pod deletion or `make vault-reset` **wipes** secrets. There is no backup or rekey procedure for this mode — recovery is reprovision:
+
+```bash
+make vault-reset    # delete vault namespace and redeploy
+make vault-init     # bootstrap K8s auth + seed from .env
+make eso-sync
+```
+
+### Rekey
+
+**Not applicable** while using the dev server (auto-unsealed, no seal configuration). If you adopt a production-style Vault with Shamir or cloud auto-unseal, follow HashiCorp rekey documentation for that backend.
+
+### Persistent dev (optional future profile)
+
+If you switch to Raft + PVC:
+
+- Enable periodic `vault operator raft snapshot save` to encrypted offline storage.
+- Restore with `vault operator raft snapshot restore` on a fresh cluster.
+- Document snapshot encryption and access controls outside git.
+
+See also [`infrastructure/secrets/DR.md`](../secrets/DR.md) for full disaster recovery steps.
+
+### Phase D — database static roles (opt-in)
+
+See [`infrastructure/secrets/PHASE-D.md`](../secrets/PHASE-D.md): `make vault-database-engine` + `make back-dynamic`.
+
 ## Runbooks
 
 ### Unseal

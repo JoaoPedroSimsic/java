@@ -10,6 +10,10 @@ target/
 .metadata
 jdt.ls-java-project
 .env
+.env.*
+!.env.example
+**/secrets.env
+infrastructure/terraform/secrets-manager/terraform.tfvars
 *.log
 *.log.gz
 /log/
@@ -46,6 +50,7 @@ CLAUDE.md
 
 infrastructure/vault/.vault-root-token
 *.vault-local
+infrastructure/aws/lambda/secrets-rotation/function.zip
 
 .cursor/*
 !.cursor/.gitignore

@@ -226,7 +226,27 @@ Staging and production use **AWS Secrets Manager + External Secrets Operator** w
 
 Full documentation: **[infrastructure/terraform/secrets-manager/README.md](../terraform/secrets-manager/README.md)**.
 
-**Production CI:** `.github/workflows/deploy-k8s-prod.yml` applies manifests via GitHub OIDC — no `secrets.env` in the pipeline.
+**Production CI:** `.github/workflows/deploy-k8s-prod.yml` applies manifests via GitHub OIDC — no `secrets.env` in the pipeline. Staging deploys run [`smoke-test-secrets.sh`](scripts/smoke-test-secrets.sh) automatically.
+
+### Git and CI guardrails (PRD §6)
+
+Never commit real credentials. The repo enforces:
+
+| Control | Location |
+|---------|----------|
+| Gitignore | `.env`, `.env.*` (except `.env.example`), `**/secrets.env`, `terraform.tfvars` |
+| pre-commit | `.pre-commit-config.yaml` — **gitleaks** + **detect-secrets** (baseline: `.secrets.baseline`) |
+| CI | `.github/workflows/ci.yml` — `secret-scan` job |
+
+Install hooks locally:
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files   # optional first run
+```
+
+See also [`infrastructure/secrets/SECURITY.md`](../secrets/SECURITY.md), [`ROTATION.md`](../terraform/secrets-manager/ROTATION.md), [`DR.md`](../secrets/DR.md), [`PHASE-D.md`](../secrets/PHASE-D.md).
 
 ### Secrets by Component
 

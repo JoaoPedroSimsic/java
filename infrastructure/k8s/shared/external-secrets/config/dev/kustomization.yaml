@@ -3,8 +3,4 @@ kind: Kustomization
 
 resources:
   - cluster-secret-store.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/part-of: hermes
-      environment: dev
+  - cluster-secret-store-database.yaml

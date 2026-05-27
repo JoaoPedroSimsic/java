@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ESO_OVERLAY="$(cd "$SCRIPT_DIR/../overlays/dev" && pwd)"
 CONFIG_OVERLAY="$(cd "$SCRIPT_DIR/../config/dev" && pwd)"
-MANIFESTS_OVERLAY="$(cd "$SCRIPT_DIR/../manifests/dev" && pwd)"
+MANIFESTS_OVERLAY="${MANIFESTS_OVERLAY:-$(cd "$SCRIPT_DIR/../manifests/dev" && pwd)}"
 ESO_NS="${ESO_NAMESPACE:-external-secrets}"
 WEBHOOK_TIMEOUT="${ESO_WEBHOOK_TIMEOUT:-180}"
 

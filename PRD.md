@@ -179,17 +179,39 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 
 ### 5. Rotation, DR, and operations
 
-- [ ] Define **rotation procedure** for AWS Secrets Manager (manual + future Lambda/rotation rules).
-- [ ] Define **Vault** backup/rekey strategy for dev if Vault stores anything non-ephemeral.
-- [ ] Document **disaster recovery**: how to recreate secrets in a new account/region and reconnect clusters.
+- [x] Define **rotation procedure** for AWS Secrets Manager (manual + future Lambda/rotation rules).
+- [x] Define **Vault** backup/rekey strategy for dev if Vault stores anything non-ephemeral.
+- [x] Document **disaster recovery**: how to recreate secrets in a new account/region and reconnect clusters.
+
+#### 5.1 Implementation status (complete)
+
+| Deliverable | Location |
+|-------------|----------|
+| AWS SM manual rotation runbooks | `infrastructure/terraform/secrets-manager/ROTATION.md` |
+| Vault dev backup/rekey (in-memory dev model) | `infrastructure/vault/README.md` (Operations section) |
+| DR — AWS + dev Vault paths | `infrastructure/secrets/DR.md` |
+
+**Integration path:** Coordinated JWT restart (user-service → http-gateway); ESO `force-sync` annotation; `make aws-secrets-seed` from break-glass `.env.<env>`. Automatic rotation via Terraform `enable_automatic_rotation` (Phase D).
 
 ---
 
 ### 6. Security, compliance, and testing
 
-- [ ] Enforce **no secret values in git**: extend `.gitignore` / pre-commit hooks for `secrets.env` and similar.
-- [ ] Add **smoke tests** in staging that verify workloads start with ESO/Vault-provided secrets only.
-- [ ] Security review: network policies for Vault, TLS for Vault API, and IAM policy boundaries for prod.
+- [x] Enforce **no secret values in git**: extend `.gitignore` / pre-commit hooks for `secrets.env` and similar.
+- [x] Add **smoke tests** in staging that verify workloads start with ESO/Vault-provided secrets only.
+- [x] Security review: network policies for Vault, TLS for Vault API, and IAM policy boundaries for prod.
+
+#### 6.1 Implementation status (complete)
+
+| Deliverable | Location |
+|-------------|----------|
+| `.gitignore` extensions | repo root `.gitignore`, `infrastructure/k8s/.gitignore` |
+| pre-commit (gitleaks + detect-secrets) | `.pre-commit-config.yaml`, `.secrets.baseline` |
+| CI secret scan | `.github/workflows/ci.yml` `secret-scan` job |
+| Staging smoke tests | `infrastructure/k8s/scripts/smoke-test-secrets.sh`, `make smoke-test-staging`, `deploy-k8s-prod.yml` (staging) |
+| Security review doc + Vault NetworkPolicy | `infrastructure/secrets/SECURITY.md`, `infrastructure/k8s/shared/vault/overlays/dev/network-policy.yaml` |
+
+**Integration path:** Staging deploy workflow runs smoke tests after cluster apply. Dev Vault API restricted to ESO ingress on port 8200; TLS on Vault API documented as dev-only risk acceptance.
 
 ---
 
@@ -198,12 +220,24 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 - [x] **Phase A — Non-breaking:** Introduce Vault/AWS SM alongside existing `secretGenerator`; dual-write or read from new path with feature flag.
 - [x] **Phase B:** Switch dev overlays to Vault-sourced secrets by default; keep **`secrets.env.example`** (or equivalent) for **documented variable names and shapes only** — no real values; support optional fallback flows from §2.
 - [x] **Phase C:** Cut prod to AWS Secrets Manager + ESO; archive plaintext prod secret delivery paths.
-- [ ] **Phase D:** Optional — dynamic secrets, automatic rotation, and secret scanning in CI.
+- [x] **Phase D:** Optional — dynamic secrets, automatic rotation, and secret scanning in CI.
+
+#### 7.1 Phase D implementation status (complete)
+
+| Deliverable | Location |
+|-------------|----------|
+| CI secret scanning (gitleaks + detect-secrets) | `.pre-commit-config.yaml`, `.github/workflows/ci.yml`, `.secrets.baseline` |
+| AWS SM automatic rotation Lambda + Terraform | `infrastructure/aws/lambda/secrets-rotation/`, `infrastructure/terraform/secrets-manager/rotation.tf` |
+| Vault database static roles (dev opt-in) | `infrastructure/vault/scripts/bootstrap-dev-database-engine.sh`, `manifests/dev-dynamic/` |
+| Skaffold / Makefile dynamic profile | `skaffold.yaml` profile `dynamic-secrets`, `make back-dynamic` |
+| Documentation | `infrastructure/secrets/PHASE-D.md` |
+
+**Integration path:** Rotation disabled by default (`enable_automatic_rotation = false`). Dev dynamic creds opt-in via `make back-dynamic`. Postgres bundles and IdP-aware rotators remain manual / future work.
 
 ---
 
 ### Open decisions (to resolve during implementation)
 
 - [x] **Operator choice:** External Secrets Operator vs Vault Agent Injector vs mix (Vault in dev, ESO+AWS in prod is a common split).
-- [ ] **Staging environment:** Mirror prod (AWS SM) or mirror dev (Vault) for cost/simplicity.
-- [ ] **Local developer laptop:** Always use minikube Vault vs optional direct Vault Cloud / HCP trial. *(Current default: minikube Vault via Skaffold.)*
+- [x] **Staging environment:** Mirror prod (**AWS SM + ESO**); manifests under `infrastructure/k8s/shared/external-secrets/manifests/staging/`.
+- [x] **Local developer laptop:** Minikube Vault via `make back` (default); `--local-secrets` / `make back-local` for offline fallback.

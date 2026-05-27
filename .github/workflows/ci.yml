@@ -11,6 +11,28 @@ on:
       - develop
 
 jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: detect-secrets
+        run: |
+          pip install detect-secrets==1.5.0
+          detect-secrets scan --baseline .secrets.baseline
+
   java-integration:
     runs-on: ubuntu-latest
     steps:

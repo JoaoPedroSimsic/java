@@ -42,3 +42,15 @@ output "secretsmanager_get_alarm_name" {
   description = "CloudWatch alarm for anomalous GetSecretValue volume."
   value       = aws_cloudwatch_metric_alarm.secretsmanager_get_secret_value_spike.alarm_name
 }
+
+output "rotation_lambda_arn" {
+  description = "ARN of the generic Secrets Manager rotation Lambda (null when rotation disabled)."
+  value       = try(aws_lambda_function.rotation[0].arn, null)
+}
+
+output "rotated_secret_names" {
+  description = "Secret names with automatic rotation enabled."
+  value = var.enable_automatic_rotation ? [
+    for key in keys(local.rotatable_secrets) : aws_secretsmanager_secret.hermes[key].name
+  ] : []
+}

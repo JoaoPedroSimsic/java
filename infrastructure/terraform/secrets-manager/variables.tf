@@ -73,3 +73,32 @@ variable "tags" {
     ManagedBy = "terraform"
   }
 }
+
+variable "enable_automatic_rotation" {
+  description = "When true, attach rotation Lambda schedules to eligible Secrets Manager secrets (Phase D)."
+  type        = bool
+  default     = false
+}
+
+variable "rotation_schedule_days" {
+  description = "Automatic rotation interval in days when enable_automatic_rotation is true."
+  type        = number
+  default     = 90
+}
+
+variable "rotation_secret_keys" {
+  description = "Logical secret keys (from secrets.tf) that use the generic JSON rotation Lambda."
+  type        = set(string)
+  default = [
+    "jwt_signing_key",
+    "rabbitmq",
+    "keycloak_admin",
+    "auth_service_cognito",
+  ]
+}
+
+variable "rotation_notification_sns_topic_arn" {
+  description = "Optional SNS topic for Secrets Manager rotation success/failure events."
+  type        = string
+  default     = null
+}
