@@ -198,6 +198,20 @@ All secrets are managed through Kustomize's `secretGenerator` feature:
 
 See `secrets.env.example` in the root k8s directory for a complete reference of all secrets.
 
+### Vault path (Phase A — dev)
+
+For minikube/Skaffold dev, Hermes also deploys **HashiCorp Vault** and **External Secrets Operator** alongside the existing `secretGenerator` flow. Workloads still consume Kustomize-generated secrets; ESO creates parallel `*-vault` secrets for validation.
+
+| Step | Command |
+|------|---------|
+| Generate local overlay files | `infrastructure/k8s/setup-env.sh dev` |
+| Start stack | `make back` (ESO CRDs are installed automatically before deploy) |
+| Configure Vault auth for ESO | `make vault-bootstrap` |
+| Seed Vault from `.env` | `make vault-seed` |
+| Verify sync | `kubectl get externalsecret -n hermes-dev` |
+
+Full documentation: **[infrastructure/vault/README.md](../vault/README.md)** (KV paths, policies, runbooks).
+
 ### Secrets by Component
 
 #### Postgres (auth-db & user-db)
@@ -215,7 +229,11 @@ APP_PASSWORD=secure-app-password
 
 RABBITMQ_DEFAULT_USER=admin
 RABBITMQ_DEFAULT_PASS=secure-rabbitmq-password
+RABBITMQ_USERNAME=admin
+RABBITMQ_PASSWORD=secure-rabbitmq-password
 ```
+
+(`setup-env.sh` writes all four keys from `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` in `.env`.)
 
 #### Keycloak
 ```bash

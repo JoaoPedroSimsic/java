@@ -62,13 +62,45 @@ The script enables `kubernetes` auth, configures the Kubernetes API connection f
 
 **Root token:** export `VAULT_ROOT_TOKEN` or let the script parse `Root Token:` from `kubectl logs -n vault vault-0`. Optionally save a token locally with a **gitignored** filename (see `.gitignore`); never commit it.
 
+## Seed secrets (Phase A)
+
+After bootstrap, populate Vault KV from the repo-root `.env` (same source as `setup-env.sh`):
+
+```bash
+make vault-seed
+# or: ./infrastructure/vault/scripts/seed-dev-secrets.sh
+```
+
+The script writes idempotent `vault kv put` entries under `secret/hermes/dev/...`:
+
+| Vault path | Keys |
+|------------|------|
+| `shared/jwt-signing-key` | `value` → `GATEWAY_SECRET` |
+| `shared/rabbitmq` | `username`, `password` |
+| `shared/github-oauth` | `client_id`, `client_secret` |
+| `services/auth-db/postgres` | `POSTGRES_*`, `APP_*`, `FLYWAY_*` |
+| `services/user-db/postgres` | same shape |
+| `services/keycloak/keycloak-admin` | `username`, `password` |
+
+Override environment with `HERMES_ENV=dev` (default) or point at `.env.dev` when present.
+
 ## External Secrets Operator (ESO)
 
-- Helm chart: `infrastructure/k8s/shared/external-secrets/overlays/dev` (installs CRDs + controller + webhook).
-- **ClusterSecretStore** `vault-hermes-dev`: `infrastructure/k8s/shared/external-secrets/config/dev` (applied **after** the chart so CRDs exist).
-- Example consumer manifest (not wired into deployments yet — **Phase A** side-by-side with `secretGenerator`): `infrastructure/vault/examples/external-secret-jwt.yaml`.
+- Helm chart + **ClusterSecretStore** + **ExternalSecret** manifests: `infrastructure/k8s/shared/external-secrets/overlays/dev` (single kustomize path in Skaffold).
+- CRDs are **pre-installed** before each deploy via `infrastructure/k8s/shared/external-secrets/scripts/ensure-crds.sh` (Skaffold `deploy.kubectl.hooks.before`) using the pinned bundle at `infrastructure/k8s/shared/external-secrets/crds/bundle.yaml` (chart version **0.10.5**).
+- Legacy paths `config/dev` and `manifests/dev` remain as source files referenced by the overlay; do not add them as separate Skaffold paths.
 
 **Vault Agent Injector** is disabled in chart values (`injector.enabled: false`) to keep minikube footprint small; enable it in a follow-up if you prefer file-based injection over ESO.
+
+### Verify ESO sync
+
+```bash
+kubectl get externalsecret -n hermes-dev
+kubectl get secret gateway-secrets-vault -n hermes-dev
+# ExternalSecret status should show Ready / SecretSynced
+```
+
+**ExternalSecret manifests (Phase A):** synced to `*-vault` Kubernetes `Secret` names in `hermes-dev` (parallel to `secretGenerator`; deployments still use generated secrets until Phase B).
 
 ## `secrets.env` + `secretGenerator` (dev)
 
@@ -82,10 +114,25 @@ The script enables `kubernetes` auth, configures the Kubernetes API connection f
 
 ## Makefile and Skaffold
 
-- `make back` still starts minikube (if needed) and runs `skaffold dev`. Vault and ESO are deployed as **additional** kustomize paths (see root `skaffold.yaml`).
+- `make back` starts minikube, runs **`make vault-up`** (Vault deployed outside Skaffold), then `skaffold dev` for ESO + the app stack.
+- Vault is **not** in Skaffold’s status check (StatefulSet rollout on minikube was causing false `1/16 failed` errors).
 - Helpers:
+  - `make vault-up` — deploy Vault and wait for `vault-0`
   - `make vault-bootstrap` — runs `bootstrap-dev-k8s-auth.sh` with your current kubectl context.
+  - `make vault-seed` — writes `.env` values into Vault KV (run after bootstrap).
   - `make vault-ui` — prints the suggested `kubectl port-forward` for the UI.
+  - `make teardown` — delete ESO CRs, `skaffold delete`, and the `vault` namespace
+
+### Recommended dev workflow
+
+```bash
+cp .env.example .env          # if needed
+infrastructure/k8s/setup-env.sh dev
+make back                     # vault-up + skaffold dev (ESO + apps)
+make vault-bootstrap
+make vault-seed
+kubectl get externalsecret -n hermes-dev
+```
 
 ## Runbooks
 

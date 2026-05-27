@@ -6,6 +6,18 @@ namespace: vault
 resources:
   - namespace.yaml
 
+patches:
+  # Helm test pod must not be applied via kubectl (Skaffold counts it as a workload).
+  - target:
+      kind: Pod
+      name: vault-server-test
+    patch: |
+      $patch: delete
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: vault-server-test
+
 helmCharts:
   - name: vault
     repo: https://helm.releases.hashicorp.com
@@ -28,6 +40,8 @@ helmCharts:
             memory: 512Mi
         dev:
           enabled: true
+        readinessProbe:
+          enabled: false
         service:
           enabled: true
           type: ClusterIP

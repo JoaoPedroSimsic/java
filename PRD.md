@@ -91,21 +91,21 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 
 ### 2. Development — HashiCorp Vault
 
-- [ ] Choose deployment model for dev: **Vault in Kubernetes** (minikube); document ports, unseal strategy, and data persistence expectations.
-- [ ] Add **Vault Helm chart** or **official container** to `infrastructure/` (dev overlay only), with resource limits suitable for local clusters.
-- [ ] Configure **KV secrets engine** (v2) and optional **database / RabbitMQ** engines if dynamic credentials are in scope for a later phase.
-- [ ] **Keycloak (dev):** Evaluate the **Vault Keycloak secrets engine** to issue **short-lived admin credentials** for Keycloak integration (e.g. `KeycloakAdapter`) instead of long-lived `KEYCLOAK_ADMIN_PASSWORD` values in `secrets.env`; document trade-offs vs static KV for phase 1.
-- [ ] Define **Vault policies** per role (read-only for apps, admin for bootstrap) and **authentication**: Kubernetes auth (preferred for in-cluster workloads) and **token/AppRole** for local scripts.
-- [ ] **Bootstrap credentials for operators (dev):** Document how **ESO** and/or **Vault Agent** first authenticate to Vault in minikube:
-  - [ ] Add a **documented manual or scripted step** (e.g. in `bootstrap-dev-k8s-auth.sh`, `setup-env.sh`, or equivalent) to enable the **Kubernetes auth method** in Vault, configure roles, and **bind the namespace default ServiceAccount (or dedicated SA)** to the correct Vault policy so sync/injection can run before app pods start.
-  - [ ] Avoid checking long-lived root tokens into git; use one-time bootstrap tokens or local-only files excluded by `.gitignore`.
-- [ ] Integrate workloads using one of:
-  - [ ] **External Secrets Operator** (ESO) + Vault backend → syncs to Kubernetes `Secret` objects, or
+- [x] Choose deployment model for dev: **Vault in Kubernetes** (minikube); document ports, unseal strategy, and data persistence expectations.
+- [x] Add **Vault Helm chart** or **official container** to `infrastructure/` (dev overlay only), with resource limits suitable for local clusters.
+- [x] Configure **KV secrets engine** (v2) and optional **database / RabbitMQ** engines if dynamic credentials are in scope for a later phase.
+- [x] **Keycloak (dev):** Evaluate the **Vault Keycloak secrets engine** to issue **short-lived admin credentials** for Keycloak integration (e.g. `KeycloakAdapter`) instead of long-lived `KEYCLOAK_ADMIN_PASSWORD` values in `secrets.env`; document trade-offs vs static KV for phase 1.
+- [x] Define **Vault policies** per role (read-only for apps, admin for bootstrap) and **authentication**: Kubernetes auth (preferred for in-cluster workloads) and **token/AppRole** for local scripts.
+- [x] **Bootstrap credentials for operators (dev):** Document how **ESO** and/or **Vault Agent** first authenticate to Vault in minikube:
+  - [x] Add a **documented manual or scripted step** (e.g. in `bootstrap-dev-k8s-auth.sh`, `setup-env.sh`, or equivalent) to enable the **Kubernetes auth method** in Vault, configure roles, and **bind the namespace default ServiceAccount (or dedicated SA)** to the correct Vault policy so sync/injection can run before app pods start.
+  - [x] Avoid checking long-lived root tokens into git; use one-time bootstrap tokens or local-only files excluded by `.gitignore`.
+- [x] Integrate workloads using one of:
+  - [x] **External Secrets Operator** (ESO) + Vault backend → syncs to Kubernetes `Secret` objects, or
   - [ ] **Vault Agent Injector** / CSI provider for file/env injection.
 - [ ] Replace or gate **`secrets.env` + `secretGenerator`** in **dev** overlays: either generate K8s secrets from Vault in CI/CD, or reference ESO-managed secrets in Deployments.
-- [ ] **Offline / flaky network:** Provide a **local mock or fallback path** so `make back` is not blocked when minikube Vault is unreachable (e.g. optional overlay that keeps `secretGenerator` from `secrets.env`, or a documented **pure local** flow using **`secrets.env.example`** as a template for non-K8s development). Clearly label fallbacks as **non-prod** and unsafe for shared environments.
-- [ ] Update **Skaffold / Makefile** docs so `make back` brings up Vault (or depends on it) when using the default path, and developers know how to log in and read secrets.
-- [ ] Add **runbooks**: unseal (if applicable), root token handling, and “break-glass” local override for offline work.
+- [x] **Offline / flaky network:** Provide a **local mock or fallback path** so `make back` is not blocked when minikube Vault is unreachable (e.g. optional overlay that keeps `secretGenerator` from `secrets.env`, or a documented **pure local** flow using **`secrets.env.example`** as a template for non-K8s development). Clearly label fallbacks as **non-prod** and unsafe for shared environments.
+- [x] Update **Skaffold / Makefile** docs so `make back` brings up Vault (or depends on it) when using the default path, and developers know how to log in and read secrets.
+- [x] Add **runbooks**: unseal (if applicable), root token handling, and “break-glass” local override for offline work.
 
 ---
 
@@ -152,7 +152,7 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 
 ### 7. Rollout
 
-- [ ] **Phase A — Non-breaking:** Introduce Vault/AWS SM alongside existing `secretGenerator`; dual-write or read from new path with feature flag.
+- [x] **Phase A — Non-breaking:** Introduce Vault/AWS SM alongside existing `secretGenerator`; dual-write or read from new path with feature flag.
 - [ ] **Phase B:** Switch dev overlays to Vault-sourced secrets by default; keep **`secrets.env.example`** (or equivalent) for **documented variable names and shapes only** — no real values; support optional fallback flows from §2.
 - [ ] **Phase C:** Cut prod to AWS Secrets Manager + ESO; archive plaintext prod secret delivery paths.
 - [ ] **Phase D:** Optional — dynamic secrets, automatic rotation, and secret scanning in CI.
@@ -161,6 +161,6 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 
 ### Open decisions (to resolve during implementation)
 
-- [ ] **Operator choice:** External Secrets Operator vs Vault Agent Injector vs mix (Vault in dev, ESO+AWS in prod is a common split).
+- [x] **Operator choice:** External Secrets Operator vs Vault Agent Injector vs mix (Vault in dev, ESO+AWS in prod is a common split).
 - [ ] **Staging environment:** Mirror prod (AWS SM) or mirror dev (Vault) for cost/simplicity.
-- [ ] **Local developer laptop:** Always use minikube Vault vs optional direct Vault Cloud / HCP trial.
+- [ ] **Local developer laptop:** Always use minikube Vault vs optional direct Vault Cloud / HCP trial. *(Current default: minikube Vault via Skaffold.)*

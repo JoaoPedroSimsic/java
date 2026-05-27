@@ -131,8 +131,38 @@ DB_VARS=("POSTGRES_DB" "POSTGRES_USER" "POSTGRES_PASSWORD" "POSTGRES_PORT" "APP_
 generate_files "shared/postgres/auth-db/overlays/$ENV" "${DB_VARS[@]}"
 generate_files "shared/postgres/user-db/overlays/$ENV" "${DB_VARS[@]}"
 
-MQ_VARS=("RABBITMQ_HOST" "RABBITMQ_PORT" "RABBITMQ_USERNAME" "RABBITMQ_PASSWORD")
-generate_files "shared/rabbitmq/overlays/$ENV" "${MQ_VARS[@]}"
+generate_rabbitmq_files() {
+    local target_dir="shared/rabbitmq/overlays/$ENV"
+    require_mq_var() {
+        if [[ -z "${!1:-}" ]]; then
+            echo -e "\n${RED}FAILED: Variable '$1' is missing or empty in $ENV_FILE${NC}"
+            exit 1
+        fi
+    }
+    require_mq_var RABBITMQ_HOST
+    require_mq_var RABBITMQ_PORT
+    require_mq_var RABBITMQ_USERNAME
+    require_mq_var RABBITMQ_PASSWORD
+
+    mkdir -p "$target_dir"
+    > "$target_dir/secrets.env"
+    > "$target_dir/params.env"
+
+    echo -ne "${YELLOW}Processing rabbitmq... ${NC}"
+    {
+        echo "RABBITMQ_HOST=$RABBITMQ_HOST"
+        echo "RABBITMQ_PORT=$RABBITMQ_PORT"
+    } >> "$target_dir/params.env"
+    {
+        echo "RABBITMQ_DEFAULT_USER=$RABBITMQ_USERNAME"
+        echo "RABBITMQ_DEFAULT_PASS=$RABBITMQ_PASSWORD"
+        echo "RABBITMQ_USERNAME=$RABBITMQ_USERNAME"
+        echo "RABBITMQ_PASSWORD=$RABBITMQ_PASSWORD"
+    } >> "$target_dir/secrets.env"
+    echo -e "${GREEN}✓${NC}"
+}
+
+generate_rabbitmq_files
 
 KC_VARS=(
     "KEYCLOAK_ADMIN" "KEYCLOAK_ADMIN_PASSWORD" 

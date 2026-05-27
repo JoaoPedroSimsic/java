@@ -64,3 +64,4 @@ kubectl exec -n "$VAULT_NS" "$VAULT_POD" -- env \
   ttl=24h
 
 echo "Done. ClusterSecretStore vault-hermes-dev should use role: $ESO_ROLE"
+echo "Next: make vault-seed  (populate KV from .env)"

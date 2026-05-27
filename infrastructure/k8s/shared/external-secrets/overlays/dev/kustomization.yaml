@@ -5,6 +5,8 @@ namespace: external-secrets
 
 resources:
   - namespace.yaml
+  - ../../config/dev
+  - ../../manifests/dev
 
 helmCharts:
   - name: external-secrets
@@ -12,9 +14,9 @@ helmCharts:
     version: 0.10.5
     releaseName: external-secrets
     namespace: external-secrets
-    includeCRDs: true
+    includeCRDs: false
     valuesInline:
-      installCRDs: true
+      installCRDs: false
       replicaCount: 1
       resources:
         requests:

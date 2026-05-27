@@ -45,9 +45,7 @@ build:
 manifests:
   kustomize:
     paths:
-      - infrastructure/k8s/shared/vault/overlays/dev
       - infrastructure/k8s/shared/external-secrets/overlays/dev
-      - infrastructure/k8s/shared/external-secrets/config/dev
       - infrastructure/k8s/clusters/dev
     buildArgs:
       - "--load-restrictor=LoadRestrictionsNone"
@@ -55,6 +53,13 @@ manifests:
 
 deploy:
   kubectl:
+    hooks:
+      before:
+        - host:
+            command:
+              - bash
+              - infrastructure/k8s/shared/external-secrets/scripts/ensure-crds.sh
+            os: [linux, darwin]
     flags:
       apply:
         - "--server-side"
