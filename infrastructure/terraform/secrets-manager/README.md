@@ -2,6 +2,14 @@
 
 Terraform provisions **AWS Secrets Manager** secrets, **IRSA** roles for External Secrets Operator and **user-service**, and **CloudTrail** auditing for Secrets Manager API calls.
 
+| Task | Command |
+|------|---------|
+| Provision infrastructure | `./secrets-manager-tf.sh apply` (this directory) |
+| Seed secret values | `HERMES_ENV=prod make aws-secrets-seed` |
+| Deploy ESO + ExternalSecrets | `ESO_IRSA_ROLE_ARN=... HERMES_ENV=prod make eso-sync-prod` |
+
+Never commit `.env.prod`, `.env.staging`, or real secret values. Use CI OIDC or operator sessions with `seed-secrets.sh`.
+
 ## Prerequisites
 
 - AWS CLI and Terraform >= 1.0
@@ -35,7 +43,7 @@ Capture outputs for Kubernetes deployment:
 Terraform creates all secrets listed in `secrets.tf`. Populate values with the seed script (never commit real values):
 
 ```bash
-HERMES_ENV=prod bash infrastructure/aws/scripts/seed-secrets.sh
+HERMES_ENV=prod bash infrastructure/scripts/seed-secrets.sh
 ```
 
 ## IRSA
@@ -85,6 +93,12 @@ See `.github/workflows/deploy-kubernetes.yml` for a GitHub Actions OIDC skeleton
 
 - Manual rotation procedures: [ROTATION.md](ROTATION.md)
 - Automatic rotation (Phase D): [PHASE-D.md](../../secrets/PHASE-D.md) — set `enable_automatic_rotation = true`
+
+Before `terraform apply` with `enable_automatic_rotation = true`, build the rotation Lambda:
+
+```bash
+cd infrastructure/lambda/secrets-rotation && bun install && bun run build
+```
 - Disaster recovery (new account/region): [DR.md](../../secrets/DR.md)
 
 ## Staging

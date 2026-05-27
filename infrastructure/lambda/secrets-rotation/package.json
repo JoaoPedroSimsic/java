@@ -1,14 +1,14 @@
 {
-  "name": "github-auth-lambda",
+  "name": "secrets-rotation-lambda",
   "version": "1.0.0",
-  "description": "Lambda function for GitHub OAuth with Cognito",
+  "description": "AWS Secrets Manager rotation Lambda for Hermes JSON secrets",
   "main": "dist/index.js",
   "scripts": {
     "build": "bunx tsc",
     "package": "bun run build && cd dist && zip -r ../function.zip ."
   },
   "dependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.400.0"
+    "@aws-sdk/client-secrets-manager": "^3.400.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.119",

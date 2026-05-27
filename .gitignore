@@ -50,7 +50,10 @@ CLAUDE.md
 
 infrastructure/vault/.vault-root-token
 *.vault-local
-infrastructure/aws/lambda/secrets-rotation/function.zip
+infrastructure/k8s/shared/external-secrets/crds/bundle.yaml
+infrastructure/lambda/secrets-rotation/function.zip
+infrastructure/lambda/secrets-rotation/dist/
+infrastructure/lambda/secrets-rotation/node_modules/
 
 .cursor/*
 !.cursor/.gitignore

@@ -43,7 +43,7 @@ From break-glass `.env.<env>` or org backup:
 
 ```bash
 export HERMES_ENV=prod   # or staging
-bash infrastructure/aws/scripts/seed-secrets.sh
+bash infrastructure/scripts/seed-secrets.sh
 ```
 
 Confirm secrets exist:

@@ -3,6 +3,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CRDS_DIR="$(cd "$SCRIPT_DIR/../crds" && pwd)"
+BUNDLE="$CRDS_DIR/bundle.yaml"
+
+if [[ ! -f "$BUNDLE" ]]; then
+  echo "CRD bundle missing; generating..."
+  bash "$SCRIPT_DIR/generate-crds.sh"
+fi
 
 REQUIRED_CRDS=(
   clustersecretstores.external-secrets.io

@@ -8,8 +8,8 @@ locals {
 
 data "archive_file" "rotation_lambda" {
   type        = "zip"
-  source_file = "${path.module}/../../aws/lambda/secrets-rotation/handler.py"
-  output_path = "${path.module}/../../aws/lambda/secrets-rotation/function.zip"
+  source_dir  = "${path.module}/../../lambda/secrets-rotation/dist"
+  output_path = "${path.module}/../../lambda/secrets-rotation/function.zip"
 }
 
 resource "aws_iam_role" "rotation_lambda" {
@@ -64,8 +64,8 @@ resource "aws_lambda_function" "rotation" {
   count         = var.enable_automatic_rotation ? 1 : 0
   function_name = local.rotation_lambda_name
   role          = aws_iam_role.rotation_lambda[0].arn
-  handler       = "handler.lambda_handler"
-  runtime       = "python3.12"
+  handler       = "index.handler"
+  runtime       = "nodejs20.x"
   timeout       = 30
   filename      = data.archive_file.rotation_lambda.output_path
   source_code_hash = data.archive_file.rotation_lambda.output_base64sha256

@@ -37,7 +37,7 @@ jobs:
         if: ${{ vars.SEED_SECRETS_ON_DEPLOY == 'true' }}
         env:
           HERMES_ENV: ${{ inputs.environment }}
-        run: bash infrastructure/aws/scripts/seed-secrets.sh
+        run: bash infrastructure/scripts/seed-secrets.sh
 
       - name: Deploy External Secrets Operator + sync
         env:

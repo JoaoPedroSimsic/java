@@ -51,7 +51,7 @@ export NAMESPACE=hermes-${HERMES_ENV}
 kubectl rollout restart deployment/user-service deployment/http-gateway deployment/auth-service -n "$NAMESPACE"
 ```
 
-Lambda source: [`infrastructure/aws/lambda/secrets-rotation/handler.py`](../aws/lambda/secrets-rotation/handler.py)
+Lambda source: [`infrastructure/lambda/secrets-rotation/src/index.ts`](../lambda/secrets-rotation/src/index.ts)
 
 ## 3. Vault database static roles (dev opt-in)
 

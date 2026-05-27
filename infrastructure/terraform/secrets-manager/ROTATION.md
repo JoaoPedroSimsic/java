@@ -47,7 +47,7 @@ Or wait for the `refreshInterval` (default **1h** on ExternalSecret manifests).
 When rotating from a local break-glass file:
 
 ```bash
-HERMES_ENV=prod bash infrastructure/aws/scripts/seed-secrets.sh
+HERMES_ENV=prod bash infrastructure/scripts/seed-secrets.sh
 ```
 
 ## Per-secret playbooks

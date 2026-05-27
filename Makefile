@@ -99,7 +99,7 @@ eso-sync-dynamic:
 	bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets.sh
 
 aws-secrets-seed:
-	bash infrastructure/aws/scripts/seed-secrets.sh
+	bash infrastructure/scripts/seed-secrets.sh
 
 eso-sync-staging:
 	@test -n "$$ESO_IRSA_ROLE_ARN" || (echo "Set ESO_IRSA_ROLE_ARN (terraform output eso_irsa_role_arn)" && exit 1)

@@ -3,7 +3,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-LAMBDA_DIR="$SCRIPT_DIR/../lambda/github-auth"
+LAMBDA_DIR="$SCRIPT_DIR/../../lambda/github-auth"
 TERRAFORM_DIR="$SCRIPT_DIR/../terraform/cognito"
 
 if [ -f "$ROOT_DIR/.env" ]; then
@@ -20,12 +20,12 @@ export TF_VAR_frontend_url="${FRONTEND_URL:-http://localhost:3000}"
 if [ ! -f "$LAMBDA_DIR/function.zip" ] || [ "$LAMBDA_DIR/src/index.ts" -nt "$LAMBDA_DIR/function.zip" ]; then
   echo "Building Lambda function..."
   cd "$LAMBDA_DIR"
-  npm install
-  npm run build
+  bun install
+  bun run build
   cd dist
   cp ../package.json .
-  cp ../package-lock.json .
-  npm install --omit=dev
+  cp ../bun.lock .
+  bun install --production
   zip -r ../function.zip .
   echo "Lambda build complete."
 fi
