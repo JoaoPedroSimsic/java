@@ -2,13 +2,16 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - ../../base
-- ../../../../shared/postgres/auth-db/overlays/dev
-- ../../../../shared/redis/auth-redis/overlays/dev
 configMapGenerator:
-- name: auth-service-config
+- name: ws-gateway-config
   envs:
-  - params.env
+  - ../dev/params.env
+secretGenerator:
+- name: ws-gateway-secrets
+  literals:
+  - _PLACEHOLDER=unused
 labels:
 - pairs:
     environment: dev
+    secret-source: local
   includeSelectors: true

@@ -4,13 +4,14 @@ kind: Kustomization
 namespace: hermes-dev
 
 resources:
-  - gateway-secrets-vault.yaml
-  - user-service-secrets-vault.yaml
-  - auth-postgres-secrets-vault.yaml
-  - user-postgres-secrets-vault.yaml
-  - rabbitmq-secrets-vault.yaml
-  - keycloak-secrets-vault.yaml
-  - auth-service-secrets-vault.yaml
+  - ../../../../clusters/dev/namespace.yaml
+  - gateway-secrets.yaml
+  - user-service-secrets.yaml
+  - auth-postgres-secrets.yaml
+  - user-postgres-secrets.yaml
+  - rabbitmq-secrets.yaml
+  - keycloak-secrets.yaml
+  - auth-service-secrets.yaml
 
 labels:
   - pairs:

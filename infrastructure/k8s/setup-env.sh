@@ -12,6 +12,11 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 ENV=${1:-dev}
+LOCAL_SECRETS=false
+if [[ "${2:-}" == "--local-secrets" ]]; then
+    LOCAL_SECRETS=true
+fi
+
 ALLOWED_ENVS=("dev" "staging" "prod")
 
 if [[ ! " ${ALLOWED_ENVS[@]} " =~ " ${ENV} " ]]; then
@@ -19,8 +24,18 @@ if [[ ! " ${ALLOWED_ENVS[@]} " =~ " ${ENV} " ]]; then
     exit 1
 fi
 
+WRITE_SECRETS=true
+if [[ "$ENV" == "dev" && "$LOCAL_SECRETS" != "true" ]]; then
+    WRITE_SECRETS=false
+fi
+
 echo "=========================================="
 echo -e "Hermes K8s Setup: ${BLUE}${ENV^^}${NC}"
+if [[ "$WRITE_SECRETS" == "false" ]]; then
+    echo -e "Secret source: ${BLUE}Vault + ESO${NC} (params.env only; run make vault-seed)"
+else
+    echo -e "Secret source: ${YELLOW}local secrets.env${NC} (Kustomize secretGenerator)"
+fi
 echo "=========================================="
 
 ENV_FILE="../../.env"
@@ -37,16 +52,31 @@ else
     exit 1
 fi
 
+is_vault_managed_secret() {
+    case "$1" in
+        GATEWAY_SECRET|GITHUB_CLIENT_SECRET|KEYCLOAK_ADMIN|KEYCLOAK_ADMIN_PASSWORD|RABBITMQ_USERNAME|RABBITMQ_PASSWORD|RABBITMQ_DEFAULT_USER|RABBITMQ_DEFAULT_PASS|POSTGRES_USER|POSTGRES_PASSWORD|APP_USER|APP_PASSWORD|FLYWAY_USER|FLYWAY_PASSWORD|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|COGNITO_CLIENT_SECRET)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 generate_files() {
     local target_dir=$1
     shift
     local vars=("$@")
-    
+
     mkdir -p "$target_dir" || { echo -e "${RED}Error: Cannot create directory $target_dir${NC}"; exit 1; }
-    
-    > "$target_dir/secrets.env"
+
     > "$target_dir/params.env"
-    
+    if [[ "$WRITE_SECRETS" == "true" ]]; then
+        > "$target_dir/secrets.env"
+    else
+        rm -f "$target_dir/secrets.env"
+    fi
+
     echo -ne "${YELLOW}Processing $(basename "$(dirname "$(dirname "$target_dir")")")... ${NC}"
 
     for var in "${vars[@]}"; do
@@ -55,14 +85,19 @@ generate_files() {
             exit 1
         fi
 
-        if [[ "$var" =~ (^USERNAME|_USER|PASSWORD|PASS|SECRET|KEY|TOKEN) ]]; then
+        if [[ "$WRITE_SECRETS" == "false" ]]; then
+            if is_vault_managed_secret "$var"; then
+                continue
+            fi
+            echo "$var=${!var}" >> "$target_dir/params.env"
+        elif [[ "$var" =~ (^USERNAME|_USER|PASSWORD|PASS|SECRET|KEY|TOKEN) ]]; then
             echo "$var=${!var}" >> "$target_dir/secrets.env"
         else
             echo "$var=${!var}" >> "$target_dir/params.env"
         fi
     done
 
-    if [[ -f "$target_dir/secrets.env" && -f "$target_dir/params.env" ]]; then
+    if [[ -f "$target_dir/params.env" ]]; then
         echo -e "${GREEN}✓${NC}"
     else
         echo -e "${RED}FAILED: Files were not generated in $target_dir${NC}"
@@ -73,7 +108,7 @@ generate_files() {
 echo -e "Validating and generating manifests..."
 
 HTTP_GATEWAY_VARS=(
-    "GATEWAY_PROFILE" "HTTP_GATEWAY_PORT" "GATEWAY_SECRET" "GATEWAY_CACHE_HOST" 
+    "GATEWAY_PROFILE" "HTTP_GATEWAY_PORT" "GATEWAY_SECRET" "GATEWAY_CACHE_HOST"
     "REDIS_PORT" "RATE_LIMIT_AUTHENTICATED" "RATE_LIMIT_AUTHENTICATED_BURST"
     "RATE_LIMIT_UNAUTHENTICATED" "RATE_LIMIT_UNAUTHENTICATED_BURST" "CACHE_TTL_SECONDS"
     "AUTH_SERVICE_HOST" "AUTH_SERVICE_PORT" "USER_SERVICE_HOST" "USER_SERVICE_PORT"
@@ -94,11 +129,11 @@ fi
 
 AUTH_VARS=(
     "AUTH_PROFILE" "AUTH_SERVICE_HOST" "AUTH_SERVICE_PORT" "AUTH_COOKIE_DOMAIN"
-    "AUTH_COOKIE_SECURE" "AUTH_COOKIE_SAME_SITE" "GITHUB_REDIRECT_URI" 
+    "AUTH_COOKIE_SECURE" "AUTH_COOKIE_SAME_SITE" "GITHUB_REDIRECT_URI"
     "AUTH_DB_HOST" "POSTGRES_PORT" "POSTGRES_DB"
     "AUTH_CACHE_HOST" "REDIS_PORT" "AUTH_ACCESS_TOKEN_MAX_AGE"
     "AUTH_REFRESH_TOKEN_MAX_AGE" "APP_USER" "APP_PASSWORD" "FLYWAY_USER" "FLYWAY_PASSWORD"
-    "RABBITMQ_HOST" "RABBITMQ_PORT" "RABBITMQ_USERNAME" "RABBITMQ_PASSWORD" 
+    "RABBITMQ_HOST" "RABBITMQ_PORT" "RABBITMQ_USERNAME" "RABBITMQ_PASSWORD"
     "OUTBOX_BATCH_SIZE" "OUTBOX_MAX_ATTEMPTS" "OUTBOX_POLL_INTERVAL"
     "GITHUB_CLIENT_ID" "GITHUB_CLIENT_SECRET"
 )
@@ -115,7 +150,7 @@ fi
 
 USER_VARS=(
     "USER_PROFILE" "USER_SERVICE_HOST" "USER_SERVICE_PORT" "USER_DB_HOST"
-    "POSTGRES_PORT" "POSTGRES_DB" "USER_CACHE_HOST" "REDIS_PORT" 
+    "POSTGRES_PORT" "POSTGRES_DB" "USER_CACHE_HOST" "REDIS_PORT"
     "APP_USER" "APP_PASSWORD" "FLYWAY_USER" "FLYWAY_PASSWORD" "GATEWAY_SECRET"
     "RABBITMQ_HOST" "RABBITMQ_PORT" "RABBITMQ_USERNAME" "RABBITMQ_PASSWORD"
 )
@@ -145,27 +180,33 @@ generate_rabbitmq_files() {
     require_mq_var RABBITMQ_PASSWORD
 
     mkdir -p "$target_dir"
-    > "$target_dir/secrets.env"
     > "$target_dir/params.env"
+    if [[ "$WRITE_SECRETS" == "true" ]]; then
+        > "$target_dir/secrets.env"
+    else
+        rm -f "$target_dir/secrets.env"
+    fi
 
     echo -ne "${YELLOW}Processing rabbitmq... ${NC}"
     {
         echo "RABBITMQ_HOST=$RABBITMQ_HOST"
         echo "RABBITMQ_PORT=$RABBITMQ_PORT"
     } >> "$target_dir/params.env"
-    {
-        echo "RABBITMQ_DEFAULT_USER=$RABBITMQ_USERNAME"
-        echo "RABBITMQ_DEFAULT_PASS=$RABBITMQ_PASSWORD"
-        echo "RABBITMQ_USERNAME=$RABBITMQ_USERNAME"
-        echo "RABBITMQ_PASSWORD=$RABBITMQ_PASSWORD"
-    } >> "$target_dir/secrets.env"
+    if [[ "$WRITE_SECRETS" == "true" ]]; then
+        {
+            echo "RABBITMQ_DEFAULT_USER=$RABBITMQ_USERNAME"
+            echo "RABBITMQ_DEFAULT_PASS=$RABBITMQ_PASSWORD"
+            echo "RABBITMQ_USERNAME=$RABBITMQ_USERNAME"
+            echo "RABBITMQ_PASSWORD=$RABBITMQ_PASSWORD"
+        } >> "$target_dir/secrets.env"
+    fi
     echo -e "${GREEN}✓${NC}"
 }
 
 generate_rabbitmq_files
 
 KC_VARS=(
-    "KEYCLOAK_ADMIN" "KEYCLOAK_ADMIN_PASSWORD" 
+    "KEYCLOAK_ADMIN" "KEYCLOAK_ADMIN_PASSWORD"
     "GITHUB_CLIENT_ID" "GITHUB_CLIENT_SECRET" "POSTGRES_DB"
 )
 generate_files "shared/keycloak/overlays/$ENV" "${KC_VARS[@]}"
@@ -190,3 +231,7 @@ else
 fi
 
 echo -e "\n${GREEN}All files synchronized with .env and validated.${NC}"
+if [[ "$WRITE_SECRETS" == "false" ]]; then
+    echo -e "${BLUE}Dev overlays use Vault + ESO. Run: make vault-init  (or make back, which calls it)${NC}"
+    echo -e "${YELLOW}Offline fallback: ./setup-env.sh dev --local-secrets  then  skaffold dev -p local-secrets${NC}"
+fi

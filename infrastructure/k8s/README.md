@@ -198,17 +198,17 @@ All secrets are managed through Kustomize's `secretGenerator` feature:
 
 See `secrets.env.example` in the root k8s directory for a complete reference of all secrets.
 
-### Vault path (Phase A — dev)
+### Vault path (Phase B — dev default)
 
-For minikube/Skaffold dev, Hermes also deploys **HashiCorp Vault** and **External Secrets Operator** alongside the existing `secretGenerator` flow. Workloads still consume Kustomize-generated secrets; ESO creates parallel `*-vault` secrets for validation.
+For minikube/Skaffold dev, **HashiCorp Vault + External Secrets Operator** are the default secret source. Dev overlays no longer use Kustomize `secretGenerator`; ESO syncs Vault KV into the Kubernetes `Secret` names expected by Deployments (`gateway-secrets`, `auth-service-secrets`, etc.).
 
 | Step | Command |
 |------|---------|
-| Generate local overlay files | `infrastructure/k8s/setup-env.sh dev` |
-| Start stack | `make back` (ESO CRDs are installed automatically before deploy) |
-| Configure Vault auth for ESO | `make vault-bootstrap` |
-| Seed Vault from `.env` | `make vault-seed` |
-| Verify sync | `kubectl get externalsecret -n hermes-dev` |
+| Generate local config (params only) | `infrastructure/k8s/setup-env.sh dev` |
+| Start stack | `make back` (Vault bootstrap + seed from `.env`, then Skaffold) |
+| Verify sync | `kubectl get externalsecret,secret -n hermes-dev` |
+
+**Offline / non-prod fallback** (no Vault): `setup-env.sh dev --local-secrets` then `make back-local` (Skaffold profile `local-secrets` uses `clusters/dev-local-secrets` with Kustomize `secretGenerator`). Label this path **non-prod** only.
 
 Full documentation: **[infrastructure/vault/README.md](../vault/README.md)** (KV paths, policies, runbooks).
 

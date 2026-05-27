@@ -101,11 +101,26 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
   - [x] Avoid checking long-lived root tokens into git; use one-time bootstrap tokens or local-only files excluded by `.gitignore`.
 - [x] Integrate workloads using one of:
   - [x] **External Secrets Operator** (ESO) + Vault backend → syncs to Kubernetes `Secret` objects, or
-  - [ ] **Vault Agent Injector** / CSI provider for file/env injection.
-- [ ] Replace or gate **`secrets.env` + `secretGenerator`** in **dev** overlays: either generate K8s secrets from Vault in CI/CD, or reference ESO-managed secrets in Deployments.
+  - [x] **Vault Agent Injector** / CSI provider — **not adopted** in phase 1 (ESO chosen per open decisions; Vault chart `injector.enabled: false`; revisit in Phase D if file-based injection is required).
+- [x] Replace or gate **`secrets.env` + `secretGenerator`** in **dev** overlays: either generate K8s secrets from Vault in CI/CD, or reference ESO-managed secrets in Deployments.
 - [x] **Offline / flaky network:** Provide a **local mock or fallback path** so `make back` is not blocked when minikube Vault is unreachable (e.g. optional overlay that keeps `secretGenerator` from `secrets.env`, or a documented **pure local** flow using **`secrets.env.example`** as a template for non-K8s development). Clearly label fallbacks as **non-prod** and unsafe for shared environments.
 - [x] Update **Skaffold / Makefile** docs so `make back` brings up Vault (or depends on it) when using the default path, and developers know how to log in and read secrets.
 - [x] Add **runbooks**: unseal (if applicable), root token handling, and “break-glass” local override for offline work.
+
+#### 2.1 Implementation status (complete)
+
+| Deliverable | Location |
+|-------------|----------|
+| Vault Helm (dev server, in-memory, auto-unsealed) | `infrastructure/k8s/shared/vault/overlays/dev` |
+| KV v2 bootstrap + policies | `infrastructure/vault/policies/`, `bootstrap-dev-k8s-auth.sh` |
+| Seed from `.env` | `infrastructure/vault/scripts/seed-dev-secrets.sh`, `make vault-seed` |
+| ESO controller + ClusterSecretStore | `infrastructure/k8s/shared/external-secrets/overlays/dev`, `config/dev/` |
+| ExternalSecret manifests (7 secrets) | `infrastructure/k8s/shared/external-secrets/manifests/dev/` |
+| Dev default workflow | `make back` → `vault-init` + `eso-sync` + Skaffold |
+| Offline fallback (non-prod) | `setup-env.sh dev --local-secrets`, `make back-local`, `clusters/dev-local-secrets` |
+| Runbooks | `infrastructure/vault/README.md` |
+
+**Integration path:** ESO syncs Vault KV into the Kubernetes `Secret` names Deployments already reference (`gateway-secrets`, `auth-service-secrets`, …). Dev overlays no longer use Kustomize `secretGenerator`; staging/prod still use `secrets.env` until Phase C.
 
 ---
 
@@ -153,7 +168,7 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 ### 7. Rollout
 
 - [x] **Phase A — Non-breaking:** Introduce Vault/AWS SM alongside existing `secretGenerator`; dual-write or read from new path with feature flag.
-- [ ] **Phase B:** Switch dev overlays to Vault-sourced secrets by default; keep **`secrets.env.example`** (or equivalent) for **documented variable names and shapes only** — no real values; support optional fallback flows from §2.
+- [x] **Phase B:** Switch dev overlays to Vault-sourced secrets by default; keep **`secrets.env.example`** (or equivalent) for **documented variable names and shapes only** — no real values; support optional fallback flows from §2.
 - [ ] **Phase C:** Cut prod to AWS Secrets Manager + ESO; archive plaintext prod secret delivery paths.
 - [ ] **Phase D:** Optional — dynamic secrets, automatic rotation, and secret scanning in CI.
 

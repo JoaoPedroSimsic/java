@@ -9,12 +9,7 @@ ESO_ROLE="${ESO_VAULT_ROLE:-external-secrets}"
 ESO_SA="${ESO_SERVICE_ACCOUNT:-external-secrets}"
 ESO_NS="${ESO_NAMESPACE:-external-secrets}"
 
-ROOT_TOKEN="${VAULT_ROOT_TOKEN:-}"
-if [[ -z "$ROOT_TOKEN" ]]; then
-  ROOT_TOKEN="$(kubectl logs -n "$VAULT_NS" "$VAULT_POD" 2>/dev/null | sed -n 's/.*Root Token: \(hvs\.[^[:space:]]*\).*/\1/p' | tail -1 || true)"
-fi
-
-if [[ -z "$ROOT_TOKEN" ]]; then
+if ! ROOT_TOKEN="$(bash "$SCRIPT_DIR/resolve-vault-root-token.sh")"; then
   echo "Could not determine Vault root token. Export VAULT_ROOT_TOKEN or inspect:"
   echo "  kubectl logs -n $VAULT_NS $VAULT_POD"
   exit 1

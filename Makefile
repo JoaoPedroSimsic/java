@@ -1,4 +1,4 @@
-.PHONY: front back dev teardown minikube-up minikube-reset vault-up vault-reset vault-bootstrap vault-seed vault-ui
+.PHONY: front back back-local dev teardown minikube-up minikube-reset vault-up vault-init vault-reset vault-bootstrap vault-seed vault-ui eso-sync
 
 MINIKUBE_PROFILE ?= hermes-dev
 MINIKUBE_DRIVER ?= docker
@@ -36,16 +36,33 @@ minikube-reset:
 front:
 	cd frontend && bun run start
 
-back: minikube-up vault-up
+back: minikube-up vault-init eso-sync
 	@if pgrep -x skaffold >/dev/null 2>&1; then \
 		echo "WARNING: another 'skaffold dev' is already running. Stop it (Ctrl+C) before make back."; \
 		exit 1; \
 	fi
-	@echo "Starting Skaffold (15 Deployments; Vault is deployed separately via vault-up)."
+	@echo "Starting Skaffold (Vault + ESO + apps; secrets synced from Vault by default)."
 	MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)" skaffold dev --trigger="$(SKAFFOLD_TRIGGER)" $(SKAFFOLD_DEV_FLAGS)
+
+back-local: minikube-up
+	@if pgrep -x skaffold >/dev/null 2>&1; then \
+		echo "WARNING: another 'skaffold dev' is already running. Stop it (Ctrl+C) before make back-local."; \
+		exit 1; \
+	fi
+	@echo "Starting Skaffold with local secrets.env (non-prod offline fallback; no Vault required)."
+	MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)" skaffold dev -p local-secrets --trigger="$(SKAFFOLD_TRIGGER)" $(SKAFFOLD_DEV_FLAGS)
 
 vault-up:
 	bash infrastructure/vault/scripts/deploy-dev.sh
+
+vault-init: vault-up
+	@if [ -f .env ]; then \
+		echo "Bootstrapping Vault Kubernetes auth and seeding KV from .env..."; \
+		bash infrastructure/vault/scripts/bootstrap-dev-k8s-auth.sh; \
+		bash infrastructure/vault/scripts/seed-dev-secrets.sh; \
+	else \
+		echo "WARNING: .env not found — copy .env.example to .env, run setup-env.sh dev, then make vault-seed."; \
+	fi
 
 vault-reset:
 	kubectl delete namespace vault --ignore-not-found --wait=true
@@ -61,6 +78,10 @@ vault-bootstrap:
 
 vault-seed:
 	bash infrastructure/vault/scripts/seed-dev-secrets.sh
+
+eso-sync:
+	bash infrastructure/k8s/shared/external-secrets/scripts/deploy-dev.sh
+	bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets.sh
 
 vault-ui:
 	@echo "Vault UI: kubectl port-forward -n vault svc/vault 8200:8200  (then http://127.0.0.1:8200/ui )"

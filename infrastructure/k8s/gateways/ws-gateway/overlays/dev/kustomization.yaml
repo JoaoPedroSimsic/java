@@ -6,11 +6,21 @@ configMapGenerator:
 - name: ws-gateway-config
   envs:
   - params.env
-secretGenerator:
-- name: ws-gateway-secrets
-  envs:
-  - secrets.env
 labels:
 - pairs:
     environment: dev
   includeSelectors: true
+patches:
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ws-gateway
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ws-gateway
+            envFrom:
+            - configMapRef:
+                name: ws-gateway-config

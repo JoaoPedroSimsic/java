@@ -7,10 +7,6 @@ configMapGenerator:
 - name: gateway-config
   envs:
   - params.env
-secretGenerator:
-- name: gateway-secrets
-  envs:
-  - secrets.env
 labels:
 - pairs:
     environment: dev

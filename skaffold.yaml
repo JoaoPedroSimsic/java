@@ -46,6 +46,7 @@ manifests:
   kustomize:
     paths:
       - infrastructure/k8s/shared/external-secrets/overlays/dev
+      - infrastructure/k8s/shared/external-secrets/manifests/dev
       - infrastructure/k8s/clusters/dev
     buildArgs:
       - "--load-restrictor=LoadRestrictionsNone"
@@ -138,6 +139,14 @@ verify:
           exit 1
 
 profiles:
+  - name: local-secrets
+    manifests:
+      kustomize:
+        paths:
+          - infrastructure/k8s/clusters/dev-local-secrets
+        buildArgs:
+          - "--load-restrictor=LoadRestrictionsNone"
+          - "--enable-helm"
   - name: prod
     manifests:
       kustomize:

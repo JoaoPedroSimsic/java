@@ -6,10 +6,6 @@ configMapGenerator:
 - name: keycloak-config
   envs:
   - params.env
-secretGenerator:
-- name: keycloak-secrets
-  envs:
-  - secrets.env
 labels:
 - pairs:
     environment: dev

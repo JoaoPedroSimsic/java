@@ -42,12 +42,7 @@ for var in "${REQUIRED[@]}"; do
   require_var "$var"
 done
 
-ROOT_TOKEN="${VAULT_ROOT_TOKEN:-}"
-if [[ -z "$ROOT_TOKEN" ]]; then
-  ROOT_TOKEN="$(kubectl logs -n "$VAULT_NS" "$VAULT_POD" 2>/dev/null | sed -n 's/.*Root Token: \(hvs\.[^[:space:]]*\).*/\1/p' | tail -1 || true)"
-fi
-
-if [[ -z "$ROOT_TOKEN" ]]; then
+if ! ROOT_TOKEN="$(bash "$SCRIPT_DIR/resolve-vault-root-token.sh")"; then
   echo "Could not determine Vault root token. Export VAULT_ROOT_TOKEN or inspect:"
   echo "  kubectl logs -n $VAULT_NS $VAULT_POD"
   exit 1
@@ -104,4 +99,4 @@ vault_kv_put "$PREFIX/services/keycloak/keycloak-admin" \
   password="$KEYCLOAK_ADMIN_PASSWORD"
 
 echo "Done. Vault paths seeded under secret/$PREFIX/"
-echo "Next: kubectl get externalsecret -n hermes-dev"
+echo "Next: kubectl get externalsecret,secret -n hermes-dev"
