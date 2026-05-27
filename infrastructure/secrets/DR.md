@@ -83,7 +83,7 @@ kubectl kustomize "infrastructure/k8s/clusters/${HERMES_ENV}" \
   | kubectl apply --server-side --force-conflicts -f -
 ```
 
-Or use GitHub Actions: `.github/workflows/deploy-k8s-prod.yml` with `workflow_dispatch` and the target environment.
+Or use GitHub Actions: `.github/workflows/deploy-kubernetes.yml` with `workflow_dispatch` and the target environment.
 
 ### 5. Verification
 

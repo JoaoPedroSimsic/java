@@ -1,4 +1,4 @@
-name: Deploy Kubernetes (prod)
+name: Deploy Kubernetes
 
 on:
   workflow_dispatch:
@@ -59,7 +59,6 @@ jobs:
             | sed "s|PLACEHOLDER_USER_SERVICE_IRSA_ROLE_ARN|${USER_SERVICE_IRSA_ROLE_ARN}|g" \
             | kubectl apply --server-side --force-conflicts -f -
 
-      # Staging only: verify ESO-backed secrets and core workload health (PRD §6).
       - name: Smoke test secrets (staging)
         if: inputs.environment == 'staging'
         env:

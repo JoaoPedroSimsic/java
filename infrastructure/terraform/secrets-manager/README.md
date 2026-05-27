@@ -79,7 +79,7 @@ Production Kubernetes deploys must **not** use `secrets.env` or Kustomize `secre
 3. `deploy-aws.sh` + `wait-for-synced-secrets.sh`
 4. `kubectl apply -k infrastructure/k8s/clusters/prod`
 
-See `.github/workflows/deploy-k8s-prod.yml` for a GitHub Actions OIDC skeleton.
+See `.github/workflows/deploy-kubernetes.yml` for a GitHub Actions OIDC skeleton.
 
 ## Rotation and DR
 

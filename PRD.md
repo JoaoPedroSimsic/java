@@ -144,7 +144,7 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 | ExternalSecret manifests (7 secrets / env) | `infrastructure/k8s/shared/external-secrets/manifests/{staging,prod}/` |
 | Prod/staging overlays (no `secretGenerator`) | `infrastructure/k8s/**/overlays/{staging,prod}/` |
 | user-service IRSA (S3; no static AWS keys) | `services/user-service/overlays/prod/serviceaccount.yaml`, `application-prod.yml` |
-| Deploy workflow | `make eso-sync-prod`, `make deploy-prod-k8s`; `.github/workflows/deploy-k8s-prod.yml` |
+| Deploy workflow | `make eso-sync-prod`, `make deploy-prod-k8s`; `.github/workflows/deploy-kubernetes.yml` |
 | Runbook | `infrastructure/terraform/secrets-manager/README.md` |
 
 **Integration path:** ESO syncs AWS Secrets Manager into the same Kubernetes `Secret` names as dev (`gateway-secrets`, `auth-service-secrets`, …). Staging and prod overlays no longer use Kustomize `secretGenerator`.
@@ -208,7 +208,7 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 | `.gitignore` extensions | repo root `.gitignore`, `infrastructure/k8s/.gitignore` |
 | pre-commit (gitleaks + detect-secrets) | `.pre-commit-config.yaml`, `.secrets.baseline` |
 | CI secret scan | `.github/workflows/ci.yml` `secret-scan` job |
-| Staging smoke tests | `infrastructure/k8s/scripts/smoke-test-secrets.sh`, `make smoke-test-staging`, `deploy-k8s-prod.yml` (staging) |
+| Staging smoke tests | `infrastructure/k8s/scripts/smoke-test-secrets.sh`, `make smoke-test-staging`, `deploy-kubernetes.yml` (staging) |
 | Security review doc + Vault NetworkPolicy | `infrastructure/secrets/SECURITY.md`, `infrastructure/k8s/shared/vault/overlays/dev/network-policy.yaml` |
 
 **Integration path:** Staging deploy workflow runs smoke tests after cluster apply. Dev Vault API restricted to ESO ingress on port 8200; TLS on Vault API documented as dev-only risk acceptance.

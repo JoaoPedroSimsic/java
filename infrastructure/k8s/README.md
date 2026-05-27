@@ -226,7 +226,7 @@ Staging and production use **AWS Secrets Manager + External Secrets Operator** w
 
 Full documentation: **[infrastructure/terraform/secrets-manager/README.md](../terraform/secrets-manager/README.md)**.
 
-**Production CI:** `.github/workflows/deploy-k8s-prod.yml` applies manifests via GitHub OIDC — no `secrets.env` in the pipeline. Staging deploys run [`smoke-test-secrets.sh`](scripts/smoke-test-secrets.sh) automatically.
+**Production CI:** `.github/workflows/deploy-kubernetes.yml` applies manifests via GitHub OIDC — no `secrets.env` in the pipeline. Staging deploys run [`smoke-test-secrets.sh`](scripts/smoke-test-secrets.sh) automatically.
 
 ### Git and CI guardrails (PRD §6)
 
@@ -236,7 +236,9 @@ Never commit real credentials. The repo enforces:
 |---------|----------|
 | Gitignore | `.env`, `.env.*` (except `.env.example`), `**/secrets.env`, `terraform.tfvars` |
 | pre-commit | `.pre-commit-config.yaml` — **gitleaks** + **detect-secrets** (baseline: `.secrets.baseline`) |
-| CI | `.github/workflows/ci.yml` — `secret-scan` job |
+| CI | `.github/workflows/ci.yml` — tests, secret scan, infra validate |
+| Container images | `.github/workflows/build-images.yml` — push after CI on `main` / `develop` |
+| Cluster deploy | `.github/workflows/deploy-kubernetes.yml` — manual `workflow_dispatch` |
 
 Install hooks locally:
 
