@@ -1,4 +1,4 @@
-.PHONY: front back back-local dev teardown minikube-up minikube-reset vault-up vault-init vault-reset vault-bootstrap vault-seed vault-ui eso-sync
+.PHONY: front back back-local dev teardown minikube-up minikube-reset vault-up vault-init vault-reset vault-bootstrap vault-seed vault-ui eso-sync eso-sync-staging eso-sync-prod aws-secrets-seed deploy-prod-k8s
 
 MINIKUBE_PROFILE ?= hermes-dev
 MINIKUBE_DRIVER ?= docker
@@ -82,6 +82,25 @@ vault-seed:
 eso-sync:
 	bash infrastructure/k8s/shared/external-secrets/scripts/deploy-dev.sh
 	bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets.sh
+
+aws-secrets-seed:
+	bash infrastructure/aws/scripts/seed-secrets.sh
+
+eso-sync-staging:
+	@test -n "$$ESO_IRSA_ROLE_ARN" || (echo "Set ESO_IRSA_ROLE_ARN (terraform output eso_irsa_role_arn)" && exit 1)
+	HERMES_ENV=staging bash infrastructure/k8s/shared/external-secrets/scripts/deploy-aws.sh
+	HERMES_ENV=staging bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets-aws.sh
+
+eso-sync-prod:
+	@test -n "$$ESO_IRSA_ROLE_ARN" || (echo "Set ESO_IRSA_ROLE_ARN (terraform output eso_irsa_role_arn)" && exit 1)
+	HERMES_ENV=prod bash infrastructure/k8s/shared/external-secrets/scripts/deploy-aws.sh
+	HERMES_ENV=prod bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets-aws.sh
+
+deploy-prod-k8s: eso-sync-prod
+	@test -n "$$USER_SERVICE_IRSA_ROLE_ARN" || (echo "Set USER_SERVICE_IRSA_ROLE_ARN (terraform output user_service_irsa_role_arn)" && exit 1)
+	kubectl kustomize infrastructure/k8s/clusters/prod --load-restrictor=LoadRestrictionsNone --enable-helm \
+	  | sed "s|PLACEHOLDER_USER_SERVICE_IRSA_ROLE_ARN|$$USER_SERVICE_IRSA_ROLE_ARN|g" \
+	  | kubectl apply --server-side --force-conflicts -f -
 
 vault-ui:
 	@echo "Vault UI: kubectl port-forward -n vault svc/vault 8200:8200  (then http://127.0.0.1:8200/ui )"

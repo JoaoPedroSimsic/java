@@ -212,6 +212,22 @@ For minikube/Skaffold dev, **HashiCorp Vault + External Secrets Operator** are t
 
 Full documentation: **[infrastructure/vault/README.md](../vault/README.md)** (KV paths, policies, runbooks).
 
+### AWS Secrets Manager (Phase 3 — staging / prod)
+
+Staging and production use **AWS Secrets Manager + External Secrets Operator** with **IRSA** (no static AWS keys in the cluster for sync). Overlays no longer use Kustomize `secretGenerator`.
+
+| Step | Command |
+|------|---------|
+| Provision secrets + IAM + CloudTrail | `cd infrastructure/terraform/secrets-manager && ./secrets-manager-tf.sh apply` |
+| Generate params only | `infrastructure/k8s/setup-env.sh prod` (or `staging`) |
+| Seed AWS SM from `.env.prod` | `HERMES_ENV=prod make aws-secrets-seed` |
+| Deploy ESO + sync | `ESO_IRSA_ROLE_ARN=... make eso-sync-prod` |
+| Apply workloads | `USER_SERVICE_IRSA_ROLE_ARN=... make deploy-prod-k8s` |
+
+Full documentation: **[infrastructure/terraform/secrets-manager/README.md](../terraform/secrets-manager/README.md)**.
+
+**Production CI:** `.github/workflows/deploy-k8s-prod.yml` applies manifests via GitHub OIDC — no `secrets.env` in the pipeline.
+
 ### Secrets by Component
 
 #### Postgres (auth-db & user-db)

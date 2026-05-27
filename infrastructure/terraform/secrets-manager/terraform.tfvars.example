@@ -1,0 +1,19 @@
+aws_region  = "sa-east-1"
+environment = "prod"
+
+eks_cluster_name = "hermes-prod"
+
+# S3 bucket used by user-service for profile images (IRSA scoped access).
+user_service_s3_bucket = "hermes-prod-user-profile-images"
+
+# Optional: set true for first apply to create REPLACE_ME placeholders, then run seed script.
+seed_placeholder_secrets = false
+
+# Optional: use an existing bucket instead of creating one for CloudTrail.
+# cloudtrail_s3_bucket_name = "my-org-cloudtrail-logs"
+
+tags = {
+  Project     = "hermes"
+  Environment = "prod"
+  ManagedBy   = "terraform"
+}

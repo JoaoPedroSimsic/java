@@ -120,19 +120,34 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 | Offline fallback (non-prod) | `setup-env.sh dev --local-secrets`, `make back-local`, `clusters/dev-local-secrets` |
 | Runbooks | `infrastructure/vault/README.md` |
 
-**Integration path:** ESO syncs Vault KV into the Kubernetes `Secret` names Deployments already reference (`gateway-secrets`, `auth-service-secrets`, …). Dev overlays no longer use Kustomize `secretGenerator`; staging/prod still use `secrets.env` until Phase C.
+**Integration path:** ESO syncs Vault KV into the Kubernetes `Secret` names Deployments already reference (`gateway-secrets`, `auth-service-secrets`, …). Dev overlays no longer use Kustomize `secretGenerator`; staging/prod use AWS Secrets Manager + ESO (Phase 3).
 
 ---
 
 ### 3. Production — AWS Secrets Manager
 
-- [ ] Create **AWS Secrets Manager** secrets per environment (e.g. `hermes/prod/...`) matching the naming convention from §1 (including **shared** vs **service-specific** paths).
-- [ ] **Bootstrap credentials for operators (prod):** Use **IAM Roles for Service Accounts (IRSA)** so **ESO** (and any AWS Secrets Store CSI driver) assumes least-privilege IAM roles to read only the secrets needed for each namespace/workload — no static AWS keys in the cluster for sync.
-- [ ] Configure workload **IRSA** where applications call AWS APIs directly (if any); keep ESO controller identity separate from app identity unless deliberately shared.
-- [ ] Deploy **External Secrets Operator** (or AWS-native **Secrets Store CSI + ASCP**) in prod and wire the **AWS provider** to Secrets Manager.
-- [ ] Map **ExternalSecret** resources to Kubernetes `Secret` names expected by existing Deployments, or update manifests to match new names.
-- [ ] Remove plaintext **`secrets.env` from prod pipelines**; ensure CI applies only references (and uses OIDC/IAM to push or rotate secrets, not store them in repo).
-- [ ] Enable **CloudTrail** logging for `secretsmanager` API calls and define alerts for anomalous access.
+- [x] Create **AWS Secrets Manager** secrets per environment (e.g. `hermes/prod/...`) matching the naming convention from §1 (including **shared** vs **service-specific** paths).
+- [x] **Bootstrap credentials for operators (prod):** Use **IAM Roles for Service Accounts (IRSA)** so **ESO** (and any AWS Secrets Store CSI driver) assumes least-privilege IAM roles to read only the secrets needed for each namespace/workload — no static AWS keys in the cluster for sync.
+- [x] Configure workload **IRSA** where applications call AWS APIs directly (if any); keep ESO controller identity separate from app identity unless deliberately shared.
+- [x] Deploy **External Secrets Operator** (or AWS-native **Secrets Store CSI + ASCP**) in prod and wire the **AWS provider** to Secrets Manager.
+- [x] Map **ExternalSecret** resources to Kubernetes `Secret` names expected by existing Deployments, or update manifests to match new names.
+- [x] Remove plaintext **`secrets.env` from prod pipelines**; ensure CI applies only references (and uses OIDC/IAM to push or rotate secrets, not store them in repo).
+- [x] Enable **CloudTrail** logging for `secretsmanager` API calls and define alerts for anomalous access.
+
+#### 3.1 Implementation status (complete)
+
+| Deliverable | Location |
+|-------------|----------|
+| Terraform: Secrets Manager + IRSA + CloudTrail | `infrastructure/terraform/secrets-manager/` |
+| Seed from `.env.<env>` | `infrastructure/aws/scripts/seed-secrets.sh`, `make aws-secrets-seed` |
+| ESO controller + ClusterSecretStore (AWS) | `infrastructure/k8s/shared/external-secrets/overlays/{staging,prod}/`, `config/{staging,prod}/` |
+| ExternalSecret manifests (7 secrets / env) | `infrastructure/k8s/shared/external-secrets/manifests/{staging,prod}/` |
+| Prod/staging overlays (no `secretGenerator`) | `infrastructure/k8s/**/overlays/{staging,prod}/` |
+| user-service IRSA (S3; no static AWS keys) | `services/user-service/overlays/prod/serviceaccount.yaml`, `application-prod.yml` |
+| Deploy workflow | `make eso-sync-prod`, `make deploy-prod-k8s`; `.github/workflows/deploy-k8s-prod.yml` |
+| Runbook | `infrastructure/terraform/secrets-manager/README.md` |
+
+**Integration path:** ESO syncs AWS Secrets Manager into the same Kubernetes `Secret` names as dev (`gateway-secrets`, `auth-service-secrets`, …). Staging and prod overlays no longer use Kustomize `secretGenerator`.
 
 ---
 
@@ -169,7 +184,7 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 
 - [x] **Phase A — Non-breaking:** Introduce Vault/AWS SM alongside existing `secretGenerator`; dual-write or read from new path with feature flag.
 - [x] **Phase B:** Switch dev overlays to Vault-sourced secrets by default; keep **`secrets.env.example`** (or equivalent) for **documented variable names and shapes only** — no real values; support optional fallback flows from §2.
-- [ ] **Phase C:** Cut prod to AWS Secrets Manager + ESO; archive plaintext prod secret delivery paths.
+- [x] **Phase C:** Cut prod to AWS Secrets Manager + ESO; archive plaintext prod secret delivery paths.
 - [ ] **Phase D:** Optional — dynamic secrets, automatic rotation, and secret scanning in CI.
 
 ---

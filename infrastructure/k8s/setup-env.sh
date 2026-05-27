@@ -25,14 +25,16 @@ if [[ ! " ${ALLOWED_ENVS[@]} " =~ " ${ENV} " ]]; then
 fi
 
 WRITE_SECRETS=true
-if [[ "$ENV" == "dev" && "$LOCAL_SECRETS" != "true" ]]; then
-    WRITE_SECRETS=false
+if [[ "$LOCAL_SECRETS" != "true" ]]; then
+    if [[ "$ENV" == "dev" || "$ENV" == "staging" || "$ENV" == "prod" ]]; then
+        WRITE_SECRETS=false
+    fi
 fi
 
 echo "=========================================="
 echo -e "Hermes K8s Setup: ${BLUE}${ENV^^}${NC}"
 if [[ "$WRITE_SECRETS" == "false" ]]; then
-    echo -e "Secret source: ${BLUE}Vault + ESO${NC} (params.env only; run make vault-seed)"
+    echo -e "Secret source: ${BLUE}central store + ESO${NC} (params.env only)"
 else
     echo -e "Secret source: ${YELLOW}local secrets.env${NC} (Kustomize secretGenerator)"
 fi
@@ -232,6 +234,13 @@ fi
 
 echo -e "\n${GREEN}All files synchronized with .env and validated.${NC}"
 if [[ "$WRITE_SECRETS" == "false" ]]; then
-    echo -e "${BLUE}Dev overlays use Vault + ESO. Run: make vault-init  (or make back, which calls it)${NC}"
-    echo -e "${YELLOW}Offline fallback: ./setup-env.sh dev --local-secrets  then  skaffold dev -p local-secrets${NC}"
+    if [[ "$ENV" == "dev" ]]; then
+        echo -e "${BLUE}Dev overlays use Vault + ESO. Run: make vault-init  (or make back, which calls it)${NC}"
+        echo -e "${YELLOW}Offline fallback: ./setup-env.sh dev --local-secrets  then  make back-local${NC}"
+    else
+        echo -e "${BLUE}${ENV^^} overlays use AWS Secrets Manager + ESO.${NC}"
+        echo -e "  1. terraform apply in infrastructure/terraform/secrets-manager (environment=${ENV})"
+        echo -e "  2. HERMES_ENV=${ENV} make aws-secrets-seed"
+        echo -e "  3. ESO_IRSA_ROLE_ARN=... HERMES_ENV=${ENV} make eso-sync-${ENV}"
+    fi
 fi

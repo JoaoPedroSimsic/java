@@ -3,9 +3,7 @@ spring:
     aws:
       region:
         static: ${AWS_DEFAULT_REGION}
-      credentials:
-        access-key: ${AWS_ACCESS_KEY_ID}
-        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      # Credentials via EKS IRSA (DefaultCredentialsProvider); do not inject static keys.
 
   rabbitmq:
     listener:

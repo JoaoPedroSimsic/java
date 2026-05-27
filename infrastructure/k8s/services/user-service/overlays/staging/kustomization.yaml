@@ -4,15 +4,21 @@ resources:
 - ../../base
 - ../../../../shared/postgres/user-db/overlays/staging
 - ../../../../shared/redis/user-redis/overlays/staging
+- serviceaccount.yaml
 configMapGenerator:
 - name: user-service-config
   envs:
   - params.env
-secretGenerator:
-- name: user-service-secrets
-  envs:
-  - secrets.env
 patches:
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: user-service
+    spec:
+      template:
+        spec:
+          serviceAccountName: user-service
 - patch: "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: user-service\n\
     spec:\n  replicas: 2\n  template:\n    spec:\n      containers:\n      - name:\
     \ user-service\n        resources:\n          requests:\n            memory: \"\

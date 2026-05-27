@@ -7,10 +7,6 @@ configMapGenerator:
   behavior: replace
   envs:
   - params.env
-secretGenerator:
-- name: ws-gateway-secrets
-  envs:
-  - secrets.env
 patches:
 - patch: |-
     apiVersion: apps/v1
@@ -23,6 +19,9 @@ patches:
         spec:
           containers:
           - name: ws-gateway
+            envFrom:
+            - configMapRef:
+                name: ws-gateway-config
             resources:
               requests:
                 memory: "128Mi"

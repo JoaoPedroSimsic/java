@@ -151,7 +151,25 @@ profiles:
     manifests:
       kustomize:
         paths:
+          - infrastructure/k8s/shared/external-secrets/overlays/prod
+          - infrastructure/k8s/shared/external-secrets/manifests/prod
           - infrastructure/k8s/clusters/prod
+        buildArgs:
+          - "--load-restrictor=LoadRestrictionsNone"
+          - "--enable-helm"
+    build:
+      artifacts:
+        - image: http-gateway
+        - image: auth-service
+        - image: user-service
+        - image: ws-gateway
+  - name: staging
+    manifests:
+      kustomize:
+        paths:
+          - infrastructure/k8s/shared/external-secrets/overlays/staging
+          - infrastructure/k8s/shared/external-secrets/manifests/staging
+          - infrastructure/k8s/clusters/staging
         buildArgs:
           - "--load-restrictor=LoadRestrictionsNone"
           - "--enable-helm"
