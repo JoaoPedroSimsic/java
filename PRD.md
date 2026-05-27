@@ -153,14 +153,27 @@ ARNs follow `arn:aws:secretsmanager:<region>:<account>:secret:hermes/<env>/...` 
 
 ### 4. Application and platform integration
 
-- [ ] Standardize consumption: **env from projected secrets** vs **files**; align Spring Boot / Go configs with one pattern.
-- [ ] Refactor services to read **non-secret config from ConfigMaps** and **secrets only from Secret/volume** (no duplicate sensitive values in env files).
-- [ ] **Spring Boot “bootstrap” ordering:** Ensure **base `deployment.yaml` files** (and overlays) reference secrets via **`secretRef`** / **`valueFrom.secretKeyRef`** (not plain `env` literals for sensitive keys) so that if ESO has not yet synced from Vault/AWS, or a `Secret` is missing, the Pod remains in **`CreateContainerConfigError`** / **`ErrImagePull`-class failures** rather than starting with **null or empty env** and failing later in application code.
-- [ ] **Vault Agent Injector:** If used, confirm init/sidecar ordering so secrets are materialized before the app container starts; align with the same “fail closed” behavior as ESO.
-- [ ] **Authentication services:** Plan credential flow for **Keycloak** and **AWS Cognito** paths in `auth-service` (shared vs per-integration secrets; no accidental duplication of signing keys across IdPs unless intended).
-- [ ] Plan **Keycloak / Postgres / Redis / RabbitMQ** credential flow: static secrets in phase 1; optional **dynamic credentials** in a later iteration.
-- [ ] Add **health checks** that do not expose secret values in logs.
-- [ ] **Spring Boot Actuator:** Configure **`/actuator/env`** (and related endpoints) to **sanitize or disable** exposure of Vault- or AWS-sourced keys — default Spring behavior can leak secret **values** in JSON responses; restrict management endpoints by profile, network policy, or explicit property sanitizer lists.
+- [x] Standardize consumption: **env from projected secrets** vs **files**; align Spring Boot / Go configs with one pattern.
+- [x] Refactor services to read **non-secret config from ConfigMaps** and **secrets only from Secret/volume** (no duplicate sensitive values in env files).
+- [x] **Spring Boot “bootstrap” ordering:** Ensure **base `deployment.yaml` files** (and overlays) reference secrets via **`secretRef`** / **`valueFrom.secretKeyRef`** (not plain `env` literals for sensitive keys) so that if ESO has not yet synced from Vault/AWS, or a `Secret` is missing, the Pod remains in **`CreateContainerConfigError`** / **`ErrImagePull`-class failures** rather than starting with **null or empty env** and failing later in application code.
+- [x] **Vault Agent Injector:** Not adopted in phase 1 (ESO only). Documented in `infrastructure/secrets/INTEGRATION.md`; revisit in Phase D.
+- [x] **Authentication services:** Plan credential flow for **Keycloak** and **AWS Cognito** paths in `auth-service` (shared vs per-integration secrets; no accidental duplication of signing keys across IdPs unless intended).
+- [x] Plan **Keycloak / Postgres / Redis / RabbitMQ** credential flow: static secrets in phase 1; optional **dynamic credentials** in a later iteration.
+- [x] Add **health checks** that do not expose secret values in logs.
+- [x] **Spring Boot Actuator:** Configure **`/actuator/env`** (and related endpoints) to **sanitize or disable** exposure of Vault- or AWS-sourced keys — default Spring behavior can leak secret **values** in JSON responses; restrict management endpoints by profile, network policy, or explicit property sanitizer lists.
+
+#### 4.1 Implementation status (complete)
+
+| Deliverable | Location |
+|-------------|----------|
+| Consumption pattern + fail-closed docs | `infrastructure/secrets/INTEGRATION.md` |
+| ConfigMap vs Secret split (staging/prod `params.env`) | `infrastructure/k8s/**/overlays/{staging,prod}/params.env` |
+| IdP properties scoped by profile | `KeycloakProperties` (`dev`), `CognitoProperties` (`prod`) |
+| Actuator hardening (env disabled, values hidden) | `services/*/application*.yml`, `gateways/http-gateway/application*.yml` |
+| Removed hardcoded prod Keycloak admin password | `services/auth-service/application-prod.yml` |
+| `setup-env.sh` staging parity with prod Cognito vars | `infrastructure/k8s/setup-env.sh` |
+
+**Integration path:** Non-secret env in `params.env` → ConfigMap; credentials in ESO-managed Secrets → `envFrom.secretRef`. Spring Boot and ws-gateway read env vars only (no secret files in phase 1).
 
 ---
 

@@ -123,7 +123,7 @@ HTTP_GATEWAY_PROD_VARS=("COGNITO_JWKS_URL" "COGNITO_JWT_ISSUER" "CORS_ALLOWED_OR
 
 if [[ "$ENV" == "dev" ]]; then
     generate_files "gateways/http-gateway/overlays/$ENV" "${HTTP_GATEWAY_VARS[@]}" "${HTTP_GATEWAY_DEV_VARS[@]}"
-elif [[ "$ENV" == "prod" ]]; then
+elif [[ "$ENV" == "prod" || "$ENV" == "staging" ]]; then
     generate_files "gateways/http-gateway/overlays/$ENV" "${HTTP_GATEWAY_VARS[@]}" "${HTTP_GATEWAY_PROD_VARS[@]}"
 else
     generate_files "gateways/http-gateway/overlays/$ENV" "${HTTP_GATEWAY_VARS[@]}"
@@ -144,7 +144,7 @@ AUTH_PROD_VARS=("COGNITO_USER_POOL_ID" "COGNITO_CLIENT_ID" "COGNITO_CLIENT_SECRE
 
 if [[ "$ENV" == "dev" ]]; then
     generate_files "services/auth-service/overlays/$ENV" "${AUTH_VARS[@]}" "${AUTH_DEV_VARS[@]}"
-elif [[ "$ENV" == "prod" ]]; then
+elif [[ "$ENV" == "prod" || "$ENV" == "staging" ]]; then
     generate_files "services/auth-service/overlays/$ENV" "${AUTH_VARS[@]}" "${AUTH_PROD_VARS[@]}"
 else
     generate_files "services/auth-service/overlays/$ENV" "${AUTH_VARS[@]}"
@@ -226,7 +226,7 @@ WS_GATEWAY_PROD_VARS=("COGNITO_JWKS_URL" "COGNITO_JWT_ISSUER" "CORS_ALLOWED_ORIG
 
 if [[ "$ENV" == "dev" ]]; then
     generate_files "gateways/ws-gateway/overlays/$ENV" "${WS_GATEWAY_VARS[@]}" "${WS_GATEWAY_DEV_VARS[@]}"
-elif [[ "$ENV" == "prod" ]]; then
+elif [[ "$ENV" == "prod" || "$ENV" == "staging" ]]; then
     generate_files "gateways/ws-gateway/overlays/$ENV" "${WS_GATEWAY_VARS[@]}" "${WS_GATEWAY_PROD_VARS[@]}"
 else
     generate_files "gateways/ws-gateway/overlays/$ENV" "${WS_GATEWAY_VARS[@]}"
