@@ -45,6 +45,8 @@ build:
 manifests:
   kustomize:
     paths:
+      - infrastructure/k8s/shared/external-secrets/overlays/dev
+      - infrastructure/k8s/shared/external-secrets/manifests/dev
       - infrastructure/k8s/clusters/dev
     buildArgs:
       - "--load-restrictor=LoadRestrictionsNone"
@@ -52,6 +54,13 @@ manifests:
 
 deploy:
   kubectl:
+    hooks:
+      before:
+        - host:
+            command:
+              - bash
+              - infrastructure/k8s/shared/external-secrets/scripts/ensure-crds.sh
+            os: [linux, darwin]
     flags:
       apply:
         - "--server-side"
@@ -130,11 +139,47 @@ verify:
           exit 1
 
 profiles:
+  - name: local-secrets
+    manifests:
+      kustomize:
+        paths:
+          - infrastructure/k8s/clusters/dev-local-secrets
+        buildArgs:
+          - "--load-restrictor=LoadRestrictionsNone"
+          - "--enable-helm"
+  - name: dynamic-secrets
+    manifests:
+      kustomize:
+        paths:
+          - infrastructure/k8s/shared/external-secrets/overlays/dev
+          - infrastructure/k8s/shared/external-secrets/manifests/dev-dynamic
+          - infrastructure/k8s/clusters/dev
+        buildArgs:
+          - "--load-restrictor=LoadRestrictionsNone"
+          - "--enable-helm"
   - name: prod
     manifests:
       kustomize:
         paths:
+          - infrastructure/k8s/shared/external-secrets/overlays/prod
+          - infrastructure/k8s/shared/external-secrets/manifests/prod
           - infrastructure/k8s/clusters/prod
+        buildArgs:
+          - "--load-restrictor=LoadRestrictionsNone"
+          - "--enable-helm"
+    build:
+      artifacts:
+        - image: http-gateway
+        - image: auth-service
+        - image: user-service
+        - image: ws-gateway
+  - name: staging
+    manifests:
+      kustomize:
+        paths:
+          - infrastructure/k8s/shared/external-secrets/overlays/staging
+          - infrastructure/k8s/shared/external-secrets/manifests/staging
+          - infrastructure/k8s/clusters/staging
         buildArgs:
           - "--load-restrictor=LoadRestrictionsNone"
           - "--enable-helm"

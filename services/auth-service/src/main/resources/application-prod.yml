@@ -5,7 +5,7 @@ management:
         include: health, info, metrics, prometheus
   endpoint:
     health:
-      show-details: NEVER
+      show-details: never
       probes:
         enabled: true
   health:
@@ -20,11 +20,3 @@ cognito:
   client-secret: ${COGNITO_CLIENT_SECRET}
   domain-url: ${COGNITO_DOMAIN_URL}
   region: ${AWS_DEFAULT_REGION}
-
-keycloak:
-  server-url: "http://localhost:8180"
-  realm: "hermes-dev"
-  client-id: "hermes-client"
-  admin:
-    username: "admin"
-    password: "admin_password"

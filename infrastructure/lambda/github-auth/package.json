@@ -4,8 +4,8 @@
   "description": "Lambda function for GitHub OAuth with Cognito",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "package": "npm run build && cd dist && zip -r ../function.zip ."
+    "build": "bunx tsc",
+    "package": "bun run build && cd dist && zip -r ../function.zip ."
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.400.0"

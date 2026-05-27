@@ -29,10 +29,16 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*" 
+        include: health, info, metrics, beans, conditions, configprops
   endpoint:
+    env:
+      enabled: false
+    configprops:
+      show-values: never
+    beans:
+      show-values: never
     health:
-      show-details: always 
+      show-details: when_authorized
   health:
     circuitbreakers:
       enabled: true

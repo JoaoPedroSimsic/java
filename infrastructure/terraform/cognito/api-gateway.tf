@@ -1,4 +1,3 @@
-# API Gateway HTTP API
 resource "aws_apigatewayv2_api" "github_auth" {
   name          = "${var.app_name}-github-auth-${var.environment}"
   protocol_type = "HTTP"
@@ -13,7 +12,6 @@ resource "aws_apigatewayv2_api" "github_auth" {
   tags = var.tags
 }
 
-# API Gateway Stage
 resource "aws_apigatewayv2_stage" "github_auth" {
   api_id      = aws_apigatewayv2_api.github_auth.id
   name        = "$default"
@@ -37,7 +35,6 @@ resource "aws_apigatewayv2_stage" "github_auth" {
   tags = var.tags
 }
 
-# CloudWatch Log Group for API Gateway
 resource "aws_cloudwatch_log_group" "api_gateway" {
   name              = "/aws/apigateway/${var.app_name}-github-auth-${var.environment}"
   retention_in_days = 14
@@ -45,7 +42,6 @@ resource "aws_cloudwatch_log_group" "api_gateway" {
   tags = var.tags
 }
 
-# Lambda Integration
 resource "aws_apigatewayv2_integration" "github_auth" {
   api_id                 = aws_apigatewayv2_api.github_auth.id
   integration_type       = "AWS_PROXY"
@@ -54,14 +50,12 @@ resource "aws_apigatewayv2_integration" "github_auth" {
   payload_format_version = "2.0"
 }
 
-# Route: GET /auth/github (initiate OAuth)
 resource "aws_apigatewayv2_route" "github_auth_initiate" {
   api_id    = aws_apigatewayv2_api.github_auth.id
   route_key = "GET /auth/github"
   target    = "integrations/${aws_apigatewayv2_integration.github_auth.id}"
 }
 
-# Route: GET /auth/github/callback (OAuth callback)
 resource "aws_apigatewayv2_route" "github_auth_callback" {
   api_id    = aws_apigatewayv2_api.github_auth.id
   route_key = "GET /auth/github/callback"

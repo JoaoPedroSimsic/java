@@ -1,9 +1,13 @@
 FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
+COPY pom.xml .
 COPY bom/pom.xml bom/
 COPY events/pom.xml events/
 COPY services/auth-service/pom.xml services/auth-service/
+
+RUN --mount=type=cache,target=/root/.m2 \
+  mvn install -N -f pom.xml -DskipTests
 
 RUN --mount=type=cache,target=/root/.m2 \
   mvn install -f bom/pom.xml -DskipTests

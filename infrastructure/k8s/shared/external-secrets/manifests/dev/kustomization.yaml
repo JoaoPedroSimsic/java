@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: hermes-dev
+
+resources:
+  - ../../../../clusters/dev/namespace.yaml
+  - gateway-secrets.yaml
+  - user-service-secrets.yaml
+  - auth-postgres-secrets.yaml
+  - user-postgres-secrets.yaml
+  - rabbitmq-secrets.yaml
+  - keycloak-secrets.yaml
+  - auth-service-secrets.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: hermes
+      environment: dev
+      secret-source: vault

@@ -1,0 +1,10 @@
+enable_automatic_rotation = false
+
+rotation_schedule_days = 90
+
+rotation_secret_keys = [
+  "jwt_signing_key",
+  "rabbitmq",
+  "keycloak_admin",
+  "auth_service_cognito",
+]

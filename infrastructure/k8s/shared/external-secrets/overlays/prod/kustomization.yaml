@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: external-secrets
+
+resources:
+  - namespace.yaml
+
+helmCharts:
+  - name: external-secrets
+    repo: https://charts.external-secrets.io
+    version: 0.10.5
+    releaseName: external-secrets
+    namespace: external-secrets
+    includeCRDs: false
+    valuesInline:
+      installCRDs: false
+      replicaCount: 2
+      serviceAccount:
+        create: true
+        name: external-secrets
+        annotations:
+          eks.amazonaws.com/role-arn: PLACEHOLDER_ESO_IRSA_ROLE_ARN
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      webhook:
+        enabled: true
+      certController:
+        enabled: true
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: hermes
+      environment: prod

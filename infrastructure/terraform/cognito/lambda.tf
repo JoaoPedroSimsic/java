@@ -1,4 +1,3 @@
-# IAM Role for Lambda
 resource "aws_iam_role" "github_auth_lambda" {
   name = "${var.app_name}-github-auth-lambda-role-${var.environment}"
 
@@ -18,7 +17,6 @@ resource "aws_iam_role" "github_auth_lambda" {
   tags = var.tags
 }
 
-# IAM Policy for Lambda to access Cognito
 resource "aws_iam_role_policy" "github_auth_lambda_cognito" {
   name = "${var.app_name}-github-auth-cognito-policy"
   role = aws_iam_role.github_auth_lambda.id
@@ -41,13 +39,11 @@ resource "aws_iam_role_policy" "github_auth_lambda_cognito" {
   })
 }
 
-# Attach basic Lambda execution role
 resource "aws_iam_role_policy_attachment" "github_auth_lambda_basic" {
   role       = aws_iam_role.github_auth_lambda.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Lambda function
 resource "aws_lambda_function" "github_auth" {
   filename         = "${path.module}/../../lambda/github-auth/function.zip"
   function_name    = "${var.app_name}-github-auth-${var.environment}"
@@ -76,7 +72,6 @@ resource "aws_lambda_function" "github_auth" {
   ]
 }
 
-# Lambda permission for API Gateway
 resource "aws_lambda_permission" "github_auth_api" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"

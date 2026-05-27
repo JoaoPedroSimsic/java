@@ -198,6 +198,58 @@ All secrets are managed through Kustomize's `secretGenerator` feature:
 
 See `secrets.env.example` in the root k8s directory for a complete reference of all secrets.
 
+### Vault path (Phase B — dev default)
+
+For minikube/Skaffold dev, **HashiCorp Vault + External Secrets Operator** are the default secret source. Dev overlays no longer use Kustomize `secretGenerator`; ESO syncs Vault KV into the Kubernetes `Secret` names expected by Deployments (`gateway-secrets`, `auth-service-secrets`, etc.).
+
+| Step | Command |
+|------|---------|
+| Generate local config (params only) | `infrastructure/k8s/setup-env.sh dev` |
+| Start stack | `make back` (Vault bootstrap + seed from `.env`, then Skaffold) |
+| Verify sync | `kubectl get externalsecret,secret -n hermes-dev` |
+
+**Offline / non-prod fallback** (no Vault): `setup-env.sh dev --local-secrets` then `make back-local` (Skaffold profile `local-secrets` uses `clusters/dev-local-secrets` with Kustomize `secretGenerator`). Label this path **non-prod** only.
+
+Full documentation: **[infrastructure/vault/README.md](../vault/README.md)** (KV paths, policies, runbooks).
+
+### AWS Secrets Manager (Phase 3 — staging / prod)
+
+Staging and production use **AWS Secrets Manager + External Secrets Operator** with **IRSA** (no static AWS keys in the cluster for sync). Overlays no longer use Kustomize `secretGenerator`.
+
+| Step | Command |
+|------|---------|
+| Provision secrets + IAM + CloudTrail | `cd infrastructure/terraform/secrets-manager && ./secrets-manager-tf.sh apply` |
+| Generate params only | `infrastructure/k8s/setup-env.sh prod` (or `staging`) |
+| Seed AWS SM from `.env.prod` | `HERMES_ENV=prod make aws-secrets-seed` |
+| Deploy ESO + sync | `ESO_IRSA_ROLE_ARN=... make eso-sync-prod` |
+| Apply workloads | `USER_SERVICE_IRSA_ROLE_ARN=... make deploy-prod-k8s` |
+
+Full documentation: **[infrastructure/terraform/secrets-manager/README.md](../terraform/secrets-manager/README.md)**.
+
+**Production CI:** `.github/workflows/deploy-kubernetes.yml` applies manifests via GitHub OIDC — no `secrets.env` in the pipeline. Staging deploys run [`smoke-test-secrets.sh`](scripts/smoke-test-secrets.sh) automatically.
+
+### Git and CI guardrails (PRD §6)
+
+Never commit real credentials. The repo enforces:
+
+| Control | Location |
+|---------|----------|
+| Gitignore | `.env`, `.env.*` (except `.env.example`), `**/secrets.env`, `terraform.tfvars` |
+| pre-commit | `.pre-commit-config.yaml` — **gitleaks** + **detect-secrets** (baseline: `.secrets.baseline`) |
+| CI | `.github/workflows/ci.yml` — tests, secret scan, infra validate |
+| Container images | `.github/workflows/build-images.yml` — push after CI on `main` / `develop` |
+| Cluster deploy | `.github/workflows/deploy-kubernetes.yml` — manual `workflow_dispatch` |
+
+Install hooks locally:
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files   # optional first run
+```
+
+See also [`infrastructure/secrets/SECURITY.md`](../secrets/SECURITY.md), [`ROTATION.md`](../terraform/secrets-manager/ROTATION.md), [`DR.md`](../secrets/DR.md), [`PHASE-D.md`](../secrets/PHASE-D.md).
+
 ### Secrets by Component
 
 #### Postgres (auth-db & user-db)
@@ -215,7 +267,11 @@ APP_PASSWORD=secure-app-password
 
 RABBITMQ_DEFAULT_USER=admin
 RABBITMQ_DEFAULT_PASS=secure-rabbitmq-password
+RABBITMQ_USERNAME=admin
+RABBITMQ_PASSWORD=secure-rabbitmq-password
 ```
+
+(`setup-env.sh` writes all four keys from `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` in `.env`.)
 
 #### Keycloak
 ```bash

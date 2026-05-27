@@ -74,7 +74,6 @@ public abstract class GatewayApplicationTest {
     authServiceMock.resetAll();
     userServiceMock.resetAll();
 
-    // Stub default responses for downstream services
     authServiceMock.stubFor(
         any(urlPathMatching("/auth/.*"))
             .willReturn(aResponse().withStatus(200).withBody("{}")));

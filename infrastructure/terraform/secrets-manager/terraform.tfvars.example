@@ -1,0 +1,14 @@
+aws_region  = "sa-east-1"
+environment = "prod"
+
+eks_cluster_name = "hermes-prod"
+
+user_service_s3_bucket = "hermes-prod-user-profile-images"
+
+seed_placeholder_secrets = false
+
+tags = {
+  Project     = "hermes"
+  Environment = "prod"
+  ManagedBy   = "terraform"
+}

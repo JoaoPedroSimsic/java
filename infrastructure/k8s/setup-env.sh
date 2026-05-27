@@ -12,6 +12,11 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 ENV=${1:-dev}
+LOCAL_SECRETS=false
+if [[ "${2:-}" == "--local-secrets" ]]; then
+    LOCAL_SECRETS=true
+fi
+
 ALLOWED_ENVS=("dev" "staging" "prod")
 
 if [[ ! " ${ALLOWED_ENVS[@]} " =~ " ${ENV} " ]]; then
@@ -19,8 +24,20 @@ if [[ ! " ${ALLOWED_ENVS[@]} " =~ " ${ENV} " ]]; then
     exit 1
 fi
 
+WRITE_SECRETS=true
+if [[ "$LOCAL_SECRETS" != "true" ]]; then
+    if [[ "$ENV" == "dev" || "$ENV" == "staging" || "$ENV" == "prod" ]]; then
+        WRITE_SECRETS=false
+    fi
+fi
+
 echo "=========================================="
 echo -e "Hermes K8s Setup: ${BLUE}${ENV^^}${NC}"
+if [[ "$WRITE_SECRETS" == "false" ]]; then
+    echo -e "Secret source: ${BLUE}central store + ESO${NC} (params.env only)"
+else
+    echo -e "Secret source: ${YELLOW}local secrets.env${NC} (Kustomize secretGenerator)"
+fi
 echo "=========================================="
 
 ENV_FILE="../../.env"
@@ -37,16 +54,31 @@ else
     exit 1
 fi
 
+is_vault_managed_secret() {
+    case "$1" in
+        GATEWAY_SECRET|GITHUB_CLIENT_SECRET|KEYCLOAK_ADMIN|KEYCLOAK_ADMIN_PASSWORD|RABBITMQ_USERNAME|RABBITMQ_PASSWORD|RABBITMQ_DEFAULT_USER|RABBITMQ_DEFAULT_PASS|POSTGRES_USER|POSTGRES_PASSWORD|APP_USER|APP_PASSWORD|FLYWAY_USER|FLYWAY_PASSWORD|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|COGNITO_CLIENT_SECRET)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 generate_files() {
     local target_dir=$1
     shift
     local vars=("$@")
-    
+
     mkdir -p "$target_dir" || { echo -e "${RED}Error: Cannot create directory $target_dir${NC}"; exit 1; }
-    
-    > "$target_dir/secrets.env"
+
     > "$target_dir/params.env"
-    
+    if [[ "$WRITE_SECRETS" == "true" ]]; then
+        > "$target_dir/secrets.env"
+    else
+        rm -f "$target_dir/secrets.env"
+    fi
+
     echo -ne "${YELLOW}Processing $(basename "$(dirname "$(dirname "$target_dir")")")... ${NC}"
 
     for var in "${vars[@]}"; do
@@ -55,14 +87,19 @@ generate_files() {
             exit 1
         fi
 
-        if [[ "$var" =~ (^USERNAME|_USER|PASSWORD|PASS|SECRET|KEY|TOKEN) ]]; then
+        if [[ "$WRITE_SECRETS" == "false" ]]; then
+            if is_vault_managed_secret "$var"; then
+                continue
+            fi
+            echo "$var=${!var}" >> "$target_dir/params.env"
+        elif [[ "$var" =~ (^USERNAME|_USER|PASSWORD|PASS|SECRET|KEY|TOKEN) ]]; then
             echo "$var=${!var}" >> "$target_dir/secrets.env"
         else
             echo "$var=${!var}" >> "$target_dir/params.env"
         fi
     done
 
-    if [[ -f "$target_dir/secrets.env" && -f "$target_dir/params.env" ]]; then
+    if [[ -f "$target_dir/params.env" ]]; then
         echo -e "${GREEN}✓${NC}"
     else
         echo -e "${RED}FAILED: Files were not generated in $target_dir${NC}"
@@ -73,7 +110,7 @@ generate_files() {
 echo -e "Validating and generating manifests..."
 
 HTTP_GATEWAY_VARS=(
-    "GATEWAY_PROFILE" "HTTP_GATEWAY_PORT" "GATEWAY_SECRET" "GATEWAY_CACHE_HOST" 
+    "GATEWAY_PROFILE" "HTTP_GATEWAY_PORT" "GATEWAY_SECRET" "GATEWAY_CACHE_HOST"
     "REDIS_PORT" "RATE_LIMIT_AUTHENTICATED" "RATE_LIMIT_AUTHENTICATED_BURST"
     "RATE_LIMIT_UNAUTHENTICATED" "RATE_LIMIT_UNAUTHENTICATED_BURST" "CACHE_TTL_SECONDS"
     "AUTH_SERVICE_HOST" "AUTH_SERVICE_PORT" "USER_SERVICE_HOST" "USER_SERVICE_PORT"
@@ -86,7 +123,7 @@ HTTP_GATEWAY_PROD_VARS=("COGNITO_JWKS_URL" "COGNITO_JWT_ISSUER" "CORS_ALLOWED_OR
 
 if [[ "$ENV" == "dev" ]]; then
     generate_files "gateways/http-gateway/overlays/$ENV" "${HTTP_GATEWAY_VARS[@]}" "${HTTP_GATEWAY_DEV_VARS[@]}"
-elif [[ "$ENV" == "prod" ]]; then
+elif [[ "$ENV" == "prod" || "$ENV" == "staging" ]]; then
     generate_files "gateways/http-gateway/overlays/$ENV" "${HTTP_GATEWAY_VARS[@]}" "${HTTP_GATEWAY_PROD_VARS[@]}"
 else
     generate_files "gateways/http-gateway/overlays/$ENV" "${HTTP_GATEWAY_VARS[@]}"
@@ -94,11 +131,11 @@ fi
 
 AUTH_VARS=(
     "AUTH_PROFILE" "AUTH_SERVICE_HOST" "AUTH_SERVICE_PORT" "AUTH_COOKIE_DOMAIN"
-    "AUTH_COOKIE_SECURE" "AUTH_COOKIE_SAME_SITE" "GITHUB_REDIRECT_URI" 
+    "AUTH_COOKIE_SECURE" "AUTH_COOKIE_SAME_SITE" "GITHUB_REDIRECT_URI"
     "AUTH_DB_HOST" "POSTGRES_PORT" "POSTGRES_DB"
     "AUTH_CACHE_HOST" "REDIS_PORT" "AUTH_ACCESS_TOKEN_MAX_AGE"
     "AUTH_REFRESH_TOKEN_MAX_AGE" "APP_USER" "APP_PASSWORD" "FLYWAY_USER" "FLYWAY_PASSWORD"
-    "RABBITMQ_HOST" "RABBITMQ_PORT" "RABBITMQ_USERNAME" "RABBITMQ_PASSWORD" 
+    "RABBITMQ_HOST" "RABBITMQ_PORT" "RABBITMQ_USERNAME" "RABBITMQ_PASSWORD"
     "OUTBOX_BATCH_SIZE" "OUTBOX_MAX_ATTEMPTS" "OUTBOX_POLL_INTERVAL"
     "GITHUB_CLIENT_ID" "GITHUB_CLIENT_SECRET"
 )
@@ -107,7 +144,7 @@ AUTH_PROD_VARS=("COGNITO_USER_POOL_ID" "COGNITO_CLIENT_ID" "COGNITO_CLIENT_SECRE
 
 if [[ "$ENV" == "dev" ]]; then
     generate_files "services/auth-service/overlays/$ENV" "${AUTH_VARS[@]}" "${AUTH_DEV_VARS[@]}"
-elif [[ "$ENV" == "prod" ]]; then
+elif [[ "$ENV" == "prod" || "$ENV" == "staging" ]]; then
     generate_files "services/auth-service/overlays/$ENV" "${AUTH_VARS[@]}" "${AUTH_PROD_VARS[@]}"
 else
     generate_files "services/auth-service/overlays/$ENV" "${AUTH_VARS[@]}"
@@ -115,7 +152,7 @@ fi
 
 USER_VARS=(
     "USER_PROFILE" "USER_SERVICE_HOST" "USER_SERVICE_PORT" "USER_DB_HOST"
-    "POSTGRES_PORT" "POSTGRES_DB" "USER_CACHE_HOST" "REDIS_PORT" 
+    "POSTGRES_PORT" "POSTGRES_DB" "USER_CACHE_HOST" "REDIS_PORT"
     "APP_USER" "APP_PASSWORD" "FLYWAY_USER" "FLYWAY_PASSWORD" "GATEWAY_SECRET"
     "RABBITMQ_HOST" "RABBITMQ_PORT" "RABBITMQ_USERNAME" "RABBITMQ_PASSWORD"
 )
@@ -131,11 +168,47 @@ DB_VARS=("POSTGRES_DB" "POSTGRES_USER" "POSTGRES_PASSWORD" "POSTGRES_PORT" "APP_
 generate_files "shared/postgres/auth-db/overlays/$ENV" "${DB_VARS[@]}"
 generate_files "shared/postgres/user-db/overlays/$ENV" "${DB_VARS[@]}"
 
-MQ_VARS=("RABBITMQ_HOST" "RABBITMQ_PORT" "RABBITMQ_USERNAME" "RABBITMQ_PASSWORD")
-generate_files "shared/rabbitmq/overlays/$ENV" "${MQ_VARS[@]}"
+generate_rabbitmq_files() {
+    local target_dir="shared/rabbitmq/overlays/$ENV"
+    require_mq_var() {
+        if [[ -z "${!1:-}" ]]; then
+            echo -e "\n${RED}FAILED: Variable '$1' is missing or empty in $ENV_FILE${NC}"
+            exit 1
+        fi
+    }
+    require_mq_var RABBITMQ_HOST
+    require_mq_var RABBITMQ_PORT
+    require_mq_var RABBITMQ_USERNAME
+    require_mq_var RABBITMQ_PASSWORD
+
+    mkdir -p "$target_dir"
+    > "$target_dir/params.env"
+    if [[ "$WRITE_SECRETS" == "true" ]]; then
+        > "$target_dir/secrets.env"
+    else
+        rm -f "$target_dir/secrets.env"
+    fi
+
+    echo -ne "${YELLOW}Processing rabbitmq... ${NC}"
+    {
+        echo "RABBITMQ_HOST=$RABBITMQ_HOST"
+        echo "RABBITMQ_PORT=$RABBITMQ_PORT"
+    } >> "$target_dir/params.env"
+    if [[ "$WRITE_SECRETS" == "true" ]]; then
+        {
+            echo "RABBITMQ_DEFAULT_USER=$RABBITMQ_USERNAME"
+            echo "RABBITMQ_DEFAULT_PASS=$RABBITMQ_PASSWORD"
+            echo "RABBITMQ_USERNAME=$RABBITMQ_USERNAME"
+            echo "RABBITMQ_PASSWORD=$RABBITMQ_PASSWORD"
+        } >> "$target_dir/secrets.env"
+    fi
+    echo -e "${GREEN}✓${NC}"
+}
+
+generate_rabbitmq_files
 
 KC_VARS=(
-    "KEYCLOAK_ADMIN" "KEYCLOAK_ADMIN_PASSWORD" 
+    "KEYCLOAK_ADMIN" "KEYCLOAK_ADMIN_PASSWORD"
     "GITHUB_CLIENT_ID" "GITHUB_CLIENT_SECRET" "POSTGRES_DB"
 )
 generate_files "shared/keycloak/overlays/$ENV" "${KC_VARS[@]}"
@@ -153,10 +226,21 @@ WS_GATEWAY_PROD_VARS=("COGNITO_JWKS_URL" "COGNITO_JWT_ISSUER" "CORS_ALLOWED_ORIG
 
 if [[ "$ENV" == "dev" ]]; then
     generate_files "gateways/ws-gateway/overlays/$ENV" "${WS_GATEWAY_VARS[@]}" "${WS_GATEWAY_DEV_VARS[@]}"
-elif [[ "$ENV" == "prod" ]]; then
+elif [[ "$ENV" == "prod" || "$ENV" == "staging" ]]; then
     generate_files "gateways/ws-gateway/overlays/$ENV" "${WS_GATEWAY_VARS[@]}" "${WS_GATEWAY_PROD_VARS[@]}"
 else
     generate_files "gateways/ws-gateway/overlays/$ENV" "${WS_GATEWAY_VARS[@]}"
 fi
 
 echo -e "\n${GREEN}All files synchronized with .env and validated.${NC}"
+if [[ "$WRITE_SECRETS" == "false" ]]; then
+    if [[ "$ENV" == "dev" ]]; then
+        echo -e "${BLUE}Dev overlays use Vault + ESO. Run: make vault-init  (or make back, which calls it)${NC}"
+        echo -e "${YELLOW}Offline fallback: ./setup-env.sh dev --local-secrets  then  make back-local${NC}"
+    else
+        echo -e "${BLUE}${ENV^^} overlays use AWS Secrets Manager + ESO.${NC}"
+        echo -e "  1. terraform apply in infrastructure/terraform/secrets-manager (environment=${ENV})"
+        echo -e "  2. HERMES_ENV=${ENV} make aws-secrets-seed"
+        echo -e "  3. ESO_IRSA_ROLE_ARN=... HERMES_ENV=${ENV} make eso-sync-${ENV}"
+    fi
+fi

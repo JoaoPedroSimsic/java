@@ -1,4 +1,4 @@
-.PHONY: front back dev minikube-up minikube-reset
+.PHONY: front back back-local back-dynamic dev teardown minikube-up minikube-reset vault-up vault-init vault-reset vault-bootstrap vault-seed vault-ui vault-database-engine eso-sync eso-sync-dynamic eso-sync-staging eso-sync-prod aws-secrets-seed deploy-prod-k8s smoke-test-staging smoke-test-dev aws-rotation-enable
 
 MINIKUBE_PROFILE ?= hermes-dev
 MINIKUBE_DRIVER ?= docker
@@ -8,7 +8,7 @@ MINIKUBE_CPUS ?= 3
 MINIKUBE_WAIT_TIMEOUT ?= 10m
 MINIKUBE_START_EXTRA ?=
 SKAFFOLD_TRIGGER ?= polling
-SKAFFOLD_DEV_FLAGS ?= --tail=true --verbosity=warn
+SKAFFOLD_DEV_FLAGS ?= --tail=true --verbosity=warn --keep-running-on-failure
 
 minikube-up:
 	@if ! minikube status -p "$(MINIKUBE_PROFILE)" --format='{{.Host}}' 2>/dev/null | grep -q Running; then \
@@ -36,8 +36,100 @@ minikube-reset:
 front:
 	cd frontend && bun run start
 
-back: minikube-up
+back: minikube-up vault-init eso-sync
+	@if pgrep -x skaffold >/dev/null 2>&1; then \
+		echo "WARNING: another 'skaffold dev' is already running. Stop it (Ctrl+C) before make back."; \
+		exit 1; \
+	fi
+	@echo "Starting Skaffold (Vault + ESO + apps; secrets synced from Vault by default)."
 	MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)" skaffold dev --trigger="$(SKAFFOLD_TRIGGER)" $(SKAFFOLD_DEV_FLAGS)
+
+back-local: minikube-up
+	@if pgrep -x skaffold >/dev/null 2>&1; then \
+		echo "WARNING: another 'skaffold dev' is already running. Stop it (Ctrl+C) before make back-local."; \
+		exit 1; \
+	fi
+	@echo "Starting Skaffold with local secrets.env (non-prod offline fallback; no Vault required)."
+	MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)" skaffold dev -p local-secrets --trigger="$(SKAFFOLD_TRIGGER)" $(SKAFFOLD_DEV_FLAGS)
+
+back-dynamic: minikube-up vault-init vault-database-engine eso-sync-dynamic
+	@if pgrep -x skaffold >/dev/null 2>&1; then \
+		echo "WARNING: another 'skaffold dev' is already running. Stop it (Ctrl+C) before make back-dynamic."; \
+		exit 1; \
+	fi
+	@echo "Starting Skaffold with Vault database static roles (Phase D dynamic-secrets profile)."
+	MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)" skaffold dev -p dynamic-secrets --trigger="$(SKAFFOLD_TRIGGER)" $(SKAFFOLD_DEV_FLAGS)
+
+vault-up:
+	bash infrastructure/vault/scripts/deploy-dev.sh
+
+vault-init: vault-up
+	@if [ -f .env ]; then \
+		echo "Bootstrapping Vault Kubernetes auth and seeding KV from .env..."; \
+		bash infrastructure/vault/scripts/bootstrap-dev-k8s-auth.sh; \
+		bash infrastructure/vault/scripts/seed-dev-secrets.sh; \
+	else \
+		echo "WARNING: .env not found — copy .env.example to .env, run setup-env.sh dev, then make vault-seed."; \
+	fi
+
+vault-reset:
+	kubectl delete namespace vault --ignore-not-found --wait=true
+	bash infrastructure/vault/scripts/deploy-dev.sh
+
+teardown:
+	bash infrastructure/k8s/shared/external-secrets/scripts/delete-eso-resources.sh
+	skaffold delete
+	kubectl delete namespace vault --ignore-not-found --wait=false
+
+vault-bootstrap:
+	bash infrastructure/vault/scripts/bootstrap-dev-k8s-auth.sh
+
+vault-seed:
+	bash infrastructure/vault/scripts/seed-dev-secrets.sh
+
+vault-database-engine:
+	bash infrastructure/vault/scripts/bootstrap-dev-database-engine.sh
+
+eso-sync:
+	bash infrastructure/k8s/shared/external-secrets/scripts/deploy-dev.sh
+	bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets.sh
+
+eso-sync-dynamic:
+	bash infrastructure/k8s/shared/external-secrets/scripts/deploy-dev-dynamic.sh
+	bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets.sh
+
+aws-secrets-seed:
+	bash infrastructure/scripts/seed-secrets.sh
+
+eso-sync-staging:
+	@test -n "$$ESO_IRSA_ROLE_ARN" || (echo "Set ESO_IRSA_ROLE_ARN (terraform output eso_irsa_role_arn)" && exit 1)
+	HERMES_ENV=staging bash infrastructure/k8s/shared/external-secrets/scripts/deploy-aws.sh
+	HERMES_ENV=staging bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets-aws.sh
+
+eso-sync-prod:
+	@test -n "$$ESO_IRSA_ROLE_ARN" || (echo "Set ESO_IRSA_ROLE_ARN (terraform output eso_irsa_role_arn)" && exit 1)
+	HERMES_ENV=prod bash infrastructure/k8s/shared/external-secrets/scripts/deploy-aws.sh
+	HERMES_ENV=prod bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets-aws.sh
+
+deploy-prod-k8s: eso-sync-prod
+	@test -n "$$USER_SERVICE_IRSA_ROLE_ARN" || (echo "Set USER_SERVICE_IRSA_ROLE_ARN (terraform output user_service_irsa_role_arn)" && exit 1)
+	kubectl kustomize infrastructure/k8s/clusters/prod --load-restrictor=LoadRestrictionsNone --enable-helm \
+	  | sed "s|PLACEHOLDER_USER_SERVICE_IRSA_ROLE_ARN|$$USER_SERVICE_IRSA_ROLE_ARN|g" \
+	  | kubectl apply --server-side --force-conflicts -f -
+
+aws-rotation-enable:
+	@echo "Set enable_automatic_rotation = true in terraform.tfvars, then:"
+	@echo "  cd infrastructure/terraform/secrets-manager && ./secrets-manager-tf.sh apply"
+	@echo "Post-rotation: force ESO sync + rolling restart (see ROTATION.md / PHASE-D.md)."
+
+vault-ui:
+	@echo "Vault UI: kubectl port-forward -n vault svc/vault 8200:8200  (then http://127.0.0.1:8200/ui )"
+
+smoke-test-staging:
+	HERMES_ENV=staging bash infrastructure/k8s/scripts/smoke-test-secrets.sh
+
+smoke-test-dev:
+	HERMES_ENV=dev bash infrastructure/k8s/scripts/smoke-test-secrets.sh
 
 dev:
 	bash -euo pipefail -c '\

@@ -1,0 +1,18 @@
+{
+  "name": "secrets-rotation-lambda",
+  "version": "1.0.0",
+  "description": "AWS Secrets Manager rotation Lambda for Hermes JSON secrets",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "bunx tsc",
+    "package": "bun run build && cd dist && zip -r ../function.zip ."
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.400.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.119",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

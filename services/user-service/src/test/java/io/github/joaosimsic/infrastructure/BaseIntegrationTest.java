@@ -71,7 +71,6 @@ public abstract class BaseIntegrationTest {
   protected void setupBase() {
     RestAssured.baseURI = "http://localhost";
     RestAssured.port = port;
-    // Clean up before each test to ensure a fresh state (important for reused containers)
     clearAllCaches();
     jdbcTemplate.execute("TRUNCATE TABLE users CASCADE");
   }

@@ -83,10 +83,16 @@ management:
       exposure:
         include: health, info
   endpoint:
+    env:
+      enabled: false
+    configprops:
+      show-values: never
+    beans:
+      show-values: never
     health:
       probes:
         enabled: true
-      show-details: never 
+      show-details: never
   health:
     livenessState:
       enabled: true

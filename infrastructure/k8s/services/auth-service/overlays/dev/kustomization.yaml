@@ -8,10 +8,6 @@ configMapGenerator:
 - name: auth-service-config
   envs:
   - params.env
-secretGenerator:
-- name: auth-service-secrets
-  envs:
-  - secrets.env
 labels:
 - pairs:
     environment: dev

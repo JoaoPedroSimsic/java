@@ -6,10 +6,6 @@ configMapGenerator:
 - name: user-postgres-config
   envs:
   - params.env
-secretGenerator:
-- name: user-postgres-secrets
-  envs:
-  - secrets.env
 labels:
 - pairs:
     environment: dev

@@ -1,0 +1,55 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: vault
+
+resources:
+  - namespace.yaml
+  - network-policy.yaml
+
+patches:
+  - target:
+      kind: Pod
+      name: vault-server-test
+    patch: |
+      $patch: delete
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: vault-server-test
+
+helmCharts:
+  - name: vault
+    repo: https://helm.releases.hashicorp.com
+    version: 0.31.0
+    releaseName: vault
+    namespace: vault
+    valuesInline:
+      global:
+        enabled: true
+      injector:
+        enabled: false
+      server:
+        enabled: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        dev:
+          enabled: true
+        readinessProbe:
+          enabled: false
+        service:
+          enabled: true
+          type: ClusterIP
+          port: 8200
+      ui:
+        enabled: true
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: hermes
+      environment: dev

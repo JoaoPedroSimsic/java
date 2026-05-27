@@ -7,6 +7,7 @@ import io.github.joaosimsic.infrastructure.config.properties.OutboxProperties;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
@@ -15,8 +16,8 @@ import org.springframework.context.annotation.Configuration;
 public class ValidationConfig {
 
   private final AuthProperties authProperties;
-  private final CognitoProperties cognitoProperties;
-  private final KeycloakProperties keycloakProperties;
+  private final ObjectProvider<KeycloakProperties> keycloakProperties;
+  private final ObjectProvider<CognitoProperties> cognitoProperties;
   private final OutboxProperties outboxProperties;
 
   @PostConstruct
@@ -28,16 +29,20 @@ public class ValidationConfig {
         authProperties.cookie().domain(),
         authProperties.github().redirectUri());
 
-    log.info(
-        "[OK] Keycloak: Server: {}, Realm: {}, Admin User: {}",
-        keycloakProperties.serverUrl(),
-        keycloakProperties.realm(),
-        keycloakProperties.admin().username());
+    keycloakProperties.ifAvailable(
+        keycloak ->
+            log.info(
+                "[OK] Keycloak: Server: {}, Realm: {}, Admin User: {}",
+                keycloak.serverUrl(),
+                keycloak.realm(),
+                keycloak.admin().username()));
 
-    log.info(
-        "[OK] Cognito: Region: {}, Pool ID: {}",
-        cognitoProperties.region(),
-        cognitoProperties.userPoolId());
+    cognitoProperties.ifAvailable(
+        cognito ->
+            log.info(
+                "[OK] Cognito: Region: {}, Pool ID: {}",
+                cognito.region(),
+                cognito.userPoolId()));
 
     log.info("[OK] Outbox Pattern: Batch size: {}", outboxProperties.batchSize());
 

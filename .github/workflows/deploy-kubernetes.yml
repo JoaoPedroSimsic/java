@@ -1,0 +1,65 @@
+name: Deploy Kubernetes
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        default: prod
+        type: choice
+        options:
+          - prod
+          - staging
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'sa-east-1' }}
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "${{ vars.AWS_REGION || 'sa-east-1' }}"
+
+      - name: Seed Secrets Manager (optional; skip if secrets already rotated in AWS)
+        if: ${{ vars.SEED_SECRETS_ON_DEPLOY == 'true' }}
+        env:
+          HERMES_ENV: ${{ inputs.environment }}
+        run: bash infrastructure/scripts/seed-secrets.sh
+
+      - name: Deploy External Secrets Operator + sync
+        env:
+          HERMES_ENV: ${{ inputs.environment }}
+          ESO_IRSA_ROLE_ARN: ${{ vars.ESO_IRSA_ROLE_ARN }}
+        run: |
+          bash infrastructure/k8s/shared/external-secrets/scripts/ensure-crds.sh
+          bash infrastructure/k8s/shared/external-secrets/scripts/deploy-aws.sh
+          bash infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets-aws.sh
+
+      - name: Apply Hermes cluster manifests
+        env:
+          USER_SERVICE_IRSA_ROLE_ARN: ${{ vars.USER_SERVICE_IRSA_ROLE_ARN }}
+        run: |
+          kubectl kustomize "infrastructure/k8s/clusters/${{ inputs.environment }}" \
+            --load-restrictor=LoadRestrictionsNone --enable-helm \
+            | sed "s|PLACEHOLDER_USER_SERVICE_IRSA_ROLE_ARN|${USER_SERVICE_IRSA_ROLE_ARN}|g" \
+            | kubectl apply --server-side --force-conflicts -f -
+
+      - name: Smoke test secrets (staging)
+        if: inputs.environment == 'staging'
+        env:
+          HERMES_ENV: staging
+        run: |
+          bash infrastructure/k8s/scripts/smoke-test-secrets.sh
