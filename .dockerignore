@@ -13,4 +13,3 @@ infrastructure/
 .idea/
 .vscode/
 **/.DS_Store
-.devcontainer/

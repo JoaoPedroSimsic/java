@@ -56,10 +56,6 @@ skaffold run -p prod
 
 Exact image names, namespaces, and health checks are defined in `skaffold.yaml`.
 
-### Dev container
-
-The `.devcontainer` setup installs frontend dependencies, wires Docker-on-host, and mounts your kubeconfig/minikube dirs for in-editor Kubernetes workflows. Open the repo in a Dev Containers–compatible editor to use it.
-
 ## Documentation
 
 - **[infrastructure/k8s/README.md](infrastructure/k8s/README.md)** — cluster layout, secrets (`secrets.env` vs `secrets.env.example`), deploy commands, troubleshooting.

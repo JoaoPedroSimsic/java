@@ -15,4 +15,4 @@
 
 kustomize
 
-shared/observability/base/charts/
+**/charts/

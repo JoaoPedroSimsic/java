@@ -1,4 +1,4 @@
-.PHONY: front back dev minikube-up minikube-reset
+.PHONY: front back dev minikube-up minikube-reset vault-bootstrap vault-ui
 
 MINIKUBE_PROFILE ?= hermes-dev
 MINIKUBE_DRIVER ?= docker
@@ -38,6 +38,12 @@ front:
 
 back: minikube-up
 	MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)" skaffold dev --trigger="$(SKAFFOLD_TRIGGER)" $(SKAFFOLD_DEV_FLAGS)
+
+vault-bootstrap:
+	bash infrastructure/vault/scripts/bootstrap-dev-k8s-auth.sh
+
+vault-ui:
+	@echo "Vault UI: kubectl port-forward -n vault svc/vault 8200:8200  (then http://127.0.0.1:8200/ui )"
 
 dev:
 	bash -euo pipefail -c '\

@@ -43,3 +43,9 @@ dist
 *.zip
 
 CLAUDE.md
+
+infrastructure/vault/.vault-root-token
+*.vault-local
+
+.cursor/*
+!.cursor/.gitignore
