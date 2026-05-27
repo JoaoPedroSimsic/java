@@ -1083,6 +1083,15 @@ podman history hermes-http-gateway:ci --format '{{.Size}}\t{{.CreatedBy}}' | hea
 - [ ] Update project README to reference DevSpace and Podman
 - [ ] Remove Docker Desktop / Docker Engine if no longer needed
 
+### Reduce service registration boilerplate
+
+- [ ] Make `wait-for-synced-secrets.sh` and `wait-for-synced-secrets-aws.sh` discover ExternalSecrets dynamically from the namespace instead of maintaining a hardcoded `REQUIRED_SECRETS` array
+- [ ] Extract the CI service matrix into a shared `.github/service-matrix.json` and load it with `fromJson` in both `ci.yml` and `build-images.yml`
+- [ ] Create a scaffolding script (`scripts/new-service.sh <name> <port>`) that generates the Kustomize base/overlay tree, adds the Skaffold/DevSpace artifact, and updates cluster kustomizations
+- [ ] Consider replacing per-service Kustomize overlay boilerplate with a single parameterized Helm chart and per-environment values files
+- [ ] Deduplicate the skaffold-already-running guard across `back` / `back-local` / `back-dynamic` Makefile targets
+- [ ] Add a confirmation prompt to production-affecting Makefile targets (`deploy-prod-k8s`, `eso-sync-prod`)
+
 ### Validation
 
 - [ ] Full `make back` flow works end-to-end with Podman + DevSpace
