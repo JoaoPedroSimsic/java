@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Enable Vault database secrets engine + static role for auth-db APP_USER (Phase D, dev opt-in).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

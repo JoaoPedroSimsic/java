@@ -3,8 +3,6 @@ spring:
     aws:
       region:
         static: ${AWS_DEFAULT_REGION}
-      # Credentials via EKS IRSA (DefaultCredentialsProvider); do not inject static keys.
-
   rabbitmq:
     listener:
       type: simple

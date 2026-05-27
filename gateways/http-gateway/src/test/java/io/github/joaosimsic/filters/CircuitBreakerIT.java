@@ -34,10 +34,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Mono;
 
-/**
- * Integration tests for Circuit Breaker and Fallback behavior using WireMock. Run with: mvn verify
- * (requires Docker)
- */
 @Testcontainers(disabledWithoutDocker = true)
 @ActiveProfiles("circuit-breaker-test")
 @AutoConfigureWebTestClient(timeout = "60000")

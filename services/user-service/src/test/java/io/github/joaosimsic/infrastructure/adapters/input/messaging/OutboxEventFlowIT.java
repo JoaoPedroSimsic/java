@@ -377,8 +377,7 @@ class OutboxEventFlowIT {
     try {
       rabbitAdmin.purgeQueue(RabbitConfig.AUTH_USER_REGISTERED_QUEUE, false);
       rabbitAdmin.purgeQueue(RabbitConfig.AUTH_USER_EMAIL_UPDATED_QUEUE, false);
-    } catch (Exception e) {
-      // Queue may not exist yet, ignore
+    } catch (Exception ignored) {
     }
   }
 

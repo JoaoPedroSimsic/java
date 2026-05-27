@@ -34,7 +34,6 @@ spring:
                 name: userServiceCircuitBreaker
                 fallbackUri: forward:/fallback/user-service
 
-# Resilience4j configuration for tests (faster timeouts)
 resilience4j:
   circuitbreaker:
     instances:

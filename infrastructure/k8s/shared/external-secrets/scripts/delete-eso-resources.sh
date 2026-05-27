@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Teardown only — remove ESO custom resources while the validating webhook is still reachable.
-# Run via `make teardown`. Do NOT wire this into Skaffold deploy hooks.
 set -euo pipefail
 
 echo "Deleting ExternalSecret resources in hermes-dev..."

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Package the Secrets Manager rotation Lambda (handler only; boto3 is in the runtime).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

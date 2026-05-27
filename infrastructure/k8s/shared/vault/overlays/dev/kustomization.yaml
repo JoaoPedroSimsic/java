@@ -8,7 +8,6 @@ resources:
   - network-policy.yaml
 
 patches:
-  # Helm test pod must not be applied via kubectl (Skaffold counts it as a workload).
   - target:
       kind: Pod
       name: vault-server-test

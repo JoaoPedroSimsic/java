@@ -18,7 +18,6 @@
   <name>hermes</name>
 
   <properties>
-    <!-- Pre-load Mockito inline mock maker; avoids dynamic self-attach on JDK 21+ -->
     <mockito.agent.argLine>-javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar -Xshare:off</mockito.agent.argLine>
   </properties>
 

@@ -17,7 +17,6 @@ export TF_VAR_github_client_id="$GITHUB_CLIENT_ID"
 export TF_VAR_github_client_secret="$GITHUB_CLIENT_SECRET"
 export TF_VAR_frontend_url="${FRONTEND_URL:-http://localhost:3000}"
 
-# Build Lambda if function.zip doesn't exist or source changed
 if [ ! -f "$LAMBDA_DIR/function.zip" ] || [ "$LAMBDA_DIR/src/index.ts" -nt "$LAMBDA_DIR/function.zip" ]; then
   echo "Building Lambda function..."
   cd "$LAMBDA_DIR"

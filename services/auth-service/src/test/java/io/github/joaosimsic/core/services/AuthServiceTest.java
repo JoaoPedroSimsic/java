@@ -148,8 +148,6 @@ class AuthServiceTest {
   @Nested
   @DisplayName("Standard Delegations")
   class Delegations {
-    // These tests remain simple as they only verify the Port call
-    
     @Test
     void loginDelegatesToPort() {
       authService.login("u", "p");

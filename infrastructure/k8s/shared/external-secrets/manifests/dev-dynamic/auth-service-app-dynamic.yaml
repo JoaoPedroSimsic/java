@@ -1,4 +1,3 @@
-# Merge APP_USER / APP_PASSWORD from Vault database static role into auth-service-secrets.
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:

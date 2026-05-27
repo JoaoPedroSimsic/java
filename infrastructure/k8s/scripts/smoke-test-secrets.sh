@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Verify workloads use ESO-managed secrets only (PRD §6).
 set -euo pipefail
 
 ENV="${HERMES_ENV:-staging}"
@@ -30,7 +29,6 @@ REQUIRED_DEPLOYMENTS=(
   http-gateway
 )
 
-# secret_name -> space-separated required keys (presence only, never values)
 declare -A SECRET_KEYS=(
   [gateway-secrets]="GATEWAY_SECRET"
   [auth-service-secrets]="APP_PASSWORD FLYWAY_PASSWORD RABBITMQ_PASSWORD"

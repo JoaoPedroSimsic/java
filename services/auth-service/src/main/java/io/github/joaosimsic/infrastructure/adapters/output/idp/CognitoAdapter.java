@@ -175,21 +175,17 @@ public class CognitoAdapter implements AuthPort {
   @Override
   public AuthUser parseIdToken(String idToken) {
     try {
-      // JWT format: header.payload.signature
       String[] parts = idToken.split("\\.");
       if (parts.length != 3) {
         throw new AuthenticationException("Invalid ID token format");
       }
 
-      // Decode the payload (second part)
       String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
       ObjectMapper mapper = new ObjectMapper();
       Map<String, Object> claims = mapper.readValue(payload, new TypeReference<>() {});
 
-      // Try to get name from various claims (GitHub users may not have 'name' claim set)
       String name = (String) claims.get("name");
       if (name == null || name.isBlank()) {
-        // Fallback: try given_name + family_name
         String givenName = (String) claims.get("given_name");
         String familyName = (String) claims.get("family_name");
         if (givenName != null || familyName != null) {
@@ -197,14 +193,12 @@ public class CognitoAdapter implements AuthPort {
         }
       }
       if (name == null || name.isBlank()) {
-        // Fallback: use preferred_username or cognito:username
         name = (String) claims.get("preferred_username");
         if (name == null) {
           name = (String) claims.get("cognito:username");
         }
       }
       if (name == null || name.isBlank()) {
-        // Last resort: use email prefix
         String email = (String) claims.get("email");
         if (email != null && email.contains("@")) {
           name = email.substring(0, email.indexOf("@"));

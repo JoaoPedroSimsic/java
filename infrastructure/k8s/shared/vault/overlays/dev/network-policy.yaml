@@ -1,5 +1,3 @@
-# Restrict Vault API (8200) to ESO and in-namespace traffic (PRD §6).
-# Operator kubectl port-forward is unaffected (kubelet path, not pod ingress).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

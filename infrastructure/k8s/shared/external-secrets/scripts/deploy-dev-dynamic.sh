@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Deploy dev ESO with Vault database static-role ExternalSecrets (Phase D opt-in).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

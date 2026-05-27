@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Wait until ESO has synced AWS Secrets Manager secrets required by workloads.
 set -euo pipefail
 
 ENV="${HERMES_ENV:-prod}"

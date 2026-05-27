@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Apply ESO + AWS Secrets Manager stack for staging or prod.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

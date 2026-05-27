@@ -78,7 +78,6 @@ public class AuthService implements AuthUseCase {
 
     AuthTokens tokens = authPort.exchangeCodeForTokens(code, redirectUri);
 
-    // Parse user info from ID token instead of calling userinfo endpoint
     AuthUser user = authPort.parseIdToken(tokens.getIdToken());
 
     var event =

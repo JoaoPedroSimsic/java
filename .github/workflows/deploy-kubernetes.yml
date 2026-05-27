@@ -37,9 +37,7 @@ jobs:
         if: ${{ vars.SEED_SECRETS_ON_DEPLOY == 'true' }}
         env:
           HERMES_ENV: ${{ inputs.environment }}
-        run: |
-          # Requires GitHub Environment secrets mapped to seed script variables (never commit values).
-          bash infrastructure/aws/scripts/seed-secrets.sh
+        run: bash infrastructure/aws/scripts/seed-secrets.sh
 
       - name: Deploy External Secrets Operator + sync
         env:

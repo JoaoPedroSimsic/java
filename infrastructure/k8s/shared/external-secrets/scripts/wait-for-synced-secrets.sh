@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Wait until ESO has synced all Vault-backed secrets required by dev workloads.
 set -euo pipefail
 
 NAMESPACE="${HERMES_NAMESPACE:-hermes-dev}"

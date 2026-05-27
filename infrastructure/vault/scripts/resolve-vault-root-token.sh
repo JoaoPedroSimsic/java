@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Prints the Vault root token to stdout (dev server uses "root"; prod uses hvs.*).
 set -euo pipefail
 
 VAULT_NS="${VAULT_NS:-vault}"

@@ -1,17 +1,10 @@
-# Optional automatic rotation (PRD Phase D). Disabled by default.
 enable_automatic_rotation = false
 
-# Days between automatic rotations when enabled.
 rotation_schedule_days = 90
 
-# Logical keys from secrets.tf eligible for generic JSON rotation Lambda.
-# Excludes postgres bundles (require DB-aware rotators).
 rotation_secret_keys = [
   "jwt_signing_key",
   "rabbitmq",
   "keycloak_admin",
   "auth_service_cognito",
 ]
-
-# Optional SNS topic ARN for RotationSucceeded / RotationFailed notifications.
-# rotation_notification_sns_topic_arn = "arn:aws:sns:sa-east-1:123456789012:hermes-secrets-rotation"

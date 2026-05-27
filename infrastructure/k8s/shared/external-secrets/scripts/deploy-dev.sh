@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Apply the dev ESO stack in order: controller → webhook ready → ClusterSecretStore → ExternalSecrets.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
