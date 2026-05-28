@@ -31,7 +31,7 @@ This document covers the full transition of the Hermes project from Docker+Skaff
 
 ```bash
 # Ubuntu/Debian
-sudo apt install podman podman-compose
+sudo apt install podman
 
 # Fedora/RHEL (already included)
 sudo dnf install podman
@@ -68,9 +68,9 @@ minikube start -p hermes-dev --driver=podman
 > - Rootless mode is default; if you hit permission issues with volumes, run `minikube start --driver=podman --container-runtime=cri-o`
 > - On older systems you may need `slirp4netns` for rootless networking: `sudo apt install slirp4netns`
 
-### (Optional) Docker socket compatibility shim
+### Docker socket compatibility shim
 
-Some tools still look for `DOCKER_HOST`. You can expose Podman's API on a socket:
+Some third-party tools (e.g. Testcontainers, VS Code Docker extension) look for `DOCKER_HOST`. Expose Podman's API on a compatible socket:
 
 ```bash
 # Start the Podman socket (systemd user service)
@@ -79,6 +79,8 @@ systemctl --user enable --now podman.socket
 # Export for tools that expect DOCKER_HOST
 export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
 ```
+
+Add this to your shell profile (`~/.zshrc` / `~/.bashrc`) so it persists across sessions.
 
 ---
 
@@ -105,7 +107,7 @@ make minikube-up
 
 ### Step 2: Create `devspace.yaml`
 
-Replace `skaffold.yaml` with a `devspace.yaml` at the project root. Below is the equivalent configuration:
+Replace `skaffold.yaml` with a `devspace.yaml` at the project root. This configuration preserves all Skaffold features: custom Podman builds, file sync for Java resources, port forwarding, deploy status checks, and post-deploy health verification.
 
 ```yaml
 version: v2beta1
@@ -118,7 +120,6 @@ vars:
 images:
   http-gateway:
     image: http-gateway
-    buildKit: {}
     custom:
       command: |-
         ${CONTAINER_CMD} build -t ${runtime.images.http-gateway.image}:${runtime.images.http-gateway.tag} \
@@ -178,17 +179,82 @@ deployments:
         - "--force-conflicts"
 
 dev:
-  ports:
-    - imageSelector: http-gateway
-      forward:
-        - port: 8080
-          remotePort: 8081
+  http-gateway:
+    imageSelector: http-gateway
+    sync:
+      - path: gateways/http-gateway/src/main/resources:/app/resources
+        excludePaths:
+          - "**/*.class"
+    ports:
+      - port: "8080:8081"
+
+  auth-service:
+    imageSelector: auth-service
+    sync:
+      - path: services/auth-service/src/main/resources:/app/resources
+        excludePaths:
+          - "**/*.class"
+
+  user-service:
+    imageSelector: user-service
+    sync:
+      - path: services/user-service/src/main/resources:/app/resources
+        excludePaths:
+          - "**/*.class"
+
+  ws-gateway:
+    imageSelector: ws-gateway
+    ports:
+      - port: "8082:8080"
 
 hooks:
   - command: bash
     args:
       - infrastructure/k8s/shared/external-secrets/scripts/ensure-crds.sh
     events: ["before:deploy"]
+
+  - command: bash
+    args:
+      - -c
+      - |
+        echo "Waiting for deployments to become available..."
+        for dep in auth-service user-service http-gateway ws-gateway; do
+          echo "  Waiting for $dep..."
+          kubectl wait deployment/"$dep" -n hermes-dev \
+            --for=condition=Available --timeout=420s
+        done
+        echo "All deployments available."
+    events: ["after:deploy"]
+
+  - command: bash
+    args:
+      - -c
+      - |
+        echo "Running post-deploy health checks..."
+        CHECKS=(
+          "http-gateway:8081:/actuator/health"
+          "auth-service:8083:/actuator/health"
+          "user-service:8084:/actuator/health"
+          "ws-gateway:8080:/healthz"
+        )
+        for entry in "${CHECKS[@]}"; do
+          IFS=: read -r svc port path <<< "$entry"
+          echo "  Checking $svc..."
+          for i in $(seq 1 30); do
+            if kubectl exec deploy/"$svc" -n hermes-dev -- \
+              wget -qO- --timeout=2 "http://localhost:${port}${path}" > /dev/null 2>&1; then
+              echo "  OK: $svc is healthy"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "  FAIL: $svc health check timed out"
+              exit 1
+            fi
+            sleep 2
+          done
+        done
+        echo "All health checks passed."
+    events: ["after:deploy"]
 
 profiles:
   - name: local-secrets
@@ -209,6 +275,8 @@ profiles:
 
   - name: staging
     patches:
+      - op: remove
+        path: images
       - op: replace
         path: deployments.hermes.kubectl.manifests
         value:
@@ -218,6 +286,8 @@ profiles:
 
   - name: prod
     patches:
+      - op: remove
+        path: images
       - op: replace
         path: deployments.hermes.kubectl.manifests
         value:
@@ -226,24 +296,57 @@ profiles:
           - infrastructure/k8s/clusters/prod
 ```
 
+**Feature mapping from Skaffold:**
+
+| Skaffold feature | DevSpace equivalent |
+|------------------|---------------------|
+| `sync.manual` (resources → /app/resources) | `dev.<service>.sync` with path mapping |
+| `portForward` (http-gateway 8081→8080, ws-gateway 8080→8082) | `dev.<service>.ports` |
+| `statusCheck` + `statusCheckDeadlineSeconds: 420` | `after:deploy` hook with `kubectl wait --timeout=420s` |
+| `tolerateFailuresUntilDeadline` | Handled by `kubectl wait` (waits full duration before failing) |
+| `verify` (curl health checks in pods) | `after:deploy` hook with `kubectl exec` + `wget` retries |
+| `profiles` with empty `build.artifacts` (skip build for prod/staging) | `op: remove` on `images` path in profile patches |
+| `--trigger=polling` (rebuild on file change) | DevSpace watches `onChange` globs natively in dev mode |
+| `--tail=true` | DevSpace streams logs by default in dev mode |
+| `--keep-running-on-failure` | DevSpace dev mode keeps running on deploy failures by default |
+
 ### Step 3: Update the Makefile
 
-Replace skaffold commands with devspace:
+Replace skaffold commands with devspace, preserving all pre-deploy dependencies (vault bootstrap, ESO sync):
 
 ```makefile
 # Before
+SKAFFOLD_TRIGGER ?= polling
+SKAFFOLD_DEV_FLAGS ?= --tail=true --verbosity=warn --keep-running-on-failure
+
 back: minikube-up vault-init eso-sync
+	@if pgrep -x skaffold >/dev/null 2>&1; then \
+		echo "WARNING: another 'skaffold dev' is already running."; \
+		exit 1; \
+	fi
 	MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)" skaffold dev --trigger="$(SKAFFOLD_TRIGGER)" $(SKAFFOLD_DEV_FLAGS)
 
 # After
 back: minikube-up vault-init eso-sync
-	devspace dev
+	@if pgrep -f "devspace dev" >/dev/null 2>&1; then \
+		echo "WARNING: another 'devspace dev' is already running. Stop it before make back."; \
+		exit 1; \
+	fi
+	eval $$(minikube -p "$(MINIKUBE_PROFILE)" podman-env) && devspace dev
 
 back-local: minikube-up
-	devspace dev -p local-secrets
+	@if pgrep -f "devspace dev" >/dev/null 2>&1; then \
+		echo "WARNING: another 'devspace dev' is already running. Stop it before make back-local."; \
+		exit 1; \
+	fi
+	eval $$(minikube -p "$(MINIKUBE_PROFILE)" podman-env) && devspace dev -p local-secrets
 
 back-dynamic: minikube-up vault-init vault-database-engine eso-sync-dynamic
-	devspace dev -p dynamic-secrets
+	@if pgrep -f "devspace dev" >/dev/null 2>&1; then \
+		echo "WARNING: another 'devspace dev' is already running. Stop it before make back-dynamic."; \
+		exit 1; \
+	fi
+	eval $$(minikube -p "$(MINIKUBE_PROFILE)" podman-env) && devspace dev -p dynamic-secrets
 ```
 
 Also update the `teardown` target:
@@ -251,11 +354,23 @@ Also update the `teardown` target:
 ```makefile
 # Before
 teardown:
+	bash infrastructure/k8s/shared/external-secrets/scripts/delete-eso-resources.sh
 	skaffold delete
+	kubectl delete namespace vault --ignore-not-found --wait=false
 
 # After
 teardown:
+	bash infrastructure/k8s/shared/external-secrets/scripts/delete-eso-resources.sh
 	devspace purge
+	kubectl delete namespace vault --ignore-not-found --wait=false
+```
+
+Remove the now-unused Skaffold variables from the Makefile header:
+
+```makefile
+# Remove these lines
+SKAFFOLD_TRIGGER ?= polling
+SKAFFOLD_DEV_FLAGS ?= --tail=true --verbosity=warn --keep-running-on-failure
 ```
 
 ### Step 4: Update `hard-reset.sh`
@@ -270,18 +385,25 @@ echo "4. Pruning Podman volumes..."
 podman volume prune -f
 ```
 
-### Step 5: Load images into minikube
+### Step 5: Configure image visibility in minikube
 
-With the podman driver, minikube can use images built by podman directly if they share the same storage. If images aren't found, load them explicitly:
+With the podman driver, images built on the host are **not** automatically visible inside the minikube VM. The Makefile targets (Step 3) already include `eval $(minikube podman-env)` before calling `devspace dev`, which points the host `podman` CLI at minikube's internal Podman daemon.
+
+This means the DevSpace custom build commands (which use `${CONTAINER_CMD}` = `podman`) will build images directly inside minikube's container runtime. No registry push or explicit image load is needed.
+
+For manual one-off builds outside of DevSpace:
 
 ```bash
-# DevSpace handles this automatically via its build pipeline,
-# but for manual builds:
-minikube -p hermes-dev image load <image>:<tag>
-
-# Or configure minikube to use podman's image store:
+# Option A: point podman at minikube's daemon
 eval $(minikube -p hermes-dev podman-env)
+podman build --network=host -t my-image:dev -f path/to/Dockerfile .
+
+# Option B: build locally and load into minikube
+podman build --network=host -t my-image:dev -f path/to/Dockerfile .
+minikube -p hermes-dev image load my-image:dev
 ```
+
+> **Note:** `eval $(minikube podman-env)` sets `CONTAINER_HOST` and related env vars so that `podman build` targets minikube's internal daemon directly. Images built this way are immediately available to Kubernetes pods without needing a registry push or explicit load.
 
 ---
 
@@ -566,7 +688,7 @@ echo "=== Phase 3: Deploy with DevSpace (local-secrets profile) ==="
 devspace deploy -p local-secrets
 
 echo "=== Phase 4: Wait for deployments ==="
-for dep in auth-service user-service http-gateway; do
+for dep in auth-service user-service http-gateway ws-gateway; do
   echo "Waiting for $dep..."
   kubectl wait deployment/"$dep" -n "$NAMESPACE" \
     --for=condition=Available --timeout="${TIMEOUT}s"
@@ -575,7 +697,8 @@ done
 echo "=== Phase 5: Health checks ==="
 for svc_port in "http-gateway:8081:/actuator/health" \
                 "auth-service:8083:/actuator/health" \
-                "user-service:8084:/actuator/health"; do
+                "user-service:8084:/actuator/health" \
+                "ws-gateway:8080:/healthz"; do
   IFS=: read -r svc port path <<< "$svc_port"
   echo "Checking $svc..."
   kubectl run "test-${svc}-$$" -n "$NAMESPACE" --rm -i --restart=Never \
@@ -1029,6 +1152,218 @@ podman history hermes-http-gateway:ci --format '{{.Size}}\t{{.CreatedBy}}' | hea
 
 ---
 
+## Streamlining Service and Database Onboarding
+
+Adding a new service or database today touches 13+ files across 6 different concerns. This section lays out the infrastructure rearrangement to bring that down to: write your code, run one script.
+
+### The Problem: Current State
+
+To add a new service (e.g. `chat-service` on port 8085 with a Postgres DB):
+
+| # | Location | What you manually create/edit |
+|---|----------|-------------------------------|
+| 1 | `services/chat-service/` | Source code + Dockerfile |
+| 2 | `infrastructure/k8s/services/chat-service/base/` | deployment.yaml, service.yaml, kustomization.yaml |
+| 3 | `infrastructure/k8s/services/chat-service/overlays/{dev,staging,prod}/` | kustomization.yaml + params.env per env |
+| 4 | `infrastructure/k8s/shared/postgres/chat-db/base/` | deployment.yaml, service.yaml, pvc.yaml, configmap.yaml, kustomization.yaml |
+| 5 | `infrastructure/k8s/shared/postgres/chat-db/overlays/{dev,staging,prod}/` | kustomization.yaml + params.env per env |
+| 6 | `infrastructure/k8s/shared/external-secrets/manifests/{dev,staging,prod}/` | chat-service-secrets.yaml + chat-postgres-secrets.yaml per env |
+| 7 | `infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets.sh` | Add to `REQUIRED_SECRETS` array |
+| 8 | `infrastructure/k8s/shared/external-secrets/scripts/wait-for-synced-secrets-aws.sh` | Add to `REQUIRED_SECRETS` array |
+| 9 | `infrastructure/vault/scripts/seed-dev-secrets.sh` | Add `vault_kv_put` call + new vars to `REQUIRED` |
+| 10 | `infrastructure/k8s/clusters/{dev,dev-local-secrets,staging,prod}/kustomization.yaml` | Add resource reference (4 files) |
+| 11 | `devspace.yaml` | Add image entry + dev section |
+| 12 | `.github/workflows/ci.yml` | Add to matrix |
+| 13 | `.github/workflows/build-images.yml` | Add to matrix |
+
+That is too much friction.
+
+### Solution 1: Dynamic ExternalSecret Discovery
+
+Replace the hardcoded `REQUIRED_SECRETS` arrays with auto-discovery from the namespace.
+
+**Before** (`wait-for-synced-secrets.sh`):
+
+```bash
+REQUIRED_SECRETS=(
+  gateway-secrets
+  auth-service-secrets
+  user-service-secrets
+  auth-postgres-secrets
+  user-postgres-secrets
+  rabbitmq-secrets
+  keycloak-secrets
+)
+```
+
+**After:**
+
+```bash
+mapfile -t REQUIRED_SECRETS < <(
+  kubectl get externalsecret -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.name}' \
+    | tr ' ' '\n' | sort
+)
+
+if [[ ${#REQUIRED_SECRETS[@]} -eq 0 ]]; then
+  echo "No ExternalSecrets found in $NAMESPACE; skipping sync wait."
+  exit 0
+fi
+```
+
+Apply the same change to `wait-for-synced-secrets-aws.sh`.
+
+**Result:** Adding a new ExternalSecret manifest is all you need — the wait scripts discover it automatically. No more maintaining parallel lists.
+
+### Solution 2: Shared CI Service Registry
+
+Create a single source of truth for the service matrix at `.github/services.json`:
+
+```json
+[
+  { "service": "http-gateway", "path": "gateways/http-gateway", "context": ".", "type": "java" },
+  { "service": "auth-service", "path": "services/auth-service", "context": ".", "type": "java" },
+  { "service": "user-service", "path": "services/user-service", "context": ".", "type": "java" },
+  { "service": "ws-gateway",   "path": "gateways/ws-gateway",   "context": "gateways/ws-gateway", "type": "go" }
+]
+```
+
+Both CI workflows load it via a setup job:
+
+```yaml
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.matrix.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: matrix
+        run: echo "services=$(cat .github/services.json)" >> "$GITHUB_OUTPUT"
+
+  container-build:
+    needs: [secret-scan, java-integration, go-integration, setup]
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.setup.outputs.services) }}
+```
+
+**Result:** Adding a service to CI = one line in `services.json`. No more duplicated matrices.
+
+### Solution 3: Scaffolding Scripts
+
+#### `scripts/new-service.sh`
+
+```
+Usage: scripts/new-service.sh <name> <port> [--with-postgres] [--with-redis] [--type java|go]
+```
+
+What it generates:
+
+1. K8s base manifests from `infrastructure/templates/service/` (deployment.yaml, service.yaml, kustomization.yaml) with `__SERVICE_NAME__` and `__PORT__` placeholders replaced
+2. Per-env overlays (dev, staging, prod) from `infrastructure/templates/service-overlay/`
+3. Appends the service overlay to each cluster `kustomization.yaml`
+4. Adds image + dev entry to `devspace.yaml`
+5. Adds entry to `.github/services.json`
+6. If `--with-postgres`: delegates to `scripts/new-database.sh`
+7. If `--with-redis`: generates `infrastructure/k8s/shared/redis/<name>-redis/` from template
+
+#### `scripts/new-database.sh`
+
+```
+Usage: scripts/new-database.sh <service-name> [--type postgres|redis]
+```
+
+What it generates:
+
+1. `infrastructure/k8s/shared/postgres/<name>-db/base/` from `infrastructure/templates/postgres/` (deployment.yaml, service.yaml, pvc.yaml, configmap.yaml, kustomization.yaml)
+2. Per-env overlays from `infrastructure/templates/postgres-overlay/`
+3. ExternalSecret manifests per env from `infrastructure/templates/external-secret.yaml`
+4. Adds `vault_kv_put` entry to `seed-dev-secrets.sh`
+5. Adds required env vars to `.env.example`
+6. References the DB overlay from the service's overlay kustomization.yaml
+
+### Template Directory Structure
+
+```
+infrastructure/templates/
+├── service/
+│   ├── deployment.yaml        # __SERVICE_NAME__, __PORT__, __IMAGE__
+│   ├── service.yaml           # __SERVICE_NAME__, __PORT__
+│   └── kustomization.yaml
+├── service-overlay/
+│   ├── kustomization.yaml     # __SERVICE_NAME__, __ENVIRONMENT__
+│   └── params.env             # __PORT__, defaults
+├── postgres/
+│   ├── deployment.yaml        # __DB_NAME__, postgres:16-alpine
+│   ├── service.yaml           # __DB_NAME__
+│   ├── pvc.yaml               # __DB_NAME__
+│   ├── configmap.yaml         # __DB_NAME__
+│   └── kustomization.yaml
+├── postgres-overlay/
+│   ├── kustomization.yaml     # __DB_NAME__, __ENVIRONMENT__
+│   └── params.env
+├── redis/
+│   ├── deployment.yaml        # __REDIS_NAME__, redis:7-alpine
+│   ├── service.yaml
+│   └── kustomization.yaml
+├── redis-overlay/
+│   ├── kustomization.yaml
+│   └── params.env
+└── external-secret.yaml       # __SECRET_NAME__, __VAULT_PATH__, __STORE_NAME__
+```
+
+### Before vs. After
+
+**Adding `chat-service` (port 8085) with a Postgres database:**
+
+| | Before | After |
+|--|--------|-------|
+| Steps | 13 manual file edits | 2 commands |
+| Commands | None | `scripts/new-service.sh chat-service 8085 --with-postgres --type java` |
+| CI update | Edit 2 workflow files | Automatic (via services.json) |
+| Secret wait scripts | Edit 2 files | Automatic (dynamic discovery) |
+| Vault seed | Manual edit | Automatic (script appends entry) |
+| Cluster kustomizations | Edit 4 files | Automatic (script appends) |
+| DevSpace config | Manual edit | Automatic (script appends) |
+| Still manual | Write source code + Dockerfile, fill `.env` values | Same |
+
+### Vault Seed Script Rearrangement
+
+The current `seed-dev-secrets.sh` has a hardcoded `REQUIRED` array and individual `vault_kv_put` calls. Rearrange it to be data-driven:
+
+```bash
+VAULT_SECRETS_DIR="$REPO_ROOT/infrastructure/vault/secrets"
+
+for secret_file in "$VAULT_SECRETS_DIR"/*.env; do
+  vault_path=$(head -1 "$secret_file" | sed 's/^# vault_path=//')
+  
+  kv_args=()
+  while IFS='=' read -r key value; do
+    [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
+    resolved="${!key:-$value}"
+    kv_args+=("$key=$resolved")
+  done < "$secret_file"
+  
+  vault_kv_put "$PREFIX/$vault_path" "${kv_args[@]}"
+done
+```
+
+Each secret gets its own file in `infrastructure/vault/secrets/`:
+
+```
+infrastructure/vault/secrets/
+├── auth-db-postgres.env       # vault_path=services/auth-db/postgres
+├── user-db-postgres.env       # vault_path=services/user-db/postgres
+├── keycloak-admin.env         # vault_path=services/keycloak/keycloak-admin
+├── rabbitmq.env               # vault_path=shared/rabbitmq
+├── github-oauth.env           # vault_path=shared/github-oauth
+└── jwt-signing-key.env        # vault_path=shared/jwt-signing-key
+```
+
+Adding a new secret to Vault = drop a `.env` file. The seed script discovers and seeds all of them.
+
+---
+
 ## Checklist
 
 ### Prerequisites
@@ -1047,7 +1382,7 @@ podman history hermes-http-gateway:ci --format '{{.Size}}\t{{.CreatedBy}}' | hea
 - [ ] Update Makefile targets: `back`, `back-local`, `back-dynamic`, `teardown`
 - [ ] Update `infrastructure/k8s/hard-reset.sh`: `docker` -> `podman`
 - [ ] Run `devspace dev` and verify all 4 services build and deploy
-- [ ] Verify port-forwarding works (http-gateway on localhost:8080)
+- [ ] Verify port-forwarding works (http-gateway on localhost:8080, ws-gateway on localhost:8082)
 - [ ] Verify health checks pass for all services
 - [ ] Test `devspace dev -p local-secrets` profile
 - [ ] Test `devspace dev -p dynamic-secrets` profile
@@ -1078,18 +1413,21 @@ podman history hermes-http-gateway:ci --format '{{.Size}}\t{{.CreatedBy}}' | hea
 
 ### Cleanup
 
-- [ ] Remove or archive `skaffold.yaml` (keep in `infrastructure/archive/` for reference)
-- [ ] Uninstall Skaffold locally (optional)
+- [ ] Delete `skaffold.yaml` from the repository
+- [ ] Uninstall Skaffold CLI locally
 - [ ] Update project README to reference DevSpace and Podman
-- [ ] Remove Docker Desktop / Docker Engine if no longer needed
+- [ ] Remove Docker Engine / Docker Desktop
+- [ ] Remove any `docker` references in scripts (grep for `docker` across the repo)
+- [ ] Verify no CI workflow references `docker/build-push-action` or `docker/login-action`
 
-### Reduce service registration boilerplate
+### Streamline service and database onboarding
 
-- [ ] Make `wait-for-synced-secrets.sh` and `wait-for-synced-secrets-aws.sh` discover ExternalSecrets dynamically from the namespace instead of maintaining a hardcoded `REQUIRED_SECRETS` array
-- [ ] Extract the CI service matrix into a shared `.github/service-matrix.json` and load it with `fromJson` in both `ci.yml` and `build-images.yml`
-- [ ] Create a scaffolding script (`scripts/new-service.sh <name> <port>`) that generates the Kustomize base/overlay tree, adds the Skaffold/DevSpace artifact, and updates cluster kustomizations
-- [ ] Consider replacing per-service Kustomize overlay boilerplate with a single parameterized Helm chart and per-environment values files
-- [ ] Deduplicate the skaffold-already-running guard across `back` / `back-local` / `back-dynamic` Makefile targets
+- [ ] Implement dynamic ExternalSecret discovery in wait scripts (see section above)
+- [ ] Create `.github/services.json` and update CI workflows to use `fromJson`
+- [ ] Create `scripts/new-service.sh` scaffolding script with templates
+- [ ] Create `scripts/new-database.sh` scaffolding script with templates
+- [ ] Create `infrastructure/templates/` directory with base templates
+- [ ] Deduplicate the devspace-already-running guard across `back` / `back-local` / `back-dynamic` Makefile targets
 - [ ] Add a confirmation prompt to production-affecting Makefile targets (`deploy-prod-k8s`, `eso-sync-prod`)
 
 ### Validation
