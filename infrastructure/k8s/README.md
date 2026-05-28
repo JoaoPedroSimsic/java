@@ -92,7 +92,7 @@ infrastructure/k8s/
 ### Required Tools
 - **kubectl** >= 1.28
 - **kustomize** >= 5.0 (or use `kubectl apply -k`)
-- **Docker** (for building images)
+- **Podman** (for building images)
 - **Kubernetes cluster** (local: minikube, kind, k3s | cloud: EKS, GKE, AKS)
 
 ### Cluster Requirements
@@ -135,25 +135,19 @@ done
 
 Edit each `secrets.env` file with appropriate values. See [Secrets Management](#secrets-management) for details.
 
-### 3. Build Docker Images
+### 3. Build container images
 
 ```bash
-# From project root
-docker build -t gateway:latest -f gateway/Dockerfile .
-docker build -t auth-service:latest -f services/auth-service/Dockerfile .
-docker build -t user-service:latest -f services/user-service/Dockerfile .
+# From project root (or: make validate-builds)
+podman build --network=host -t http-gateway:latest -f gateways/http-gateway/Dockerfile .
+podman build --network=host -t auth-service:latest -f services/auth-service/Dockerfile .
+podman build --network=host -t user-service:latest -f services/user-service/Dockerfile .
 ```
 
-For local development (minikube/kind), load images into cluster:
+For minikube with the **podman** driver, build inside the cluster runtime:
 ```bash
-# Minikube
-eval $(minikube docker-env)
-# Then rebuild images
-
-# Kind
-kind load docker-image gateway:latest --name your-cluster
-kind load docker-image auth-service:latest --name your-cluster
-kind load docker-image user-service:latest --name your-cluster
+eval $(minikube -p hermes-dev podman-env)
+# Then rebuild images (or use make back / devspace dev)
 ```
 
 ### 4. Deploy to Development
@@ -200,15 +194,15 @@ See `secrets.env.example` in the root k8s directory for a complete reference of 
 
 ### Vault path (Phase B — dev default)
 
-For minikube/Skaffold dev, **HashiCorp Vault + External Secrets Operator** are the default secret source. Dev overlays no longer use Kustomize `secretGenerator`; ESO syncs Vault KV into the Kubernetes `Secret` names expected by Deployments (`gateway-secrets`, `auth-service-secrets`, etc.).
+For minikube/DevSpace dev, **HashiCorp Vault + External Secrets Operator** are the default secret source. Dev overlays no longer use Kustomize `secretGenerator`; ESO syncs Vault KV into the Kubernetes `Secret` names expected by Deployments (`gateway-secrets`, `auth-service-secrets`, etc.).
 
 | Step | Command |
 |------|---------|
 | Generate local config (params only) | `infrastructure/k8s/setup-env.sh dev` |
-| Start stack | `make back` (Vault bootstrap + seed from `.env`, then Skaffold) |
+| Start stack | `make back` (Vault bootstrap + seed from `.env`, then DevSpace) |
 | Verify sync | `kubectl get externalsecret,secret -n hermes-dev` |
 
-**Offline / non-prod fallback** (no Vault): `setup-env.sh dev --local-secrets` then `make back-local` (Skaffold profile `local-secrets` uses `clusters/dev-local-secrets` with Kustomize `secretGenerator`). Label this path **non-prod** only.
+**Offline / non-prod fallback** (no Vault): `setup-env.sh dev --local-secrets` then `make back-local` (DevSpace profile `local-secrets` uses `clusters/dev-local-secrets` with Kustomize `secretGenerator`). Label this path **non-prod** only.
 
 Full documentation: **[infrastructure/vault/README.md](../vault/README.md)** (KV paths, policies, runbooks).
 
@@ -363,9 +357,9 @@ kubectl apply -k services/auth-service/overlays/dev
 ```bash
 # Ensure staging secrets are configured
 # Build and tag images with staging version
-docker build -t gateway:staging .
-docker build -t auth-service:staging .
-docker build -t user-service:staging .
+podman build --network=host -t http-gateway:staging -f gateways/http-gateway/Dockerfile .
+podman build --network=host -t auth-service:staging -f services/auth-service/Dockerfile .
+podman build --network=host -t user-service:staging -f services/user-service/Dockerfile .
 
 # Deploy
 kubectl apply -k clusters/staging
@@ -376,9 +370,9 @@ kubectl apply -k clusters/staging
 ```bash
 # CRITICAL: Verify all production secrets are set
 # Build and tag images with production version
-docker build -t gateway:v1.0.0 .
-docker build -t auth-service:v1.0.0 .
-docker build -t user-service:v1.0.0 .
+podman build --network=host -t http-gateway:v1.0.0 -f gateways/http-gateway/Dockerfile .
+podman build --network=host -t auth-service:v1.0.0 -f services/auth-service/Dockerfile .
+podman build --network=host -t user-service:v1.0.0 -f services/user-service/Dockerfile .
 
 # Deploy with care
 kubectl apply -k clusters/prod --dry-run=client
@@ -465,7 +459,7 @@ kubectl describe configmap <configmap-name> -n hermes-dev
 #### 1. ImagePullBackOff
 **Cause**: Image not found or incorrect image name
 **Solution**: 
-- Verify image exists: `docker images | grep <image-name>`
+- Verify image exists: `podman images | grep <image-name>`
 - For local: Load into cluster (minikube/kind)
 - Check imagePullPolicy in deployment
 

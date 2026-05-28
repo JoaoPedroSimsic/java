@@ -6,6 +6,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 VAULT_NS="${VAULT_NS:-vault}"
 VAULT_POD="${VAULT_POD:-vault-0}"
 ENV="${HERMES_ENV:-dev}"
+VAULT_SECRETS_DIR="$REPO_ROOT/infrastructure/vault/secrets"
 
 ENV_FILE="$REPO_ROOT/.env"
 [[ -f "$REPO_ROOT/.env.$ENV" ]] && ENV_FILE="$REPO_ROOT/.env.$ENV"
@@ -29,18 +30,26 @@ require_var() {
   fi
 }
 
-REQUIRED=(
-  GATEWAY_SECRET
-  RABBITMQ_USERNAME RABBITMQ_PASSWORD
-  GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
-  POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB
-  APP_USER APP_PASSWORD FLYWAY_USER FLYWAY_PASSWORD
-  KEYCLOAK_ADMIN KEYCLOAK_ADMIN_PASSWORD
-)
+collect_required_vars() {
+  local file line key value
+  for file in "$VAULT_SECRETS_DIR"/*.env; do
+    [[ -f "$file" ]] || continue
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      [[ "$line" =~ ^[[:space:]]*# ]] && continue
+      [[ -z "${line//[[:space:]]/}" ]] && continue
+      key="${line%%=*}"
+      value="${line#*=}"
+      [[ "$key" == "$line" ]] && continue
+      if [[ "$value" =~ ^\$([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
+        echo "${BASH_REMATCH[1]}"
+      fi
+    done < "$file"
+  done | sort -u
+}
 
-for var in "${REQUIRED[@]}"; do
+while IFS= read -r var; do
   require_var "$var"
-done
+done < <(collect_required_vars)
 
 if ! ROOT_TOKEN="$(bash "$SCRIPT_DIR/resolve-vault-root-token.sh")"; then
   echo "Could not determine Vault root token. Export VAULT_ROOT_TOKEN or inspect:"
@@ -65,38 +74,49 @@ vault_kv_put() {
 
 PREFIX="hermes/$ENV"
 
-vault_kv_put "$PREFIX/shared/jwt-signing-key" \
-  value="$GATEWAY_SECRET"
+shopt -s nullglob
+secret_files=("$VAULT_SECRETS_DIR"/*.env)
+shopt -u nullglob
 
-vault_kv_put "$PREFIX/shared/rabbitmq" \
-  username="$RABBITMQ_USERNAME" \
-  password="$RABBITMQ_PASSWORD"
+if [[ ${#secret_files[@]} -eq 0 ]]; then
+  echo "No secret definition files found in $VAULT_SECRETS_DIR"
+  exit 1
+fi
 
-vault_kv_put "$PREFIX/shared/github-oauth" \
-  client_id="$GITHUB_CLIENT_ID" \
-  client_secret="$GITHUB_CLIENT_SECRET"
+for secret_file in "${secret_files[@]}"; do
+  vault_path="$(head -1 "$secret_file" | sed 's/^# vault_path=//')"
+  if [[ -z "$vault_path" || "$vault_path" == "$(head -1 "$secret_file")" ]]; then
+    echo "Missing '# vault_path=...' header in $secret_file"
+    exit 1
+  fi
 
-vault_kv_put "$PREFIX/services/auth-db/postgres" \
-  POSTGRES_USER="$POSTGRES_USER" \
-  POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-  POSTGRES_DB="$POSTGRES_DB" \
-  APP_USER="$APP_USER" \
-  APP_PASSWORD="$APP_PASSWORD" \
-  FLYWAY_USER="$FLYWAY_USER" \
-  FLYWAY_PASSWORD="$FLYWAY_PASSWORD"
+  kv_args=()
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "${line//[[:space:]]/}" ]] && continue
 
-vault_kv_put "$PREFIX/services/user-db/postgres" \
-  POSTGRES_USER="$POSTGRES_USER" \
-  POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-  POSTGRES_DB="$POSTGRES_DB" \
-  APP_USER="$APP_USER" \
-  APP_PASSWORD="$APP_PASSWORD" \
-  FLYWAY_USER="$FLYWAY_USER" \
-  FLYWAY_PASSWORD="$FLYWAY_PASSWORD"
+    key="${line%%=*}"
+    value="${line#*=}"
+    if [[ "$key" == "$line" ]]; then
+      echo "Invalid line in $secret_file (expected key=value): $line"
+      exit 1
+    fi
 
-vault_kv_put "$PREFIX/services/keycloak/keycloak-admin" \
-  username="$KEYCLOAK_ADMIN" \
-  password="$KEYCLOAK_ADMIN_PASSWORD"
+    if [[ "$value" =~ ^\$([A-Za-z_][A-Za-z0-9_]*)$ ]]; then
+      ref="${BASH_REMATCH[1]}"
+      resolved="${!ref:-}"
+      if [[ -z "$resolved" ]]; then
+        echo "Unresolved reference \$$ref in $secret_file"
+        exit 1
+      fi
+      kv_args+=("$key=$resolved")
+    else
+      kv_args+=("$key=$value")
+    fi
+  done < <(tail -n +2 "$secret_file")
+
+  vault_kv_put "$PREFIX/$vault_path" "${kv_args[@]}"
+done
 
 echo "Done. Vault paths seeded under secret/$PREFIX/"
 echo "Next: kubectl get externalsecret,secret -n hermes-dev"

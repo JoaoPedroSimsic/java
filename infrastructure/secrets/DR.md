@@ -109,7 +109,7 @@ Dev Vault uses **in-memory storage** — pod restart wipes KV data. Recovery is 
 make vault-reset          # or: kubectl delete namespace vault
 make vault-init           # bootstrap K8s auth + seed from .env
 make eso-sync
-make back                 # or skaffold dev
+make back                 # or devspace dev
 ```
 
 If `.env` is lost, recreate from `.env.example` + `infrastructure/k8s/setup-env.sh dev` (non-prod values only).

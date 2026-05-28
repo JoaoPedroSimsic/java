@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: __SERVICE_NAME__
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: __SERVICE_NAME__
+  template:
+    metadata:
+      labels:
+        app: __SERVICE_NAME__
+    spec:
+__INIT_CONTAINERS__
+      containers:
+      - name: __SERVICE_NAME__
+        image: __IMAGE__:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: __PORT__
+        envFrom:
+        - configMapRef:
+            name: __SERVICE_NAME__-config
+        - secretRef:
+            name: __SERVICE_NAME__-secrets
+        startupProbe:
+          httpGet:
+            path: __HEALTH_PATH__
+            port: __PORT__
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 30
+        livenessProbe:
+          httpGet:
+            path: __HEALTH_PATH__
+            port: __PORT__
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: __HEALTH_PATH__
+            port: __PORT__
+          periodSeconds: 5

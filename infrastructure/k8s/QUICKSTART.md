@@ -7,7 +7,8 @@
 # Verify tools are installed
 kubectl version --client
 kustomize version
-docker --version
+podman --version
+devspace --version
 
 # Verify cluster is running
 kubectl cluster-info
@@ -42,27 +43,28 @@ kubectl wait --namespace ingress-nginx \
 
 ### 5. Build and Load Images
 
-**For Docker Desktop / Minikube:**
+**Recommended (Minikube + Podman + DevSpace from project root):**
 ```bash
-# From project root
-eval $(minikube docker-env)  # Skip for Docker Desktop
-
-docker build -t gateway:latest -f gateway/Dockerfile .
-docker build -t auth-service:latest -f services/auth-service/Dockerfile .
-docker build -t user-service:latest -f services/user-service/Dockerfile .
+make minikube-up
+make back-local   # or make back (Vault + ESO)
 ```
 
-**For Kind:**
+**Manual Podman builds inside minikube:**
 ```bash
-# Build images first
-docker build -t gateway:latest -f gateway/Dockerfile .
-docker build -t auth-service:latest -f services/auth-service/Dockerfile .
-docker build -t user-service:latest -f services/user-service/Dockerfile .
+eval $(minikube -p hermes-dev podman-env)
+podman build --network=host -t http-gateway:latest -f gateways/http-gateway/Dockerfile .
+podman build --network=host -t auth-service:latest -f services/auth-service/Dockerfile .
+podman build --network=host -t user-service:latest -f services/user-service/Dockerfile .
+```
 
-# Load into kind cluster
-kind load docker-image gateway:latest
-kind load docker-image auth-service:latest
-kind load docker-image user-service:latest
+**Build locally and load into minikube (rootless Podman):**
+```bash
+make setup-podman
+./scripts/podman-minikube-build.sh build -t http-gateway:latest \
+  --network=host -f gateways/http-gateway/Dockerfile .
+# Or manually:
+# podman save http-gateway:latest | podman exec -i hermes-dev docker load
+# podman exec hermes-dev docker tag localhost/http-gateway:latest http-gateway:latest
 ```
 
 ### 6. Deploy Everything
@@ -103,7 +105,7 @@ kubectl get ingress -n hermes-dev
 # For Minikube
 echo "$(minikube ip) hermes-dev.local" | sudo tee -a /etc/hosts
 
-# For Docker Desktop
+# For local kubectl / port-forward
 echo "127.0.0.1 hermes-dev.local" | sudo tee -a /etc/hosts
 
 # For Kind (with ingress)

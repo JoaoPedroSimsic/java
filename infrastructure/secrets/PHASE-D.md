@@ -67,7 +67,7 @@ Rotates **auth-db `APP_USER` password** in Postgres on a schedule while keeping 
 ```bash
 make vault-database-engine          # bootstrap database engine + static role
 make eso-sync-dynamic               # deploy dev-dynamic ExternalSecrets
-make back-dynamic                   # full stack with Skaffold profile dynamic-secrets
+make back-dynamic                   # full stack with DevSpace profile dynamic-secrets
 ```
 
 Or stepwise:
@@ -76,7 +76,7 @@ Or stepwise:
 make vault-init
 make vault-database-engine
 make eso-sync-dynamic
-MINIKUBE_PROFILE=hermes-dev skaffold dev -p dynamic-secrets
+MINIKUBE_PROFILE=hermes-dev devspace dev -p dynamic-secrets
 ```
 
 ### Components

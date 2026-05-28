@@ -68,6 +68,50 @@ minikube start -p hermes-dev --driver=podman
 > - Rootless mode is default; if you hit permission issues with volumes, run `minikube start --driver=podman --container-runtime=cri-o`
 > - On older systems you may need `slirp4netns` for rootless networking: `sudo apt install slirp4netns`
 
+### Minikube rootless troubleshooting
+
+Rootless Podman + minikube can start successfully while **ClusterIP / DNS is broken** (kube-proxy cannot program iptables inside the minikube node). Symptoms:
+
+- `nslookup kubernetes.default.svc.cluster.local` times out from pods
+- Init containers hang on `pg_isready -h auth-db`
+- App images show `ImagePullBackOff` for locally built tags
+
+Preflight check:
+
+```bash
+make minikube-preflight
+```
+
+One-time host fix (requires sudo):
+
+```bash
+sudo modprobe br_netfilter
+sudo tee /etc/sysctl.d/99-hermes.conf > /dev/null <<'EOF'
+# Required for rootless Podman + minikube
+fs.inotify.max_user_watches = 524288
+fs.inotify.max_user_instances = 512
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+EOF
+sudo sysctl --system
+make minikube-reset
+```
+
+> **Why inotify?** kube-proxy opens an inotify instance per Service/Endpoint it watches. The default `fs.inotify.max_user_instances = 128` is exhausted in a typical cluster, causing kube-proxy to crash with `too many open files`. This breaks ClusterIP routing even after the bridge filter fix.
+
+Set `MINIKUBE_ROOTLESS=false` in the Makefile (or export it) if you have rootful Podman with passwordless sudo for `podman`.
+
+Note: `minikube status` may fail under rootless Podman (it calls `sudo podman inspect`). Use `make minikube-preflight` or `kubectl --context <profile> get nodes` instead.
+
+### Configure Podman short-name resolution
+
+Dockerfiles use short image names (`maven:...`, `golang:...`). Podman requires an unqualified-search registry:
+
+```bash
+make setup-podman
+# or: bash scripts/setup-podman.sh
+```
+
 ### Docker socket compatibility shim
 
 Some third-party tools (e.g. Testcontainers, VS Code Docker extension) look for `DOCKER_HOST`. Expose Podman's API on a compatible socket:
@@ -387,23 +431,25 @@ podman volume prune -f
 
 ### Step 5: Configure image visibility in minikube
 
-With the podman driver, images built on the host are **not** automatically visible inside the minikube VM. The Makefile targets (Step 3) already include `eval $(minikube podman-env)` before calling `devspace dev`, which points the host `podman` CLI at minikube's internal Podman daemon.
+With the podman driver, images built on the host are **not** automatically visible inside the minikube VM. The Makefile targets (Step 3) use `scripts/podman-minikube-build.sh`, which:
 
-This means the DevSpace custom build commands (which use `${CONTAINER_CMD}` = `podman`) will build images directly inside minikube's container runtime. No registry push or explicit image load is needed.
+1. Tries `eval $(minikube podman-env)` so builds land in minikube's daemon when available.
+2. Otherwise builds on the host and loads into the minikube node via **cri-dockerd** (`podman save | podman exec <profile> docker load`, then tags without the `localhost/` prefix).
+
+`minikube image load` alone is unreliable with rootless host Podman — use the wrapper script or the manual load flow below.
 
 For manual one-off builds outside of DevSpace:
 
 ```bash
-# Option A: point podman at minikube's daemon
+# Option A: point podman at minikube's daemon (when podman-env works without sudo)
 eval $(minikube -p hermes-dev podman-env)
 podman build --network=host -t my-image:dev -f path/to/Dockerfile .
 
-# Option B: build locally and load into minikube
+# Option B: build on host and load into minikube cri-dockerd
 podman build --network=host -t my-image:dev -f path/to/Dockerfile .
-minikube -p hermes-dev image load my-image:dev
+podman save my-image:dev | podman exec -i hermes-dev docker load
+podman exec hermes-dev docker tag localhost/my-image:dev my-image:dev
 ```
-
-> **Note:** `eval $(minikube podman-env)` sets `CONTAINER_HOST` and related env vars so that `podman build` targets minikube's internal daemon directly. Images built this way are immediately available to Kubernetes pods without needing a registry push or explicit load.
 
 ---
 
@@ -743,7 +789,11 @@ validate-manifests:
 validate-terraform:
 	bash infrastructure/scripts/validate-terraform.sh
 
-validate-all: validate-builds validate-manifests validate-terraform
+validate-devspace:
+	KUBECONFIG=/dev/null devspace print > /dev/null
+	# ... all profiles
+
+validate-all: validate-builds validate-manifests validate-terraform validate-devspace
 
 integration-test:
 	MINIKUBE_PROFILE=hermes-test bash infrastructure/scripts/integration-test-local.sh
@@ -1287,30 +1337,43 @@ What it generates:
 ```
 infrastructure/templates/
 ├── service/
-│   ├── deployment.yaml        # __SERVICE_NAME__, __PORT__, __IMAGE__
-│   ├── service.yaml           # __SERVICE_NAME__, __PORT__
-│   └── kustomization.yaml
+│   ├── deployment-java.yaml     # Java/Spring: Actuator split probes + Prometheus annotations
+│   ├── deployment-go.yaml       # Go: single __HEALTH_PATH__ for all probes, no Spring conventions
+│   ├── service.yaml             # __SERVICE_NAME__, __PORT__
+│   └── kustomization.yaml       # references deployment.yaml (both variants render to that filename)
 ├── service-overlay/
-│   ├── kustomization.yaml     # __SERVICE_NAME__, __ENVIRONMENT__
-│   └── params.env             # __PORT__, defaults
+│   ├── kustomization.yaml       # __SERVICE_NAME__, __ENVIRONMENT__
+│   └── params.env               # __ENV_PREFIX__, __PORT__, __DB_SVC__, __REDIS_SVC__, defaults
 ├── postgres/
-│   ├── deployment.yaml        # __DB_NAME__, postgres:16-alpine
-│   ├── service.yaml           # __DB_NAME__
-│   ├── pvc.yaml               # __DB_NAME__
-│   ├── configmap.yaml         # __DB_NAME__
+│   ├── deployment.yaml          # __DB_DEPLOY__, __PG_SECRETS__, postgres:16-alpine
+│   ├── service.yaml             # __DB_SVC__, __DB_DEPLOY__
+│   ├── pvc.yaml                 # __DB_DEPLOY__
+│   ├── configmap.yaml           # __DB_DEPLOY__
 │   └── kustomization.yaml
 ├── postgres-overlay/
-│   ├── kustomization.yaml     # __DB_NAME__, __ENVIRONMENT__
+│   ├── kustomization.yaml       # __DB_DEPLOY__, __ENVIRONMENT__
 │   └── params.env
 ├── redis/
-│   ├── deployment.yaml        # __REDIS_NAME__, redis:7-alpine
-│   ├── service.yaml
+│   ├── deployment.yaml          # __REDIS_DEPLOY__, redis:7-alpine
+│   ├── service.yaml             # __REDIS_SVC__, __REDIS_DEPLOY__
+│   ├── pvc.yaml                 # __REDIS_DEPLOY__
 │   └── kustomization.yaml
 ├── redis-overlay/
-│   ├── kustomization.yaml
-│   └── params.env
-└── external-secret.yaml       # __SECRET_NAME__, __VAULT_PATH__, __STORE_NAME__
+│   └── kustomization.yaml       # __REDIS_DEPLOY__, __ENVIRONMENT__
+├── init-container-postgres.yaml # __DB_SVC__, __SERVICE_NAME__ — pg_isready wait block
+├── init-container-redis.yaml    # __REDIS_SVC__ — redis-cli ping wait block
+├── external-secret-postgres.yaml # __PG_SECRETS__, __SECRET_STORE__, __VAULT_PATH__ (POSTGRES_*/APP_*/FLYWAY_* keys)
+└── external-secret-service.yaml  # __SERVICE_NAME__, __SECRET_STORE__, __VAULT_PATH__, __VAULT_ENV__
+                                  # (APP_*/FLYWAY_* keys + RABBITMQ_* from hermes/<env>/shared/rabbitmq)
 ```
+
+`scripts/new-service.sh` composes the deployment spec by selecting `deployment-java.yaml`
+or `deployment-go.yaml` (via `--type java|go`) and splicing in `init-container-postgres.yaml`
+and/or `init-container-redis.yaml` based on the `--with-postgres` / `--with-redis` flags.
+Both variants render to `<service>/base/deployment.yaml`, which is what the generated
+`kustomization.yaml` references. ExternalSecret manifests are generated separately for
+the service (`external-secret-service.yaml`, includes RabbitMQ refs) and for its database
+(`external-secret-postgres.yaml`).
 
 ### Before vs. After
 
@@ -1368,19 +1431,25 @@ Adding a new secret to Vault = drop a `.env` file. The seed script discovers and
 
 ### Prerequisites
 
-- [ ] Install Podman (4.0+) and verify `podman info` works
-- [ ] Install DevSpace CLI
-- [ ] Verify cgroup v2 is active (`cat /sys/fs/cgroup/cgroup.controllers`)
+- [x] Install Podman (4.0+) and verify `podman info` works
+- [x] Install DevSpace CLI
+- [x] Verify cgroup v2 is active (`cat /sys/fs/cgroup/cgroup.controllers`)
 - [ ] Install `slirp4netns` if on older kernel (for rootless networking)
+- [x] Apply one-time host sysctl fix (`/etc/sysctl.d/99-hermes.conf`): `br_netfilter`, inotify limits
+- [x] Run `make setup-podman` once (unqualified-search-registries for docker.io)
 
 ### Local Development
 
-- [ ] Change `MINIKUBE_DRIVER` from `docker` to `podman` in `Makefile`
-- [ ] Delete existing minikube profile (`minikube delete -p hermes-dev`)
-- [ ] Recreate minikube with podman driver (`make minikube-up`)
-- [ ] Create `devspace.yaml` at project root (see template above)
-- [ ] Update Makefile targets: `back`, `back-local`, `back-dynamic`, `teardown`
-- [ ] Update `infrastructure/k8s/hard-reset.sh`: `docker` -> `podman`
+- [x] Change `MINIKUBE_DRIVER` from `docker` to `podman` in `Makefile`
+- [x] Add `MINIKUBE_ROOTLESS=true` and `--rootless` for Podman driver in Makefile
+- [x] Fix minikube running checks for rootless Podman (`minikube-common.sh`; `minikube status` needs sudo)
+- [ ] Delete existing minikube profile (`minikube delete -p hermes-dev`) *(manual, per developer)*
+- [ ] Recreate minikube with podman driver (`make minikube-up`) *(manual, per developer)*
+- [x] Create `devspace.yaml` at project root (see template above)
+- [x] Add `scripts/podman-minikube-build.sh` (host build → `podman save` + `docker load` into minikube cri-dockerd when podman-env unavailable)
+- [x] Update Makefile targets: `back`, `back-local`, `back-dynamic`, `teardown`, `minikube-preflight`
+- [x] Update `infrastructure/k8s/hard-reset.sh`: `docker` -> `podman`
+- [x] Fix dev-local Kustomize overlays (local `secrets.env` / `params.env`; `setup-env.sh` copies to dev-local)
 - [ ] Run `devspace dev` and verify all 4 services build and deploy
 - [ ] Verify port-forwarding works (http-gateway on localhost:8080, ws-gateway on localhost:8082)
 - [ ] Verify health checks pass for all services
@@ -1389,51 +1458,61 @@ Adding a new secret to Vault = drop a `.env` file. The seed script discovers and
 
 ### Infrastructure Testing
 
-- [ ] Create `infrastructure/scripts/validate-builds.sh` and verify all 4 services build with Podman
-- [ ] Create `infrastructure/scripts/validate-manifests.sh` and verify all 4 overlays render
-- [ ] Create `infrastructure/scripts/validate-terraform.sh` and verify secrets-manager + cognito modules
-- [ ] Run `devspace print` for each profile to validate DevSpace config
-- [ ] Run full local integration test (`integration-test-local.sh`) end-to-end
+- [x] Create `infrastructure/scripts/validate-builds.sh` (reads `.github/services.json`) *(run: `make validate-builds`)*
+- [x] Create `infrastructure/scripts/validate-manifests.sh` and verify all 4 overlays render *(auto-generates secrets.env from `.env` when present)*
+- [x] Create `infrastructure/scripts/validate-terraform.sh` and verify secrets-manager + cognito modules *(run: `make validate-terraform`)*
+- [x] Create `infrastructure/scripts/minikube-preflight.sh` (cluster DNS check; run: `make minikube-preflight`)
+- [x] Run `devspace print` for each profile to validate DevSpace config *(run: `make validate-devspace`)*
+- [x] Add DevSpace `integration` profile (local-secrets deploy without wait/health hooks)
+- [x] Streamline `integration-test-local.sh` (single build; `INTEGRATION_REUSE_CLUSTER=1` for reruns)
+- [x] Run full local integration test (`make integration-test`) end-to-end *(passes with cri-dockerd image load fix)*
 - [ ] Run Trivy (or equivalent) image scan with no CRITICAL vulnerabilities
-- [ ] Verify all images run as non-root user
-- [ ] Add `validate-builds`, `validate-manifests`, `validate-terraform`, `validate-all`, and `integration-test` Makefile targets
+- [x] Verify all images run as non-root user *(validate-builds: http-gateway, auth-service, user-service, ws-gateway)*
+- [x] Add `validate-builds`, `validate-manifests`, `validate-terraform`, `validate-devspace`, `validate-all`, and `integration-test` Makefile targets
+- [x] Add `scripts/setup-podman.sh` for unqualified-search-registries (docker.io)
 
 ### CI/CD
 
-- [ ] Rename `docker-build` to `container-build` in `ci.yml` and switch to `podman build`
-- [ ] Add ws-gateway to the CI build matrix (with its separate build context)
-- [ ] Expand `infra-validate` to cover cognito TF module, all 4 Kustomize overlays, and DevSpace config
-- [ ] Add `infra-test` job: image sanity checks, layer analysis, rootless networking test
-- [ ] Update `.github/workflows/build-images.yml` to use `podman login` + `podman build` + `podman push`
-- [ ] Add pull-back verification step in `build-images.yml`
-- [ ] Remove `docker/build-push-action` and `docker/login-action` dependencies
-- [ ] Configure GitHub Actions cache for Maven (`~/.m2/repository`) and Go (`~/go/pkg/mod`)
+- [x] Rename `docker-build` to `container-build` in `ci.yml` and switch to `podman build`
+- [x] Add ws-gateway to the CI build matrix (with its separate build context)
+- [x] Expand `infra-validate` to cover cognito TF module, all 4 Kustomize overlays, and DevSpace config
+- [x] Add `infra-test` job: image sanity checks, layer analysis, rootless networking test
+- [x] Update `.github/workflows/build-images.yml` to use `podman login` + `podman build` + `podman push`
+- [x] Add pull-back verification step in `build-images.yml`
+- [x] Remove `docker/build-push-action` and `docker/login-action` dependencies
+- [x] Configure GitHub Actions cache for Maven (`~/.m2/repository`) and Go (`~/go/pkg/mod`)
 - [ ] Run CI pipeline on a feature branch and verify all jobs pass
 - [ ] Verify pushed images are pullable from Docker Hub
 
 ### Cleanup
 
-- [ ] Delete `skaffold.yaml` from the repository
+- [x] Delete `skaffold.yaml` from the repository
 - [ ] Uninstall Skaffold CLI locally
-- [ ] Update project README to reference DevSpace and Podman
+- [x] Update project README to reference DevSpace and Podman
 - [ ] Remove Docker Engine / Docker Desktop
-- [ ] Remove any `docker` references in scripts (grep for `docker` across the repo)
-- [ ] Verify no CI workflow references `docker/build-push-action` or `docker/login-action`
+- [x] Remove any `docker` references in scripts (grep for `docker` across the repo) *(operational docs updated; `podman.md` retains migration before/after examples)*
+- [x] Verify no CI workflow references `docker/build-push-action` or `docker/login-action`
 
 ### Streamline service and database onboarding
 
-- [ ] Implement dynamic ExternalSecret discovery in wait scripts (see section above)
-- [ ] Create `.github/services.json` and update CI workflows to use `fromJson`
-- [ ] Create `scripts/new-service.sh` scaffolding script with templates
-- [ ] Create `scripts/new-database.sh` scaffolding script with templates
-- [ ] Create `infrastructure/templates/` directory with base templates
-- [ ] Deduplicate the devspace-already-running guard across `back` / `back-local` / `back-dynamic` Makefile targets
-- [ ] Add a confirmation prompt to production-affecting Makefile targets (`deploy-prod-k8s`, `eso-sync-prod`)
+- [x] Implement dynamic ExternalSecret discovery in wait scripts (see section above)
+- [x] Create `.github/services.json` and update CI workflows to use `fromJson`
+- [x] Create `scripts/new-service.sh` scaffolding script with templates
+- [x] Create `scripts/new-database.sh` scaffolding script with templates
+- [x] Create `infrastructure/templates/` directory with base templates
+- [x] Deduplicate the devspace-already-running guard across `back` / `back-local` / `back-dynamic` Makefile targets
+- [x] Add a confirmation prompt to production-affecting Makefile targets (`deploy-prod-k8s`, `eso-sync-prod`)
+- [x] Rearrange Vault seed to data-driven `infrastructure/vault/secrets/*.env` files
+
+- [x] Rearrange Vault seed script to data-driven `infrastructure/vault/secrets/*.env` discovery
 
 ### Validation
 
-- [ ] Full `make back` flow works end-to-end with Podman + DevSpace
-- [ ] Full CI build + push works on `develop` branch
+- [ ] Full `make back` flow works end-to-end with Podman + DevSpace *(app readiness confirmed on hermes-test after image-load fix)*
+- [ ] Full CI build + push works on `develop` branch *(push `refactor/docker-to-podman` and verify Actions)*
 - [ ] Staging deploy (`devspace deploy -p staging`) applies correctly
 - [ ] `make teardown` cleans up all resources
 - [ ] Another developer can onboard using only Podman (no Docker installed)
+- [x] Cluster DNS preflight passes after rootless minikube sysctl fix *(run: `make minikube-preflight`)*
+- [x] DevSpace deploy applies full local-secrets stack (postgres, keycloak, 4 apps) to minikube
+- [x] App deployments become Available after image load into minikube cri-dockerd

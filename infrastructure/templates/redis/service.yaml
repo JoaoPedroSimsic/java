@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: __REDIS_SVC__
+  labels:
+    app: __REDIS_DEPLOY__
+    component: cache
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: __REDIS_DEPLOY__

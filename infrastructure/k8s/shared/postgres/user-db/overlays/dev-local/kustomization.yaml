@@ -5,7 +5,7 @@ resources:
 secretGenerator:
 - name: user-postgres-secrets
   envs:
-  - ../dev/secrets.env
+  - secrets.env
 labels:
 - pairs:
     environment: dev

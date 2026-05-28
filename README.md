@@ -1,6 +1,6 @@
 # Hermes
 
-Hermes is a multi-service platform: a Spring Cloud HTTP API gateway, dedicated auth and user backends, a Go WebSocket gateway backed by NATS, and an Angular web app. Infrastructure is defined as Kubernetes manifests (Kustomize) with optional Skaffold-based local workflows.
+Hermes is a multi-service platform: a Spring Cloud HTTP API gateway, dedicated auth and user backends, a Go WebSocket gateway backed by NATS, and an Angular web app. Infrastructure is defined as Kubernetes manifests (Kustomize) with DevSpace + Podman for local workflows.
 
 ## What’s in this repository
 
@@ -20,8 +20,9 @@ Java services use **Java 21** and **Spring Boot 3.4** (see `gateways/http-gatewa
 ## Prerequisites
 
 - **JDK 21** and **Maven** (or use `./mvnw` at the repo root)
-- **Docker** and a **Kubernetes** cluster (e.g. minikube) for full-stack deployment
-- **kubectl** and **kustomize** (or Skaffold — see below)
+- **Podman** (4.0+) and a **Kubernetes** cluster (e.g. minikube with the `podman` driver) for full-stack deployment
+- **DevSpace** CLI, **kubectl**, and **kustomize**
+- Run `make setup-podman` once so Dockerfile short names resolve via docker.io
 - **Bun** (recommended) or npm for the frontend — see `frontend/package.json` (`packageManager`)
 
 ## Local development
@@ -44,17 +45,24 @@ bun install   # or: npm install
 bun run start # or: npm run start — serves at http://localhost:4200
 ```
 
-### Kubernetes (Skaffold)
+### Kubernetes (DevSpace + Podman)
 
-The repo includes `skaffold.yaml` for building images and deploying the **dev** cluster overlay, with port forwarding for the HTTP gateway (e.g. local **8080** → gateway **8081** in `hermes-dev`). Use a profile for production-shaped deploys:
+The repo includes `devspace.yaml` for building images with Podman and deploying the **dev** cluster overlay, with port forwarding for the HTTP gateway (local **8080** → gateway **8081** in `hermes-dev`) and WebSocket gateway (**8082**). Point Podman at minikube before dev:
 
 ```bash
-skaffold dev
-# or
-skaffold run -p prod
+make minikube-up
+make back                    # Vault + ESO + apps (default dev profile)
+make back-local              # offline secrets (local-secrets profile)
+devspace deploy -p staging   # staging overlay (no local image build)
 ```
 
-Exact image names, namespaces, and health checks are defined in `skaffold.yaml`.
+See `podman.md` for migration notes, validation scripts (`make validate-all`), and CI details.
+
+**Scaffold a new service** (K8s, DevSpace, CI registry):
+
+```bash
+scripts/new-service.sh chat-service 8085 --with-postgres --type java
+```
 
 ## Documentation
 

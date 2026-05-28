@@ -1,0 +1,17 @@
+      - name: wait-for-postgres
+        image: postgres:16-alpine
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h __DB_SVC__ -p 5432 -U app_user; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: __SERVICE_NAME__-secrets
+              key: APP_PASSWORD

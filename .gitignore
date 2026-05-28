@@ -1,5 +1,6 @@
 HELP.md
 target/
+.devspace/
 
 *.pem
 !public.pem
@@ -48,6 +49,7 @@ dist
 
 CLAUDE.md
 
+infrastructure/k8s/_rendered/
 infrastructure/vault/.vault-root-token
 *.vault-local
 infrastructure/k8s/shared/external-secrets/crds/bundle.yaml

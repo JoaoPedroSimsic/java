@@ -105,6 +105,14 @@ generate_files() {
         echo -e "${RED}FAILED: Files were not generated in $target_dir${NC}"
         exit 1
     fi
+
+    if [[ "$WRITE_SECRETS" == "true" ]]; then
+        dev_local_dir="${target_dir%/dev}/dev-local"
+        if [[ -d "$dev_local_dir" ]]; then
+            cp "$target_dir/params.env" "$dev_local_dir/params.env"
+            cp "$target_dir/secrets.env" "$dev_local_dir/secrets.env"
+        fi
+    fi
 }
 
 echo -e "Validating and generating manifests..."
@@ -203,6 +211,14 @@ generate_rabbitmq_files() {
         } >> "$target_dir/secrets.env"
     fi
     echo -e "${GREEN}✓${NC}"
+
+    if [[ "$WRITE_SECRETS" == "true" ]]; then
+        dev_local_dir="${target_dir%/dev}/dev-local"
+        if [[ -d "$dev_local_dir" ]]; then
+            cp "$target_dir/params.env" "$dev_local_dir/params.env"
+            cp "$target_dir/secrets.env" "$dev_local_dir/secrets.env"
+        fi
+    fi
 }
 
 generate_rabbitmq_files

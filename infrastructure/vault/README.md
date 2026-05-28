@@ -1,6 +1,6 @@
 # HashiCorp Vault — development (minikube)
 
-This folder supports **PRD §2 — Development — HashiCorp Vault**: Vault runs **in-cluster on minikube** alongside the Hermes stack deployed by Skaffold (`make back`). The supported path matches `Makefile` + Skaffold.
+This folder supports **PRD §2 — Development — HashiCorp Vault**: Vault runs **in-cluster on minikube** alongside the Hermes stack deployed by DevSpace (`make back`). The supported path matches `Makefile` + DevSpace.
 
 ## Deployment model
 
@@ -40,7 +40,7 @@ This folder supports **PRD §2 — Development — HashiCorp Vault**: Vault runs
 
 ## Bootstrap (Kubernetes auth + ESO)
 
-After Skaffold has created the Vault pod:
+After DevSpace has created the Vault pod:
 
 1. Ensure the `vault` ServiceAccount can call **TokenReview** (the Vault Helm chart installs `vault-server-binding` → `system:auth-delegator`).
 2. Run:
@@ -84,11 +84,13 @@ The script writes idempotent `vault kv put` entries under `secret/hermes/dev/...
 
 Override environment with `HERMES_ENV=dev` (default) or point at `.env.dev` when present.
 
+Secret definitions live in `infrastructure/vault/secrets/*.env` (one file per Vault path, with a `# vault_path=...` header). The seed script discovers and writes all of them. To add a new secret, drop a file there or run `scripts/new-database.sh` for Postgres paths.
+
 ## External Secrets Operator (ESO)
 
-- Helm chart + **ClusterSecretStore** + **ExternalSecret** manifests: `infrastructure/k8s/shared/external-secrets/overlays/dev` (single kustomize path in Skaffold).
-- CRDs are **pre-installed** before each deploy via `infrastructure/k8s/shared/external-secrets/scripts/ensure-crds.sh` (Skaffold `deploy.kubectl.hooks.before`) using the pinned bundle at `infrastructure/k8s/shared/external-secrets/crds/bundle.yaml` (chart version **0.10.5**).
-- Legacy paths `config/dev` and `manifests/dev` remain as source files referenced by the overlay; do not add them as separate Skaffold paths.
+- Helm chart + **ClusterSecretStore** + **ExternalSecret** manifests: `infrastructure/k8s/shared/external-secrets/overlays/dev` (single kustomize path in DevSpace).
+- CRDs are **pre-installed** before each deploy via `infrastructure/k8s/shared/external-secrets/scripts/ensure-crds.sh` (DevSpace `before:deploy` hook) using the pinned bundle at `infrastructure/k8s/shared/external-secrets/crds/bundle.yaml` (chart version **0.10.5**).
+- Legacy paths `config/dev` and `manifests/dev` remain as source files referenced by the overlay; do not add them as separate DevSpace manifest paths.
 
 **Vault Agent Injector / CSI** are **not deployed** in dev (PRD §2 complete via ESO only). Chart values set `injector.enabled: false` to keep minikube footprint small. Revisit in Phase D if file-based injection is preferred over synced Kubernetes `Secret` objects.
 
@@ -105,7 +107,7 @@ kubectl get secret gateway-secrets -n hermes-dev
 ## `secrets.env` + `secretGenerator` (dev)
 
 - **Phase B (default):** Dev overlays use **Vault + ESO only**. `setup-env.sh dev` writes **`params.env`** (ConfigMaps) and validates secret values in `.env` for `make vault-seed`; it does **not** write `secrets.env`.
-- **Offline fallback:** `setup-env.sh dev --local-secrets` + `make back-local` (Skaffold profile `local-secrets` → `clusters/dev-local-secrets`) restores Kustomize `secretGenerator` from `secrets.env`. **Non-prod only** — unsafe for shared clusters.
+- **Offline fallback:** `setup-env.sh dev --local-secrets` + `make back-local` (DevSpace profile `local-secrets` → `clusters/dev-local-secrets`) restores Kustomize `secretGenerator` from `secrets.env`. **Non-prod only** — unsafe for shared clusters.
 - **`secrets.env.example`** remains the committed shape reference; never commit real `secrets.env` files.
 
 ## Offline / flaky network
@@ -113,25 +115,25 @@ kubectl get secret gateway-secrets -n hermes-dev
 - **Kubernetes path (default):** Requires Vault reachable for first boot (`make back` runs `vault-init`). If Vault is down after seed, ESO refresh keeps existing synced secrets until the pod restarts wipe Vault data.
 - **Pure local fallback:** `setup-env.sh dev --local-secrets` then `make back-local` — skips Vault/ESO entirely.
 
-## Makefile and Skaffold
+## Makefile and DevSpace
 
-- `make back` starts minikube, runs **`make vault-init`** (deploy Vault, bootstrap K8s auth, seed from `.env`), then `skaffold dev` for ESO + the app stack.
-- Vault is **not** in Skaffold’s status check (StatefulSet rollout on minikube was causing false `1/16 failed` errors).
+- `make back` starts minikube, runs **`make vault-init`** (deploy Vault, bootstrap K8s auth, seed from `.env`), then `devspace dev` for ESO + the app stack.
+- Vault is deployed outside DevSpace’s deployment status checks (StatefulSet rollout on minikube was causing false failures).
 - Helpers:
   - `make vault-up` — deploy Vault and wait for `vault-0`
   - `make vault-init` — `vault-up` + bootstrap + seed (when `.env` exists)
   - `make vault-bootstrap` — runs `bootstrap-dev-k8s-auth.sh` with your current kubectl context.
   - `make vault-seed` — writes `.env` values into Vault KV (run after bootstrap).
   - `make vault-ui` — prints the suggested `kubectl port-forward` for the UI.
-  - `make back-local` — Skaffold with `local-secrets` profile (no Vault)
-  - `make teardown` — delete ESO CRs, `skaffold delete`, and the `vault` namespace
+  - `make back-local` — DevSpace with `local-secrets` profile (no Vault)
+  - `make teardown` — delete ESO CRs, `devspace purge`, and the `vault` namespace
 
 ### Recommended dev workflow
 
 ```bash
 cp .env.example .env          # if needed
 infrastructure/k8s/setup-env.sh dev
-make back                     # vault-init + skaffold dev (ESO syncs secrets)
+make back                     # vault-init + devspace dev (ESO syncs secrets)
 kubectl get externalsecret -n hermes-dev
 ```
 

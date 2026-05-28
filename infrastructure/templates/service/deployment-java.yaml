@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: __SERVICE_NAME__
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: __SERVICE_NAME__
+  template:
+    metadata:
+      labels:
+        app: __SERVICE_NAME__
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "__PORT__"
+    spec:
+__INIT_CONTAINERS__
+      containers:
+      - name: __SERVICE_NAME__
+        image: __IMAGE__:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: __PORT__
+        envFrom:
+        - configMapRef:
+            name: __SERVICE_NAME__-config
+        - secretRef:
+            name: __SERVICE_NAME__-secrets
+        startupProbe:
+          httpGet:
+            path: __HEALTH_PATH__
+            port: __PORT__
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 30
+          timeoutSeconds: 3
+        livenessProbe:
+          httpGet:
+            path: __HEALTH_PATH__/liveness
+            port: __PORT__
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: __HEALTH_PATH__/readiness
+            port: __PORT__
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
