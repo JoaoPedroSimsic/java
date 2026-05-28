@@ -75,6 +75,11 @@ portForward:
     namespace: hermes-dev
     port: 8081
     localPort: 8080
+  - resourceType: service
+    resourceName: ws-gateway
+    namespace: hermes-dev
+    port: 8082
+    localPort: 8082
 
 verify:
   - name: http-gateway-health

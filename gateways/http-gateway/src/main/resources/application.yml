@@ -57,6 +57,11 @@ spring:
           predicates:
             - Path=/swagger-ui/**,/v3/api-docs/**
 
+        - id: ws-gateway
+          uri: http://ws-gateway:8082
+          predicates:
+            - Path=/ws
+
 gateway:
   secret: ${GATEWAY_SECRET}
   rate-limit:
