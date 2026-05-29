@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: matrix
-        run: echo "services=$(cat .github/services.json)" >> "$GITHUB_OUTPUT"
+        run: echo "services=$(cat .github/services.json | jq -c .)" >> "$GITHUB_OUTPUT"
 
   build:
     needs: setup
