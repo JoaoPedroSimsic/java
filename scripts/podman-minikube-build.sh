@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Podman build wrapper for minikube: uses podman-env when available, otherwise
-# builds on the host and loads the image into the minikube node via cri-dockerd.
+# Podman build wrapper for minikube: builds images and loads them directly
+# into the minikube node's containerd via podman exec + ctr.
 set -euo pipefail
 
 PROFILE="${MINIKUBE_PROFILE:-hermes-dev}"
@@ -32,18 +32,23 @@ load_image_into_minikube() {
     return 0
   fi
 
-  # Host podman stores short names as localhost/<name>:<tag>.
-  if podman image exists "localhost/$image_tag" 2>/dev/null && ! podman image exists "$image_tag" 2>/dev/null; then
-    podman tag "localhost/$image_tag" "$image_tag"
+  local src_ref="$image_tag"
+  if podman image exists "localhost/$image_tag" 2>/dev/null; then
+    podman tag "localhost/$image_tag" "$image_tag" 2>/dev/null
+  elif ! podman image exists "$image_tag" 2>/dev/null; then
+    echo "ERROR: image $image_tag not found in podman"
+    return 1
   fi
 
-  echo "Loading $image_tag into minikube profile $PROFILE (cri-dockerd)..."
-  podman save "$image_tag" | podman exec -i "$PROFILE" docker load
-
-  # Kubelet requests auth-service:tag; cri-dockerd needs that exact reference.
-  if podman exec "$PROFILE" docker image inspect "localhost/$image_tag" >/dev/null 2>&1; then
-    podman exec "$PROFILE" docker tag "localhost/$image_tag" "$image_tag"
-  fi
+  echo "Loading $image_tag into minikube profile $PROFILE..."
+  local tmp_tar
+  tmp_tar="$(mktemp /tmp/hermes-image-XXXXXX.tar)"
+  podman save "$image_tag" -o "$tmp_tar"
+  podman cp "$tmp_tar" "$PROFILE":/tmp/hermes-image.tar
+  podman exec "$PROFILE" ctr -n k8s.io image import /tmp/hermes-image.tar
+  podman exec "$PROFILE" ctr -n k8s.io image tag "$image_tag" "docker.io/library/$image_tag" 2>/dev/null || true
+  podman exec "$PROFILE" rm /tmp/hermes-image.tar
+  rm -f "$tmp_tar"
 }
 
 use_image_load=false

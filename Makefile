@@ -8,6 +8,7 @@ MINIKUBE_KUBERNETES_VERSION ?= v1.31.6
 MINIKUBE_MEMORY ?= 6144
 MINIKUBE_CPUS ?= 3
 MINIKUBE_WAIT_TIMEOUT ?= 10m
+MINIKUBE_CONTAINER_RUNTIME ?= containerd
 MINIKUBE_START_EXTRA ?=
 
 DEVSPACE_GUARD = @if pgrep -f "[d]evspace dev" >/dev/null 2>&1; then \
@@ -16,7 +17,7 @@ DEVSPACE_GUARD = @if pgrep -f "[d]evspace dev" >/dev/null 2>&1; then \
 fi
 
 DEVSPACE_RUN = unset KUBECONFIG; eval $$(minikube -p "$(MINIKUBE_PROFILE)" podman-env -u) 2>/dev/null || true; \
-	export MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)"; devspace dev --kube-context "$(MINIKUBE_PROFILE)"
+	export MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)"; devspace dev --kube-context "$(MINIKUBE_PROFILE)" --namespace hermes-dev
 
 minikube-up:
 	@unset KUBECONFIG; \
@@ -35,6 +36,7 @@ minikube-up:
 			--memory="$(MINIKUBE_MEMORY)" \
 			--cpus="$(MINIKUBE_CPUS)" \
 			--wait-timeout="$(MINIKUBE_WAIT_TIMEOUT)" \
+			--container-runtime="$(MINIKUBE_CONTAINER_RUNTIME)" \
 			$(MINIKUBE_START_EXTRA) --force; \
 		wait_for_minikube_profile "$(MINIKUBE_PROFILE)" 60 || (echo "Minikube API not ready." && exit 1); \
 	fi
@@ -55,7 +57,8 @@ minikube-reset:
 		--memory="$(MINIKUBE_MEMORY)" \
 		--cpus="$(MINIKUBE_CPUS)" \
 		--wait-timeout="$(MINIKUBE_WAIT_TIMEOUT)" \
-		$(MINIKUBE_START_EXTRA) --force
+		--container-runtime="$(MINIKUBE_CONTAINER_RUNTIME)" \
+			$(MINIKUBE_START_EXTRA) --force
 
 minikube-preflight:
 	unset KUBECONFIG; bash infrastructure/scripts/minikube-preflight.sh
@@ -69,7 +72,7 @@ render-manifests:
 back: minikube-up vault-init eso-sync render-manifests
 	$(DEVSPACE_GUARD)
 	@echo "Starting DevSpace (Vault + ESO + apps; secrets synced from Vault by default)."
-	unset KUBECONFIG; export MINIKUBE_PROFILE="$(MINIKUBE_PROFILE)"; $(DEVSPACE_RUN)
+	$(DEVSPACE_RUN)
 
 back-local: minikube-up
 	$(DEVSPACE_GUARD)
