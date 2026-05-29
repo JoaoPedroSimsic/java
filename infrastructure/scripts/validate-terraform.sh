@@ -18,7 +18,7 @@ package_github_auth_lambda() {
 
   echo "Packaging github-auth lambda for terraform validate..."
   if command -v bun >/dev/null 2>&1; then
-    (cd "$lambda_dir" && bun run package)
+    (cd "$lambda_dir" && bun install --frozen-lockfile && bun run package)
   elif [[ -f "$lambda_dir/dist/index.js" ]]; then
     (cd "$lambda_dir/dist" && zip -qr ../function.zip .)
   else

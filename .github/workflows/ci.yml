@@ -152,6 +152,7 @@ jobs:
         working-directory: infrastructure/terraform/cognito
         run: |
           cd ../../lambda/github-auth
+          bun install --frozen-lockfile
           bun run package
           cd ../../terraform/cognito
           terraform fmt -check -recursive
