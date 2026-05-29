@@ -228,6 +228,7 @@ jobs:
             -t hermes-${{ matrix.service }}:ci \
             -f ${{ matrix.path }}/Dockerfile \
             ${{ matrix.context }}
+          podman save hermes-${{ matrix.service }}:ci -o /tmp/hermes-${{ matrix.service }}.tar
 
       - name: Inspect image
         run: |
@@ -242,7 +243,7 @@ jobs:
       - name: Scan image for CVEs
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: hermes-${{ matrix.service }}:ci
+          image-ref: docker-archive:/tmp/hermes-${{ matrix.service }}.tar
           severity: HIGH,CRITICAL
           exit-code: '0'
           format: table
