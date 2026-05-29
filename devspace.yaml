@@ -12,6 +12,7 @@ images:
         ${CONTAINER_CMD} build -t ${runtime.images.http-gateway.image}:${runtime.images.http-gateway.tag} \
           --network=host -f gateways/http-gateway/Dockerfile .
       onChange:
+        - gateways/http-gateway/Dockerfile
         - gateways/http-gateway/src/**
         - gateways/http-gateway/pom.xml
         - pom.xml
@@ -24,6 +25,7 @@ images:
         ${CONTAINER_CMD} build -t ${runtime.images.auth-service.image}:${runtime.images.auth-service.tag} \
           --network=host -f services/auth-service/Dockerfile .
       onChange:
+        - services/auth-service/Dockerfile
         - services/auth-service/src/**
         - services/auth-service/pom.xml
         - pom.xml
@@ -36,6 +38,7 @@ images:
         ${CONTAINER_CMD} build -t ${runtime.images.user-service.image}:${runtime.images.user-service.tag} \
           --network=host -f services/user-service/Dockerfile .
       onChange:
+        - services/user-service/Dockerfile
         - services/user-service/src/**
         - services/user-service/pom.xml
         - pom.xml
@@ -48,6 +51,7 @@ images:
         ${CONTAINER_CMD} build -t ${runtime.images.ws-gateway.image}:${runtime.images.ws-gateway.tag} \
           --network=host -f gateways/ws-gateway/Dockerfile gateways/ws-gateway
       onChange:
+        - gateways/ws-gateway/Dockerfile
         - gateways/ws-gateway/**
 
 deployments:
@@ -87,6 +91,22 @@ dev:
       - port: "8082:8082"
 
 hooks:
+  # Ensure service images are present in the minikube containerd even when
+  # devspace skips building (file hashes unchanged). Without this, a minikube
+  # restart loses the images and pods get ErrImagePull.
+  - command: bash
+    args:
+      - -c
+      - |
+        for img in \
+          "${runtime.images.auth-service.image}:${runtime.images.auth-service.tag}" \
+          "${runtime.images.http-gateway.image}:${runtime.images.http-gateway.tag}" \
+          "${runtime.images.user-service.image}:${runtime.images.user-service.tag}" \
+          "${runtime.images.ws-gateway.image}:${runtime.images.ws-gateway.tag}"; do
+          ./scripts/podman-minikube-build.sh load "$img"
+        done
+    events: ["after:build"]
+
   - command: bash
     args:
       - infrastructure/k8s/shared/external-secrets/scripts/ensure-crds.sh

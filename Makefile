@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: front back back-local back-dynamic dev teardown minikube-up minikube-reset minikube-preflight vault-up vault-init vault-reset vault-bootstrap vault-seed vault-ui vault-database-engine eso-sync eso-sync-dynamic eso-sync-staging eso-sync-prod aws-secrets-seed deploy-prod-k8s smoke-test-staging smoke-test-dev aws-rotation-enable setup-podman validate-builds validate-manifests validate-terraform validate-devspace validate-all integration-test render-manifests
+.PHONY: front back back-local back-dynamic dev logs teardown minikube-up minikube-reset minikube-preflight vault-up vault-init vault-reset vault-bootstrap vault-seed vault-ui vault-database-engine eso-sync eso-sync-dynamic eso-sync-staging eso-sync-prod aws-secrets-seed deploy-prod-k8s smoke-test-staging smoke-test-dev aws-rotation-enable setup-podman validate-builds validate-manifests validate-terraform validate-devspace validate-all integration-test render-manifests
 
 MINIKUBE_PROFILE ?= hermes-dev
 MINIKUBE_DRIVER ?= podman
@@ -22,6 +22,7 @@ DEVSPACE_RUN = unset KUBECONFIG; eval $$(minikube -p "$(MINIKUBE_PROFILE)" podma
 minikube-up:
 	@unset KUBECONFIG; \
 	. infrastructure/scripts/minikube-common.sh; \
+	ensure_br_netfilter; \
 	if minikube_profile_running "$(MINIKUBE_PROFILE)"; then \
 		echo "Minikube profile $(MINIKUBE_PROFILE) already running."; \
 	else \
@@ -159,11 +160,17 @@ smoke-test-staging:
 smoke-test-dev:
 	HERMES_ENV=dev bash infrastructure/k8s/scripts/smoke-test-secrets.sh
 
+logs:
+	@echo "Waiting for pods in hermes-dev namespace..."
+	@until kubectl --context "$(MINIKUBE_PROFILE)" get pods -n hermes-dev --no-headers 2>/dev/null | grep -q "Running"; do sleep 5; done
+	kubectl --context "$(MINIKUBE_PROFILE)" logs -n hermes-dev -f --all-containers --prefix --max-log-requests=20 -l app
+
 dev:
 	bash -euo pipefail -c '\
 	trap "kill $$(jobs -p) 2>/dev/null" INT TERM; \
 	$(MAKE) back & \
 	$(MAKE) front & \
+	$(MAKE) logs & \
 	wait'
 
 setup-podman:

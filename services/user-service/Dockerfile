@@ -30,7 +30,7 @@ RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -D appuser
 
 COPY --from=builder /app/services/user-service/target/*.jar app.jar
 
-RUN mkdir -p /app/logs && chown appuser:appgroup /app/logs
+RUN mkdir -p /app/logs /app/resources && chown -R appuser:appgroup /app/logs /app/resources
 
 USER appuser
 EXPOSE 8081

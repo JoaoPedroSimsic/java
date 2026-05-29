@@ -9,6 +9,7 @@ source "$SCRIPT_DIR/minikube-common.sh"
 PROFILE="${MINIKUBE_PROFILE:-hermes-dev}"
 
 unset KUBECONFIG
+ensure_br_netfilter
 if ! minikube_profile_running "$PROFILE"; then
   echo "ERROR: minikube profile '$PROFILE' is not running or API is not ready."
   echo "Start it with: make minikube-up MINIKUBE_PROFILE=$PROFILE"
@@ -32,16 +33,9 @@ done
 cat <<EOF
 ERROR: cluster DNS is not working on minikube profile '$PROFILE'.
 
-This blocks service discovery (auth-db, rabbitmq, etc.) and is common with
-rootless Podman + minikube when kube-proxy cannot program iptables.
-
-Try (requires sudo once):
-  sudo modprobe br_netfilter
-  sudo sysctl -w net.bridge.bridge-nf-call-iptables=1
-  sudo sysctl -w net.bridge.bridge-nf-call-ip6tables=1
+br_netfilter was loaded above, but DNS is still failing. Try a full reset:
   make minikube-reset MINIKUBE_PROFILE=$PROFILE
 
 Also ensure slirp4netns is installed for rootless networking.
-See podman.md "Minikube rootless troubleshooting".
 EOF
 exit 1
