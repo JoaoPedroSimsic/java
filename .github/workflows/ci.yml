@@ -2,25 +2,20 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - develop
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
+    branches: [main, develop]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
   pull_request:
-    branches:
-      - main
-      - develop
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
+    branches: [main, develop]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  DEVSPACE_VERSION: 'v6.3.20'
+  TERRAFORM_VERSION: '1.15.5'
 
 jobs:
   setup:
@@ -30,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: matrix
-        run: echo "services=$(cat .github/services.json | jq -c .)" >> "$GITHUB_OUTPUT"
+        run: echo "services=$(jq -c . .github/services.json)" >> "$GITHUB_OUTPUT"
 
   secret-scan:
     runs-on: ubuntu-latest
@@ -140,21 +135,25 @@ jobs:
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
 
-      - name: Terraform fmt and validate
+      - name: Terraform fmt and validate (secrets-manager)
         working-directory: infrastructure/terraform/secrets-manager
         run: |
           terraform fmt -check -recursive
           terraform init -backend=false
           terraform validate
 
-      - name: Terraform validate (cognito)
-        working-directory: infrastructure/terraform/cognito
+      - name: Build Lambda (github-auth)
+        working-directory: infrastructure/lambda/github-auth
         run: |
-          cd ../../lambda/github-auth
           bun install --frozen-lockfile
           bun run package
-          cd ../../terraform/cognito
+
+      - name: Terraform fmt and validate (cognito)
+        working-directory: infrastructure/terraform/cognito
+        run: |
           terraform fmt -check -recursive
           terraform init -backend=false
           terraform validate
@@ -162,33 +161,49 @@ jobs:
       - name: Set up Helm
         uses: azure/setup-helm@v4
 
+      - name: Create stub secrets.env files
+        run: |
+          find infrastructure/k8s -path "*/dev-local/kustomization.yaml" -print0 \
+            | xargs -0 -I{} dirname {} \
+            | while read -r dir; do
+                if grep -q 'secrets\.env' "$dir/kustomization.yaml"; then
+                  touch "$dir/secrets.env"
+                fi
+              done
+
       - name: Validate Kustomize overlays
         run: |
           for env in dev dev-local-secrets staging prod; do
             echo "Validating cluster overlay: $env"
-            if kubectl kustomize "infrastructure/k8s/clusters/${env}" \
-              --load-restrictor=LoadRestrictionsNone --enable-helm > /dev/null 2>&1; then
-              echo "OK: $env"
-            elif [[ "$env" == "dev-local-secrets" ]]; then
-              echo "SKIP: $env (requires local secrets.env files)"
-            else
-              echo "FAIL: $env"
-              exit 1
-            fi
+            kubectl kustomize "infrastructure/k8s/clusters/${env}" \
+              --load-restrictor=LoadRestrictionsNone --enable-helm > /dev/null
+            echo "OK: $env"
           done
+
+      - name: Cache DevSpace
+        id: devspace-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/devspace
+          key: devspace-${{ env.DEVSPACE_VERSION }}-linux-amd64
+
+      - name: Download DevSpace
+        if: steps.devspace-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/bin
+          curl -fsSL -o ~/.local/bin/devspace \
+            "https://github.com/devspace-sh/devspace/releases/download/${{ env.DEVSPACE_VERSION }}/devspace-linux-amd64"
+          chmod +x ~/.local/bin/devspace
 
       - name: Validate DevSpace config
         run: |
-          curl -L -o devspace \
-            "https://github.com/devspace-sh/devspace/releases/latest/download/devspace-linux-amd64"
-          chmod +x devspace
-          sudo mv devspace /usr/local/bin/
-
+          export PATH="$HOME/.local/bin:$PATH"
           export KUBECONFIG=/dev/null
-          devspace print > /dev/null
+          devspace print > /dev/null 2>&1
           for profile in local-secrets integration dynamic-secrets staging prod; do
             echo "Validating DevSpace profile: $profile"
-            devspace print -p "$profile" > /dev/null
+            devspace print -p "$profile" > /dev/null 2>&1
+            echo "OK: $profile"
           done
 
   container-build:
@@ -201,26 +216,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify Podman version
+      - name: Verify Podman
         run: |
           bash scripts/setup-podman.sh
           podman --version
-          podman info --format '{{.Host.OciRuntime.Name}} {{.Host.CgroupVersion}}'
+          podman info --format json | jq -r '"ociRuntime=\(.host.ociRuntime.name // "unknown") cgroupVersion=\(.host.cgroupVersion)"'
 
-      - name: Build container image (validate)
+      - name: Build container image
         run: |
           podman build --network=host \
             -t hermes-${{ matrix.service }}:ci \
             -f ${{ matrix.path }}/Dockerfile \
             ${{ matrix.context }}
 
-      - name: Inspect built image
+      - name: Inspect image
         run: |
-          podman inspect hermes-${{ matrix.service }}:ci \
-            --format '{{.Id}} {{.Size}} {{.Config.User}}'
+          size=$(podman image inspect hermes-${{ matrix.service }}:ci --format '{{.Size}}')
+          layers=$(podman history --no-trunc --format '{{.Size}}' hermes-${{ matrix.service }}:ci | wc -l)
+          user=$(podman inspect hermes-${{ matrix.service }}:ci --format '{{.Config.User}}')
+          echo "size=$(( size / 1024 / 1024 ))MB layers=${layers} user=${user:-root}"
+          if [[ -z "$user" || "$user" == "root" || "$user" == "0" ]]; then
+            echo "::warning::${{ matrix.service }} runs as root — add a non-root USER to the Dockerfile"
+          fi
 
       - name: Scan image for CVEs
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: hermes-${{ matrix.service }}:ci
           severity: HIGH,CRITICAL
@@ -231,48 +251,10 @@ jobs:
     needs: [infra-validate, container-build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Podman smoke test
+        run: podman run --rm docker.io/library/alpine:3.19 echo "podman works"
 
-      - name: Verify Podman is functional
+      - name: Rootless network test
         run: |
-          podman run --rm docker.io/library/alpine:3.19 echo "podman works"
-
-      - name: Run container sanity checks
-        run: |
-          for svc in http-gateway auth-service user-service; do
-            echo "--- Rebuilding $svc for sanity check ---"
-            podman build --network=host \
-              -t "hermes-${svc}:test" \
-              -f "$(
-                case $svc in
-                  http-gateway)  echo gateways/http-gateway ;;
-                  auth-service)  echo services/auth-service ;;
-                  user-service)  echo services/user-service ;;
-                esac
-              )/Dockerfile" .
-
-            echo "Checking $svc runs and exits cleanly (--help or short-lived)..."
-            podman run --rm "hermes-${svc}:test" java -version 2>&1 | head -5 || true
-          done
-
-      - name: Validate image layer structure
-        run: |
-          for svc in http-gateway auth-service user-service; do
-            echo "--- Layer analysis: $svc ---"
-            layers=$(podman history --no-trunc --format '{{.Size}}' "hermes-${svc}:test" | wc -l)
-            size=$(podman image inspect "hermes-${svc}:test" --format '{{.Size}}')
-            echo "$svc: $layers layers, $(( size / 1024 / 1024 ))MB"
-
-            user=$(podman inspect "hermes-${svc}:test" --format '{{.Config.User}}')
-            if [[ -z "$user" || "$user" == "root" || "$user" == "0" ]]; then
-              echo "WARN: $svc runs as root — consider adding a non-root USER"
-            else
-              echo "OK: $svc runs as user '$user'"
-            fi
-          done
-
-      - name: Podman rootless network test
-        run: |
-          podman run --rm --network=host \
-            docker.io/library/alpine:3.19 \
+          podman run --rm --network=host docker.io/library/alpine:3.19 \
             sh -c "apk add --no-cache curl > /dev/null 2>&1 && echo 'rootless networking OK'"
