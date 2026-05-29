@@ -228,7 +228,6 @@ jobs:
             -t hermes-${{ matrix.service }}:ci \
             -f ${{ matrix.path }}/Dockerfile \
             ${{ matrix.context }}
-          podman save hermes-${{ matrix.service }}:ci -o /tmp/hermes-${{ matrix.service }}.tar
 
       - name: Inspect image
         run: |
@@ -240,10 +239,16 @@ jobs:
             echo "::warning::${{ matrix.service }} runs as root — add a non-root USER to the Dockerfile"
           fi
 
+      - name: Start Podman socket for Trivy
+        run: |
+          podman system service --time=0 unix:///tmp/podman.sock &
+          sleep 2
+          echo "DOCKER_HOST=unix:///tmp/podman.sock" >> "$GITHUB_ENV"
+
       - name: Scan image for CVEs
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: docker-archive:/tmp/hermes-${{ matrix.service }}.tar
+          image-ref: localhost/hermes-${{ matrix.service }}:ci
           severity: HIGH,CRITICAL
           exit-code: '0'
           format: table
