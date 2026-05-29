@@ -47,7 +47,7 @@ Base Path: `/users`
 
 ## WebSocket Gateway
 
-Base URL: `ws://localhost:8081` (local) or `wss://ws.hermes.example.com` (production)
+Base URL: `ws://localhost:8080` (local) or `wss://ws.hermes.example.com` (production)
 
 ### Connection
 

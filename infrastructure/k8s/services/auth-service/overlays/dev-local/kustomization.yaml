@@ -7,11 +7,11 @@ resources:
 configMapGenerator:
 - name: auth-service-config
   envs:
-  - ../dev/params.env
+  - params.env
 secretGenerator:
 - name: auth-service-secrets
   envs:
-  - ../dev/secrets.env
+  - secrets.env
 labels:
 - pairs:
     environment: dev

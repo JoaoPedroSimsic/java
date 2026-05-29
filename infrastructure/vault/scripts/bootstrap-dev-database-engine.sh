@@ -56,4 +56,4 @@ vault_exec vault write "database/static-roles/${STATIC_ROLE}" \
 
 echo "Done. ESO reads static creds via ClusterSecretStore vault-hermes-dev-database:"
 echo "  path: database/static-creds/${STATIC_ROLE}"
-echo "Next: deploy dev-dynamic ExternalSecrets (make eso-sync-dynamic or skaffold -p dynamic-secrets)"
+echo "Next: deploy dev-dynamic ExternalSecrets (make eso-sync-dynamic or devspace dev -p dynamic-secrets)"

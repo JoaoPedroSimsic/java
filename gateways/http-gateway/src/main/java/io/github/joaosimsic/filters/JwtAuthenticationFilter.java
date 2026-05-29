@@ -33,7 +33,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
           "/auth/register",
           "/auth/login",
           "/auth/refresh",
-          "/auth/github");
+          "/auth/github",
+          "/ws");
 
   @Override
   public int getOrder() {

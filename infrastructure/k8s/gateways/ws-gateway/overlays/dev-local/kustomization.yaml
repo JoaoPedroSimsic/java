@@ -5,11 +5,11 @@ resources:
 configMapGenerator:
 - name: ws-gateway-config
   envs:
-  - ../dev/params.env
+  - params.env
 secretGenerator:
 - name: ws-gateway-secrets
-  literals:
-  - _PLACEHOLDER=unused
+  envs:
+  - secrets.env
 labels:
 - pairs:
     environment: dev

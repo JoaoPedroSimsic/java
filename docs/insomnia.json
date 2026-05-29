@@ -232,7 +232,7 @@
       "_type": "websocket_request",
       "name": "WebSocket Connection",
       "description": "Real-time messaging WebSocket.\n\nAuthentication (in priority order):\n1. Subprotocol: bearer.<token>\n2. Cookie: access_token\n3. Query param: ?token=<token>\n\nClient-to-Server:\n- send_message, mark_read, typing, ping\n\nServer-to-Client:\n- message, pong, read_receipt, presence, ack, error, rate_limit_info, system",
-      "url": "ws://localhost:8081/ws",
+      "url": "ws://localhost:8080/ws",
       "parentId": "fld_websocket",
       "headers": [
         { "name": "Sec-WebSocket-Protocol", "value": "bearer.{{ _.access_token }}" }
@@ -243,7 +243,7 @@
       "_type": "request",
       "name": "WS Gateway Health",
       "method": "GET",
-      "url": "http://localhost:8081/health",
+      "url": "http://localhost:8082/health",
       "parentId": "fld_health",
       "headers": []
     },
@@ -252,7 +252,7 @@
       "_type": "request",
       "name": "WS Gateway Probe",
       "method": "GET",
-      "url": "http://localhost:8081/healthz",
+      "url": "http://localhost:8082/healthz",
       "parentId": "fld_health",
       "headers": []
     },

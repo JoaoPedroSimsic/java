@@ -1,0 +1,204 @@
+version: v2beta1
+name: hermes
+
+vars:
+  CONTAINER_CMD: ./scripts/podman-minikube-build.sh
+
+images:
+  http-gateway:
+    image: http-gateway
+    custom:
+      command: |-
+        ${CONTAINER_CMD} build -t ${runtime.images.http-gateway.image}:${runtime.images.http-gateway.tag} \
+          --network=host -f gateways/http-gateway/Dockerfile .
+      onChange:
+        - gateways/http-gateway/Dockerfile
+        - gateways/http-gateway/src/**
+        - gateways/http-gateway/pom.xml
+        - pom.xml
+        - bom/pom.xml
+
+  auth-service:
+    image: auth-service
+    custom:
+      command: |-
+        ${CONTAINER_CMD} build -t ${runtime.images.auth-service.image}:${runtime.images.auth-service.tag} \
+          --network=host -f services/auth-service/Dockerfile .
+      onChange:
+        - services/auth-service/Dockerfile
+        - services/auth-service/src/**
+        - services/auth-service/pom.xml
+        - pom.xml
+        - bom/pom.xml
+
+  user-service:
+    image: user-service
+    custom:
+      command: |-
+        ${CONTAINER_CMD} build -t ${runtime.images.user-service.image}:${runtime.images.user-service.tag} \
+          --network=host -f services/user-service/Dockerfile .
+      onChange:
+        - services/user-service/Dockerfile
+        - services/user-service/src/**
+        - services/user-service/pom.xml
+        - pom.xml
+        - bom/pom.xml
+
+  ws-gateway:
+    image: ws-gateway
+    custom:
+      command: |-
+        ${CONTAINER_CMD} build -t ${runtime.images.ws-gateway.image}:${runtime.images.ws-gateway.tag} \
+          --network=host -f gateways/ws-gateway/Dockerfile gateways/ws-gateway
+      onChange:
+        - gateways/ws-gateway/Dockerfile
+        - gateways/ws-gateway/**
+
+deployments:
+  hermes:
+    kubectl:
+      manifests:
+        - infrastructure/k8s/_rendered/eso-secrets-dev.yaml
+        - infrastructure/k8s/_rendered/cluster-dev.yaml
+
+dev:
+  http-gateway:
+    imageSelector: http-gateway
+    sync:
+      - path: gateways/http-gateway/src/main/resources:/app/resources
+        excludePaths:
+          - "**/*.class"
+    ports:
+      - port: "8080:8081"
+
+  auth-service:
+    imageSelector: auth-service
+    sync:
+      - path: services/auth-service/src/main/resources:/app/resources
+        excludePaths:
+          - "**/*.class"
+
+  user-service:
+    imageSelector: user-service
+    sync:
+      - path: services/user-service/src/main/resources:/app/resources
+        excludePaths:
+          - "**/*.class"
+
+  ws-gateway:
+    imageSelector: ws-gateway
+    ports:
+      - port: "8082:8082"
+
+hooks:
+  # Ensure service images are present in the minikube containerd even when
+  # devspace skips building (file hashes unchanged). Without this, a minikube
+  # restart loses the images and pods get ErrImagePull.
+  - command: bash
+    args:
+      - -c
+      - |
+        for img in \
+          "${runtime.images.auth-service.image}:${runtime.images.auth-service.tag}" \
+          "${runtime.images.http-gateway.image}:${runtime.images.http-gateway.tag}" \
+          "${runtime.images.user-service.image}:${runtime.images.user-service.tag}" \
+          "${runtime.images.ws-gateway.image}:${runtime.images.ws-gateway.tag}"; do
+          ./scripts/podman-minikube-build.sh load "$img"
+        done
+    events: ["after:build"]
+
+  - command: bash
+    args:
+      - infrastructure/k8s/shared/external-secrets/scripts/ensure-crds.sh
+    events: ["before:deploy"]
+
+  - command: bash
+    args:
+      - -c
+      - |
+        echo "Waiting for deployments to become available..."
+        for dep in auth-service user-service http-gateway ws-gateway; do
+          echo "  Waiting for $dep..."
+          kubectl wait deployment/"$dep" -n hermes-dev \
+            --for=condition=Available --timeout=420s || exit 1
+        done
+        echo "All deployments available."
+    events: ["after:deploy"]
+
+  - command: bash
+    args:
+      - -c
+      - |
+        echo "Running post-deploy health checks..."
+        CHECKS=(
+          "http-gateway:8081:/actuator/health"
+          "auth-service:8083:/actuator/health"
+          "user-service:8084:/actuator/health"
+          "ws-gateway:8082:/healthz"
+        )
+        for entry in "${CHECKS[@]}"; do
+          IFS=: read -r svc port path <<< "$entry"
+          echo "  Checking $svc..."
+          for i in $(seq 1 30); do
+            if kubectl exec deploy/"$svc" -n hermes-dev -- \
+              wget -qO- --timeout=2 "http://localhost:${port}${path}" > /dev/null 2>&1; then
+              echo "  OK: $svc is healthy"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "  FAIL: $svc health check timed out"
+              exit 1
+            fi
+            sleep 2
+          done
+        done
+        echo "All health checks passed."
+    events: ["after:deploy"]
+
+profiles:
+  - name: local-secrets
+    patches:
+      - op: replace
+        path: deployments.hermes.kubectl.manifests
+        value:
+          - infrastructure/k8s/clusters/dev-local-secrets
+
+  - name: integration
+    patches:
+      - op: replace
+        path: deployments.hermes.kubectl.manifests
+        value:
+          - infrastructure/k8s/clusters/dev-local-secrets
+      - op: replace
+        path: hooks
+        value: []
+
+  - name: dynamic-secrets
+    patches:
+      - op: replace
+        path: deployments.hermes.kubectl.manifests
+        value:
+          - infrastructure/k8s/_rendered/eso-secrets-dev-dynamic.yaml
+          - infrastructure/k8s/_rendered/cluster-dev.yaml
+
+  - name: staging
+    patches:
+      - op: remove
+        path: images
+      - op: replace
+        path: deployments.hermes.kubectl.manifests
+        value:
+          - infrastructure/k8s/shared/external-secrets/overlays/staging
+          - infrastructure/k8s/shared/external-secrets/manifests/staging
+          - infrastructure/k8s/clusters/staging
+
+  - name: prod
+    patches:
+      - op: remove
+        path: images
+      - op: replace
+        path: deployments.hermes.kubectl.manifests
+        value:
+          - infrastructure/k8s/shared/external-secrets/overlays/prod
+          - infrastructure/k8s/shared/external-secrets/manifests/prod
+          - infrastructure/k8s/clusters/prod

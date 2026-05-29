@@ -1,0 +1,6 @@
+[
+  { "service": "http-gateway", "path": "gateways/http-gateway", "context": ".", "type": "java" },
+  { "service": "auth-service", "path": "services/auth-service", "context": ".", "type": "java" },
+  { "service": "user-service", "path": "services/user-service", "context": ".", "type": "java" },
+  { "service": "ws-gateway", "path": "gateways/ws-gateway", "context": "gateways/ws-gateway", "type": "go" }
+]

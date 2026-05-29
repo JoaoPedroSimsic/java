@@ -5,18 +5,18 @@ NAMESPACE="${HERMES_NAMESPACE:-hermes-dev}"
 ESO_NS="${ESO_NAMESPACE:-external-secrets}"
 TIMEOUT="${ESO_SYNC_TIMEOUT:-300}"
 
-REQUIRED_SECRETS=(
-  gateway-secrets
-  auth-service-secrets
-  user-service-secrets
-  auth-postgres-secrets
-  user-postgres-secrets
-  rabbitmq-secrets
-  keycloak-secrets
-)
-
 if ! kubectl get externalsecret -n "$NAMESPACE" --no-headers 2>/dev/null | grep -q .; then
   echo "No ExternalSecrets in $NAMESPACE; skipping Vault secret sync wait."
+  exit 0
+fi
+
+mapfile -t REQUIRED_SECRETS < <(
+  kubectl get externalsecret -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.name}' \
+    | tr ' ' '\n' | sort
+)
+
+if [[ ${#REQUIRED_SECRETS[@]} -eq 0 ]]; then
+  echo "No ExternalSecrets found in $NAMESPACE; skipping sync wait."
   exit 0
 fi
 
