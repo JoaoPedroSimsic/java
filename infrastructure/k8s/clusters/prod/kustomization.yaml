@@ -4,6 +4,7 @@ resources:
 - namespace.yaml
 - ../../shared/rabbitmq/overlays/prod
 - ../../shared/nats/overlays/prod
+- ../../shared/dynamodb/overlays/prod
 - ../../shared/keycloak/overlays/prod
 - ../../shared/ingress/overlays/prod
 - ../../shared/observability/base
@@ -24,3 +25,4 @@ labels:
 - pairs:
     managed-by: kustomize
   includeSelectors: true
+  - ../../services/chat-service/overlays/prod

@@ -171,13 +171,13 @@ subprotocol.
 
 ## Next steps (checklist)
 
-- [ ] **infra-dynamo** — Add dynamodb-local to infra: create
+- [x] **infra-dynamo** — Add dynamodb-local to infra: create
   `infrastructure/k8s/shared/dynamodb/{base,overlays}` mirroring the nats base
   (image `amazon/dynamodb-local`, Service `dynamodb-local:8000`, PVC for `-sharedDb` persistence);
   register overlays in the cluster kustomizations.
-- [ ] **infra-jetstream** — Ensure the shared `nats` deployment runs with JetStream enabled (`-js`)
+- [x] **infra-jetstream** — Ensure the shared `nats` deployment runs with JetStream enabled (`-js`)
   and a persistence volume; bump the overlay if needed.
-- [ ] **scaffold** — Run `scripts/new-service.sh chat-service 8085 --type go` to generate k8s
+- [x] **scaffold** — Run `scripts/new-service.sh chat-service 8085 --type go` to generate k8s
   overlays, devspace.yaml image/dev blocks, `.github/services.json` entry, and params.env. Add
   `DYNAMODB_HOST/PORT`, `NATS_HOST/PORT`, `RABBITMQ_HOST/PORT`, `CHAT_PROFILE` to params.env.
 - [ ] **chat-skeleton** — Create `services/chat-service` Go module + Dockerfile with hexagonal

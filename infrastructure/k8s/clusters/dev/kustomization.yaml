@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - ../../shared/rabbitmq/overlays/dev
   - ../../shared/nats/overlays/dev
+  - ../../shared/dynamodb/overlays/dev
   - ../../shared/keycloak/overlays/dev
   - ../../shared/ingress/overlays/dev
 
@@ -20,3 +21,4 @@ labels:
       environment: dev
       cluster: dev
       managed-by: kustomize
+  - ../../services/chat-service/overlays/dev

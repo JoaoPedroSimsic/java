@@ -4,6 +4,7 @@ resources:
 - namespace.yaml
 - ../../shared/rabbitmq/overlays/staging
 - ../../shared/nats/overlays/staging
+- ../../shared/dynamodb/overlays/staging
 - ../../shared/keycloak/overlays/staging
 - ../../shared/ingress/overlays/staging
 - ../../shared/observability/base
@@ -24,3 +25,4 @@ labels:
 - pairs:
     managed-by: kustomize
   includeSelectors: true
+  - ../../services/chat-service/overlays/staging

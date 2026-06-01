@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - ../../shared/rabbitmq/overlays/dev-local
   - ../../shared/nats/overlays/dev
+  - ../../shared/dynamodb/overlays/dev
   - ../../shared/keycloak/overlays/dev-local
   - ../../shared/ingress/overlays/dev
 
@@ -21,3 +22,4 @@ labels:
       cluster: dev
       secret-source: local
       managed-by: kustomize
+  - ../../services/chat-service/overlays/dev-local

@@ -54,6 +54,15 @@ images:
         - gateways/ws-gateway/Dockerfile
         - gateways/ws-gateway/**
 
+  chat-service:
+    image: chat-service
+    custom:
+      command: |-
+        ${CONTAINER_CMD} build -t ${runtime.images.chat-service.image}:${runtime.images.chat-service.tag} \
+          --network=host -f services/chat-service/Dockerfile .
+      onChange:
+        - services/chat-service/**
+
 deployments:
   hermes:
     kubectl:
@@ -90,6 +99,9 @@ dev:
     ports:
       - port: "8082:8082"
 
+  chat-service:
+    imageSelector: chat-service
+
 hooks:
   # Ensure service images are present in the minikube containerd even when
   # devspace skips building (file hashes unchanged). Without this, a minikube
@@ -117,7 +129,7 @@ hooks:
       - -c
       - |
         echo "Waiting for deployments to become available..."
-        for dep in auth-service user-service http-gateway ws-gateway; do
+        for dep in auth-service user-service http-gateway ws-gateway chat-service; do
           echo "  Waiting for $dep..."
           kubectl wait deployment/"$dep" -n hermes-dev \
             --for=condition=Available --timeout=420s || exit 1
@@ -135,6 +147,7 @@ hooks:
           "auth-service:8083:/actuator/health"
           "user-service:8084:/actuator/health"
           "ws-gateway:8082:/healthz"
+          "chat-service:8085:/healthz"
         )
         for entry in "${CHECKS[@]}"; do
           IFS=: read -r svc port path <<< "$entry"
