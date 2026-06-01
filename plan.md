@@ -369,14 +369,14 @@ Returns the caller's conversation list ordered by `lastMessageAt` desc.
 - [x] **scaffold** — Run `scripts/new-service.sh chat-service 8085 --type go` to generate k8s
   overlays, devspace.yaml image/dev blocks, `.github/services.json` entry, and params.env. Add
   `DYNAMODB_HOST/PORT`, `NATS_HOST/PORT`, `RABBITMQ_HOST/PORT`, `CHAT_PROFILE` to params.env.
-- [ ] **chat-skeleton** — Create `services/chat-service` Go module + Dockerfile with hexagonal
+- [x] **chat-skeleton** — Create `services/chat-service` Go module + Dockerfile with hexagonal
   layout (`cmd/server`, `internal/config`, `internal/core/{domain,ports,services}`,
   `internal/adapters/{input,output}`, `internal/protocol`). Wire config loading + `/healthz` +
   graceful shutdown like ws-gateway.
   - Mirror startup: `gateways/ws-gateway/cmd/server/main.go` (config → deps → mux → signal trap).
   - Mirror Dockerfile: `gateways/ws-gateway/Dockerfile` (multi-stage alpine build).
   - Mirror go.mod structure: `gateways/ws-gateway/go.mod`.
-- [ ] **dynamo-repo** — Implement DynamoDB single-table adapters (aws-sdk-go-v2):
+- [x] **dynamo-repo** — Implement DynamoDB single-table adapters (aws-sdk-go-v2):
   ensure-table-on-startup; MessageRepository (put + dedup conditional put + keyset query),
   ConversationRepository (meta + members + inbox + get-or-create direct), ReadReceiptRepository,
   PresenceRepository (`lastActiveAt`), UserRepository (read-model). Local endpoint with dummy creds.
