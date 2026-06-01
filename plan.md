@@ -161,6 +161,195 @@ subprotocol.
 - REST endpoints read the `X-User-Id` stamped by the gateway; chat-service rejects requests without
   it (defense in depth — the route is only reachable through the gateway).
 
+## Go dependencies
+
+| Package | Purpose |
+|---|---|
+| `github.com/go-chi/chi/v5` | HTTP router |
+| `go.uber.org/zap` | Structured logging |
+| `github.com/caarlos0/env/v11` | Config loading from env vars |
+| `github.com/aws/aws-sdk-go-v2/*` | DynamoDB client (`service/dynamodb`, `feature/dynamodb/attributevalue`) |
+| `github.com/nats-io/nats.go` | NATS + JetStream client |
+| `github.com/rabbitmq/amqp091-go` | RabbitMQ AMQP consumer |
+| `github.com/oklog/ulid/v2` | ULID generation for messageId |
+| `github.com/google/uuid` | UUID if needed for group convId |
+
+## Config (caarlos0/env)
+
+```go
+type Config struct {
+  Profile     string `env:"CHAT_PROFILE,required"`
+  ServerPort  int    `env:"CHAT_SERVICE_PORT" envDefault:"8085"`
+  LogLevel    string `env:"LOG_LEVEL"         envDefault:"info"`
+
+  // DynamoDB
+  DynamoEndpoint string `env:"DYNAMODB_ENDPOINT" envDefault:"http://dynamodb-local:8000"`
+  DynamoTable    string `env:"DYNAMODB_TABLE"    envDefault:"hermes-chat"`
+
+  // NATS
+  NatsURL string `env:"NATS_URL,required"`
+
+  // RabbitMQ
+  RabbitURL string `env:"RABBITMQ_URL,required"`
+}
+```
+
+Load with `env.Parse(&cfg)` + a `validate()` function for profile-conditional checks.
+
+## NATS stream & consumer configuration
+
+| Setting | Value | Rationale |
+|---|---|---|
+| Stream name | `CHAT` | — |
+| Subjects | `chat.send`, `chat.read` | — |
+| Retention | `LimitsPolicy` | Keep messages for replay/debug |
+| MaxAge | `72h` | Enough for redelivery; not a long-term store |
+| MaxMsgs | `1_000_000` | Safety cap |
+| Storage | `FileStorage` | Survive NATS restart |
+| Replicas | `1` | Single-node dev |
+| Durable consumer | `chat-service` | — |
+| AckPolicy | `AckExplicit` | Ack only after Dynamo persist succeeds |
+| AckWait | `30s` | Generous for Dynamo round-trip |
+| MaxDeliver | `5` | Prevent infinite redelivery loops |
+| DeliverPolicy | `DeliverAll` | On first attach, replay any unacked |
+| FilterSubjects | `chat.send`, `chat.read` | Single consumer handles both |
+
+## DynamoDB write strategy
+
+**Hybrid approach:**
+- **Message + dedup**: `TransactWriteItems` with 2 items — the `MSG#` put and the `DEDUP#`
+  conditional put (`attribute_not_exists`). Atomic: either both succeed or neither does.
+- **Conversation meta bump** (`lastMessageAt`, `preview`): individual `UpdateItem` — eventually
+  consistent is fine for preview text; a failed bump is self-healing on the next message.
+- **Inbox updates** (`unreadCount++`, `lastMessageAt`): individual `UpdateItem` per member — a
+  missed bump just means a temporarily stale unread count, corrected on next message or read.
+
+This keeps the critical path (message + dedup) atomic while avoiding TransactWriteItems' 25-item
+limit and throughput penalty for the fan-out writes.
+
+## REST API contracts
+
+All REST endpoints read `X-User-Id` from the header stamped by the gateway. Requests without it
+are rejected with `403`.
+
+### Error response (mirrors user-service)
+
+```json
+{
+  "timestamp": "2026-06-01T14:30:00",
+  "status": 404,
+  "error": "Resource Not Found",
+  "message": "Conversation not found",
+  "path": "/chat/conversations/abc123",
+  "details": null
+}
+```
+
+| Condition | Status | `error` label |
+|---|---|---|
+| Missing `X-User-Id` | `403` | `Forbidden` |
+| Not a member of conversation | `403` | `Forbidden` |
+| Conversation not found | `404` | `Resource Not Found` |
+| Validation failure (missing field) | `400` | `Validation Failed` (`details` map) |
+| Duplicate group name (if enforced) | `409` | `Data Conflict` |
+| DynamoDB unreachable | `503` | `Database Unavailable` |
+
+### `POST /chat/conversations` — create or open conversation
+
+**Request (direct / get-or-create):**
+```json
+{
+  "type": "direct",
+  "participantId": "user-uuid"
+}
+```
+
+**Request (group):**
+```json
+{
+  "type": "group",
+  "name": "Project Chat",
+  "memberIds": ["user-uuid-1", "user-uuid-2"]
+}
+```
+
+The caller's `X-User-Id` is implicitly a member; for group, the caller must also be in
+`memberIds` (or is auto-added). Direct rejects if `participantId` equals the caller.
+
+**Response `201 Created` (new) / `200 OK` (existing direct):**
+```json
+{
+  "id": "dm_abc_xyz",
+  "type": "direct",
+  "name": null,
+  "members": [
+    { "userId": "abc", "email": "a@b.com", "name": "Alice" },
+    { "userId": "xyz", "email": "x@y.com", "name": "Bob" }
+  ],
+  "createdAt": "2026-06-01T14:30:00Z",
+  "lastMessageAt": null,
+  "preview": null
+}
+```
+
+### `GET /chat/conversations` — inbox
+
+Returns the caller's conversation list ordered by `lastMessageAt` desc.
+
+**Response `200 OK`:**
+```json
+{
+  "conversations": [
+    {
+      "id": "dm_abc_xyz",
+      "type": "direct",
+      "name": null,
+      "members": [
+        { "userId": "abc", "email": "a@b.com", "name": "Alice", "lastActiveAt": "2026-06-01T14:00:00Z" },
+        { "userId": "xyz", "email": "x@y.com", "name": "Bob", "lastActiveAt": "2026-06-01T13:45:00Z" }
+      ],
+      "lastMessageAt": "2026-06-01T14:30:00Z",
+      "preview": "Hey, how are you?",
+      "unreadCount": 3,
+      "lastReadMessageId": "01J5..."
+    }
+  ]
+}
+```
+
+### `GET /chat/conversations/{id}/messages?cursor=&limit=` — paginated history
+
+- `limit`: default `50`, max `100`.
+- `cursor`: opaque base64-encoded `LastEvaluatedKey` from previous page; omit for first page.
+- Messages returned newest-first (descending ULID).
+
+**Response `200 OK`:**
+```json
+{
+  "messages": [
+    {
+      "messageId": "01J5...",
+      "senderId": "abc",
+      "content": "Hello!",
+      "mediaId": null,
+      "createdAt": "2026-06-01T14:30:00Z"
+    }
+  ],
+  "nextCursor": "eyJQSyI6Ik..."
+}
+```
+
+`nextCursor` is `null` when there are no more pages.
+
+## Tracing & observability
+
+- Every incoming request/message carries `X-Trace-Id` in `_headers` (from ws-gateway) or as an
+  HTTP header (from http-gateway). If absent, chat-service generates one.
+- Store `traceId` in a `context.Context` value; pass the context through all layers.
+- All zap log lines include `traceId` as a structured field (`zap.String("traceId", ...)`).
+- Use a chi middleware to extract `X-Trace-Id` from REST requests and inject into context.
+- Use a helper to extract from NATS `_headers` map for the JetStream/core consumers.
+
 ## Out of scope (future)
 
 - Shared chat event JSON Schemas in `events/` (only needed when a media/notification service
@@ -184,6 +373,9 @@ subprotocol.
   layout (`cmd/server`, `internal/config`, `internal/core/{domain,ports,services}`,
   `internal/adapters/{input,output}`, `internal/protocol`). Wire config loading + `/healthz` +
   graceful shutdown like ws-gateway.
+  - Mirror startup: `gateways/ws-gateway/cmd/server/main.go` (config → deps → mux → signal trap).
+  - Mirror Dockerfile: `gateways/ws-gateway/Dockerfile` (multi-stage alpine build).
+  - Mirror go.mod structure: `gateways/ws-gateway/go.mod`.
 - [ ] **dynamo-repo** — Implement DynamoDB single-table adapters (aws-sdk-go-v2):
   ensure-table-on-startup; MessageRepository (put + dedup conditional put + keyset query),
   ConversationRepository (meta + members + inbox + get-or-create direct), ReadReceiptRepository,
@@ -191,6 +383,12 @@ subprotocol.
 - [ ] **gw-jetstream** — Change ws-gateway to publish `chat.send` and `chat.read` via a JetStream
   context (`js.Publish` with `nats.MsgId(clientMsgId)` on send for server-side dedup); declare/ensure
   the `CHAT` stream (subjects `chat.send`, `chat.read`). Keep typing/presence/`chat.user.*` on core.
+  - Subject constants: `gateways/ws-gateway/internal/nats/client.go:15-23`.
+  - Core NATS conn field: `gateways/ws-gateway/internal/nats/client.go:34` — add a `js nats.JetStreamContext` field.
+  - `PublishMessage`: `gateways/ws-gateway/internal/nats/client.go:151` — switch to `js.Publish`.
+  - `PublishMarkRead`: `gateways/ws-gateway/internal/nats/client.go:187` — switch to `js.Publish`.
+  - Private `publish` helper: `gateways/ws-gateway/internal/nats/client.go:243-257` — keep for core subjects.
+  - Tests: `gateways/ws-gateway/internal/nats/client_test.go:35,153`.
 - [ ] **nats-hotpath** — chat-service NATS adapters: durable JetStream consumer for
   `chat.send`/`chat.read` (manual ack after persist), core subs for `chat.conversation.*` (typing)
   and presence; ChatService orchestration (authorize membership, persist, dedup, fan-out); output
@@ -198,6 +396,8 @@ subprotocol.
 - [ ] **amqp-cqrs** — RabbitMQ AMQP consumer (amqp091-go): declare/bind queues to `user.exchange`
   (`user.created/updated/deleted`), unmarshal the JSON body (ignore `__TypeId__` header),
   upsert/delete the user read-model in Dynamo with `EVENT#` idempotency.
+  - Exchange/routing-key defs: `services/user-service/.../infrastructure/config/RabbitConfig.java:28-45`.
+  - Queue/binding beans: `services/user-service/.../infrastructure/config/RabbitConfig.java:62-103`.
 - [ ] **presence-persist** — Consume presence/online events and persist `USER#{id}` `PRESENCE`
   (`status`, `lastActiveAt`); expose last-seen via the inbox/conversation REST responses.
 - [ ] **chat-rest** — REST handlers on chat-service (port 8085), reading `X-User-Id`:
@@ -207,19 +407,35 @@ subprotocol.
 - [ ] **gw-subscribe** — Wire the missing inbound delivery in ws-gateway: add a per-user
   subscription registry + `UnsubscribeUserMessages(userID)` in `internal/nats/client.go`, and call
   `SubscribeToUserMessages` on register / unsubscribe on unregister in `internal/hub/hub.go`.
+  - `SubscribeToUserMessages`: `gateways/ws-gateway/internal/nats/client.go:85` (exists but never called).
+  - `handleUserMessage` dispatch: `gateways/ws-gateway/internal/nats/client.go:122`.
+  - Hub register/unregister loop: `gateways/ws-gateway/internal/hub/hub.go:40-69` (hook point).
+  - Hub `Register`/`Unregister` methods: `gateways/ws-gateway/internal/hub/hub.go:72,76`.
+  - Hub `On*Received` handlers: `gateways/ws-gateway/internal/hub/hub.go:145-229`.
 - [ ] **http-route** — Add a chat-service route (`Path=/chat/**`) to http-gateway `application.yml`
   mirroring the user-service block (rate limiter + circuit breaker), plus `CHAT_SERVICE_HOST/PORT`
   env vars in the http-gateway overlays.
+  - User-service route to mirror: `gateways/http-gateway/src/main/resources/application.yml:34-48`.
+  - WS route (reference): `gateways/http-gateway/src/main/resources/application.yml:60-63`.
+  - Resilience4j CB instances to mirror: `gateways/http-gateway/src/main/resources/application.yml:78-91`.
 - [ ] **fe-realtime** — Frontend realtime layer: add `wsUrl` to `environment(.prod).ts`; create a
   RealtimeService (native WebSocket to `ws://localhost:8080/ws`, reconnect w/ backoff, ping/pong,
   RxJS stream of envelopes, `send()`); add Envelope + payload types to `messaging.models.ts`.
+  - Environment files (add `wsUrl`): `frontend/src/app/environment/environment.ts`, `environment.prod.ts`.
+  - Existing models: `frontend/src/app/domains/messaging/models/messaging.models.ts`.
+  - Barrel exports: `frontend/src/app/domains/messaging/index.ts`.
 - [ ] **fe-data** — Frontend data layer: MessageService (REST create-conversation + inbox + history
   pagination), MessageStore (signals, optimistic send with clientMsgId, reconcile on ack/message,
   unread/read state); replace ConversationStore mock with the real REST inbox.
+  - Mock store to replace: `frontend/src/app/domains/messaging/data/conversation.store.ts` (mock at `:41`).
+  - Existing models: `frontend/src/app/domains/messaging/models/messaging.models.ts`.
 - [ ] **fe-thread** — Frontend UI: add route `home/:conversationId` -> ChatThread component (message
   list w/ infinite scroll, composer that sends `send_message`, typing indicator, read receipts,
   presence + last-seen, group support). Make `openConversation()` navigate instead of console.log;
   add a "new chat / new group" entry point.
+  - `openConversation` stub: `frontend/src/app/domains/messaging/features/home/home.ts:241`.
+  - App routes (add child route): `frontend/src/app/app.routes.ts:4-35`.
+  - Home component: `frontend/src/app/domains/messaging/features/home/home.ts:214`.
 - [ ] **tests-unit** — Unit tests for `core/services` (authorization, dedup, fan-out, read state)
   with mocked ports.
 - [ ] **tests-integration** — Dynamo-local integration tests for each repository (table bootstrap,
