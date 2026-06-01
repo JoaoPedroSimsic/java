@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Configure Podman for Hermes Dockerfiles (short image names like maven:..., golang:...).
-# Safe to run repeatedly; writes under $XDG_CONFIG_HOME/containers/registries.conf.d/
 set -euo pipefail
 
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/containers/registries.conf.d"
@@ -13,7 +11,6 @@ if [[ -f "$CONF_FILE" ]] && grep -q 'unqualified-search-registries.*docker.io' "
 fi
 
 cat >"$CONF_FILE" <<'EOF'
-# Hermes: allow Dockerfile short names (maven:..., golang:...) to resolve via docker.io
 unqualified-search-registries = ["docker.io"]
 EOF
 

@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Verify a minikube profile has working pod networking (ClusterIP / DNS).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=infrastructure/scripts/minikube-common.sh
 source "$SCRIPT_DIR/minikube-common.sh"
 
 PROFILE="${MINIKUBE_PROFILE:-hermes-dev}"

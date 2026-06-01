@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Pre-renders kustomizations that need --load-restrictor=LoadRestrictionsNone into plain
-# YAML files so devspace can apply them without flags its dry-run step does not pass.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

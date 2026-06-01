@@ -11,6 +11,7 @@ resources:
 
   - ../../services/auth-service/overlays/dev
   - ../../services/user-service/overlays/dev
+  - ../../services/chat-service/overlays/dev
   - ../../gateways/http-gateway/overlays/dev
   - ../../gateways/ws-gateway/overlays/dev
 
@@ -21,4 +22,3 @@ labels:
       environment: dev
       cluster: dev
       managed-by: kustomize
-  - ../../services/chat-service/overlays/dev

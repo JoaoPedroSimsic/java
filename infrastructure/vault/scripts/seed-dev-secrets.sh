@@ -18,7 +18,6 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 set -a
-# shellcheck disable=SC1090
 source "$ENV_FILE"
 set +a
 

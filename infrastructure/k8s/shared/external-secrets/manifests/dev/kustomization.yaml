@@ -12,6 +12,7 @@ resources:
   - rabbitmq-secrets.yaml
   - keycloak-secrets.yaml
   - auth-service-secrets.yaml
+  - chat-service-secrets.yaml
 
 labels:
   - pairs:

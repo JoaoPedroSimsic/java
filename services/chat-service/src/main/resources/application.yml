@@ -1,0 +1,32 @@
+server:
+  port: ${CHAT_SERVICE_PORT:8085}
+
+spring:
+  profiles:
+    active: ${CHAT_PROFILE:dev}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+logging:
+  level:
+    '[io.github.joaosimsic]': DEBUG

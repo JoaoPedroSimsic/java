@@ -163,11 +163,11 @@ smoke-test-dev:
 logs:
 	@echo "Waiting for pods in hermes-dev namespace..."
 	@until kubectl --context "$(MINIKUBE_PROFILE)" get pods -n hermes-dev --no-headers 2>/dev/null | grep -q "Running"; do sleep 5; done
-	kubectl --context "$(MINIKUBE_PROFILE)" logs -n hermes-dev -f --all-containers --prefix --max-log-requests=20 -l app
+	kubectl --context "$(MINIKUBE_PROFILE)" logs -n hermes-dev -f --all-containers --prefix --max-log-requests=50 -l app
 
 dev:
 	bash -euo pipefail -c '\
-	trap "kill $$(jobs -p) 2>/dev/null" INT TERM; \
+	trap "kill $$(jobs -p) 2>/dev/null; exit 0" INT TERM EXIT; \
 	$(MAKE) back & \
 	$(MAKE) front & \
 	$(MAKE) logs & \
@@ -197,6 +197,3 @@ validate-all: validate-builds validate-manifests validate-terraform validate-dev
 
 integration-test:
 	unset KUBECONFIG; MINIKUBE_PROFILE=hermes-test bash infrastructure/scripts/integration-test-local.sh
-
-# Re-run without recreating minikube (~5–10 min if images cached):
-#   INTEGRATION_REUSE_CLUSTER=1 INTEGRATION_KEEP_CLUSTER=1 make integration-test

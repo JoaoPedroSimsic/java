@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
-# Generate Postgres (or Redis) K8s manifests, ExternalSecrets, and Vault seed entries.
-#
-# Usage: scripts/new-database.sh <short-name> [--type postgres|redis]
-#
-# Example: scripts/new-database.sh chat --type postgres
-#   Creates infrastructure/k8s/shared/postgres/chat-db/ ...
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# shellcheck source=scripts/lib/render-template.sh
 source "$SCRIPT_DIR/lib/render-template.sh"
 
 TEMPLATES="$REPO_ROOT/infrastructure/templates"

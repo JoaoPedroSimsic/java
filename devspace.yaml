@@ -103,9 +103,6 @@ dev:
     imageSelector: chat-service
 
 hooks:
-  # Ensure service images are present in the minikube containerd even when
-  # devspace skips building (file hashes unchanged). Without this, a minikube
-  # restart loses the images and pods get ErrImagePull.
   - command: bash
     args:
       - -c
@@ -114,7 +111,8 @@ hooks:
           "${runtime.images.auth-service.image}:${runtime.images.auth-service.tag}" \
           "${runtime.images.http-gateway.image}:${runtime.images.http-gateway.tag}" \
           "${runtime.images.user-service.image}:${runtime.images.user-service.tag}" \
-          "${runtime.images.ws-gateway.image}:${runtime.images.ws-gateway.tag}"; do
+          "${runtime.images.ws-gateway.image}:${runtime.images.ws-gateway.tag}" \
+          "${runtime.images.chat-service.image}:${runtime.images.chat-service.tag}"; do
           ./scripts/podman-minikube-build.sh load "$img"
         done
     events: ["after:build"]

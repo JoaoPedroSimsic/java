@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Podman build wrapper for minikube: builds images and loads them directly
-# into the minikube node's containerd via podman exec + ctr.
 set -euo pipefail
 
 PROFILE="${MINIKUBE_PROFILE:-hermes-dev}"
@@ -18,8 +16,7 @@ load_image_into_minikube() {
     return 0
   fi
 
-  # Skip if the image is already present in minikube's containerd.
-  local bare_name="${image_tag##*/}"  # strip any registry prefix for matching
+  local bare_name="${image_tag##*/}"
   if podman exec "$PROFILE" ctr -n k8s.io images list 2>/dev/null \
       | grep -qF "docker.io/library/$bare_name"; then
     echo "Image $image_tag already in minikube; skipping load."
@@ -40,23 +37,17 @@ load_image_into_minikube() {
   podman save "$image_tag" -o "$tmp_tar"
   podman cp "$tmp_tar" "$PROFILE":"$container_tar"
   podman exec "$PROFILE" ctr -n k8s.io image import "$container_tar"
-  # The imported image lands as "localhost/<image_tag>" inside containerd.
-  # Tag it to docker.io/library so kubelet can find it without a registry pull.
   podman exec "$PROFILE" ctr -n k8s.io image tag "localhost/$image_tag" "docker.io/library/$image_tag" 2>/dev/null || \
   podman exec "$PROFILE" ctr -n k8s.io image tag "$image_tag" "docker.io/library/$image_tag" 2>/dev/null || true
   podman exec "$PROFILE" rm "$container_tar"
   rm -f "$tmp_tar"
 }
 
-# load subcommand: ensure an already-built image is present in minikube.
-# Called by the devspace after:build hook so images are always available even
-# when devspace skips building because file hashes haven't changed.
 if [[ "${1:-}" == "load" ]]; then
   load_image_into_minikube "${2:-}"
   exit $?
 fi
 
-# Only intercept build commands; pass everything else through to podman.
 if [[ "${1:-}" != "build" ]]; then
   exec podman "$@"
 fi

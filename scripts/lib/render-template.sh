@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Render a template file by replacing __PLACEHOLDER__ tokens.
-# Usage: render_template src dest KEY=val KEY2=val2 ...
 render_template() {
   local src="$1"
   local dest="$2"

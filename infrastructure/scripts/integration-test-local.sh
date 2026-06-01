@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
-# End-to-end smoke test: minikube + local-secrets deploy + health checks.
-# Typical runtime: ~10–15 min (cached Maven builds). Without cache: ~25 min.
-#
-# Quick validation without a cluster: make validate-all
-# Interactive dev loop: make back-local
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-# shellcheck source=infrastructure/scripts/minikube-common.sh
 source "$REPO_ROOT/infrastructure/scripts/minikube-common.sh"
 PROFILE="${MINIKUBE_PROFILE:-hermes-test}"
 NAMESPACE="hermes-dev"

@@ -1,16 +1,8 @@
 #!/usr/bin/env bash
-# Scaffold a new Hermes microservice: K8s manifests, DevSpace, CI registry, optional DB/Redis.
-#
-# Usage: scripts/new-service.sh <name> <port> [--with-postgres] [--with-redis] [--type java|go]
-#
-# Examples:
-#   scripts/new-service.sh chat-service 8085 --with-postgres --type java
-#   scripts/new-service.sh notify-service 8090 --type java
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# shellcheck source=scripts/lib/render-template.sh
 source "$SCRIPT_DIR/lib/render-template.sh"
 
 TEMPLATES="$REPO_ROOT/infrastructure/templates"
@@ -81,7 +73,6 @@ if [[ "$SERVICE_TYPE" == "go" ]]; then
   HEALTH_PATH="/healthz"
 fi
 
-# Resolve service path (services/ vs gateways/)
 if [[ "$SERVICE_NAME" == *-gateway ]]; then
   SVC_PATH="gateways/${SERVICE_NAME}"
   BUILD_CONTEXT="gateways/${SERVICE_NAME}"
@@ -227,7 +218,6 @@ EOF
   fi
 done
 
-# dev-local overlay (local-secrets cluster; references ../dev/ env files)
 dev_local="$K8S_BASE/overlays/dev-local"
 mkdir -p "$dev_local"
 if [[ "$SERVICE_NAME" == *-gateway ]]; then
@@ -282,7 +272,6 @@ EOF
   } >"$dev_local/kustomization.yaml"
 fi
 
-# Cluster kustomizations
 for cluster in dev staging prod dev-local-secrets; do
   case "$cluster" in
     dev) env_overlay="dev" ;;
@@ -295,7 +284,6 @@ for cluster in dev staging prod dev-local-secrets; do
   append_unique_line "$kust" "$line"
 done
 
-# devspace.yaml — image, dev, and hook entries
 DEVSPACE="$REPO_ROOT/devspace.yaml"
 if grep -q "^  ${SERVICE_NAME}:" "$DEVSPACE" 2>/dev/null; then
   echo "devspace.yaml already has image: $SERVICE_NAME"

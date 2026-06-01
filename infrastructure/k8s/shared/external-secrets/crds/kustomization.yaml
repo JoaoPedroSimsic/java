@@ -5,6 +5,7 @@ resources:
   - bundle.yaml
 
 labels:
-  - pairs:
+  - includeSelectors: false
+    pairs:
       app.kubernetes.io/part-of: hermes
       app.kubernetes.io/component: external-secrets-crds

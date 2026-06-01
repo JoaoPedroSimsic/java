@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# Shared helpers for rootless Podman + minikube (minikube status needs sudo).
 set -euo pipefail
 
-# Ensure br_netfilter is loaded so that bridge-forwarded pod traffic passes
-# through iptables/CONNTRACK. Without it, Kubernetes service ClusterIP routing
-# breaks silently under rootless Podman after a minikube restart.
 ensure_br_netfilter() {
   local current
   current="$(cat /proc/sys/net/bridge/bridge-nf-call-iptables 2>/dev/null || echo '')"
